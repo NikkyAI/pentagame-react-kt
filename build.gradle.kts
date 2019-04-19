@@ -207,3 +207,7 @@ val packageJs = tasks.create("packageJs") {
         htmlOutput.resolve("index.html").writeText(htmlText)
     }
 }
+
+tasks.withType(JavaExec::class.java).all {
+    
+}
