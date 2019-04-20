@@ -25,6 +25,14 @@ object PentaViz {
     private var scale: Double = 100.0
     private var mousePos: Point = Point(0.0, 0.0)
 
+    fun highlightedPieceAt(mousePos: Point): Piece? = gameState.findPieceAtPos(mousePos)?.let {
+        // allow highlighting blockers when a piece is selected
+        if(it !is PlayerPiece && gameState.selectedPlayerPiece == null) return@let null
+        // TODO: remove highlighting pices when placing a blocker
+        if(gameState.figurePositions[it.id] == null) return@let null
+        it
+    }
+
     val viz = viz {
         println("height: $height")
         println("width: $width")
@@ -107,12 +115,8 @@ object PentaViz {
 //        }
 
             // do not highlight blocker pieces or pieces that are out of the game
-            val highlightedPiece = gameState.findPieceAtPos(mousePos)?.let {
-                if(it !is PlayerPiece) return@let null
-                if(gameState.figurePositions[it.id] == null) return@let null
-                it
-            }
-            val highlightedField = if (highlightedPiece == null) PentaBoard.findFieldAtPos(mousePos) else null
+//            val highlightedPiece = highlightedPieceAt(mousePos)
+//            val highlightedField = if (highlightedPiece == null) PentaBoard.findFieldAtPos(mousePos) else null
 
             elements.forEach { (field, triple) ->
                 val (circle, text1, text2) = triple
@@ -120,10 +124,10 @@ object PentaViz {
                     x = ((field.pos.x / PentaMath.R_)) * scale
                     y = ((field.pos.y / PentaMath.R_)) * scale
                     radius = field.radius / PentaMath.R_ * scale
-                    fill = if (field != highlightedField)
-                        field.color
-                    else
-                        field.color.brighten(2.0)
+//                    fill = if (field != highlightedField)
+//                        field.color
+//                    else
+//                        field.color.brighten(2.0)
                 }
                 text1.apply {
                     x = ((field.pos.x / PentaMath.R_)) * scale
@@ -181,13 +185,25 @@ object PentaViz {
             field = gameState
         }
 
-    fun updatePiece(piece: Piece) {
-        val highlightedPiece = gameState.findPieceAtPos(mousePos)?.let {
-            // TODO: allow highlighting blockers when a piece is selected
-            if(it !is PlayerPiece && gameState.selectedPlayerPiece == null) return@let null
-            if(gameState.figurePositions[it.id] == null) return@let null
-            it
+    fun recolor() {
+        val highlightedPiece = highlightedPieceAt(mousePos)
+        val highlightedField = if (highlightedPiece == null) PentaBoard.findFieldAtPos(mousePos) else null
+        elements.forEach { (field, triple) ->
+            val (circle, text1, text2) = triple
+            with(circle) {
+                fill = if (field != highlightedField)
+                    field.color
+                else
+                    field.color.brighten(2.0)
+            }
         }
+        gameState.figures.forEach {
+            updatePiece(it)
+        }
+    }
+
+    fun updatePiece(piece: Piece) {
+        val highlightedPiece = highlightedPieceAt(mousePos)
 
         val (circle, text) = pieces[piece.id] ?: throw IllegalArgumentException("piece; $piece is not on the board")
 
@@ -255,7 +271,8 @@ object PentaViz {
                         hoveredField = null
 
                         // TODO: refactor - instead of resize create `recolor()`
-                        viz.resize(viz.width, viz.height)
+//                        viz.resize(viz.width, viz.height)
+                        recolor()
                         viz.render()
                     }
                 }
@@ -267,7 +284,8 @@ object PentaViz {
                         hoveredPiece = null
 
                         // TODO: refactor - instead of resize create `recolor()`
-                        viz.resize(viz.width, viz.height)
+//                        viz.resize(viz.width, viz.height)
+                        recolor()
                         viz.render()
                     }
                 }
@@ -276,7 +294,8 @@ object PentaViz {
                     if (hoveredField != null || hoveredPiece != null) {
                         hoveredField = null
                         hoveredPiece = null
-                        viz.resize(viz.width, viz.height)
+//                        viz.resize(viz.width, viz.height)
+                        recolor()
                         viz.render()
                     }
                 }
