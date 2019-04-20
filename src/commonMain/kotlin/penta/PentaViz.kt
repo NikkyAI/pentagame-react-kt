@@ -20,7 +20,7 @@ import penta.figure.Piece
 import penta.figure.PlayerPiece
 
 object PentaViz {
-    private val pieces: MutableMap<String, CircleNode> = mutableMapOf()
+    private val pieces: MutableMap<String, Pair<CircleNode, TextNode?>> = mutableMapOf()
     val elements = mutableMapOf<AbstractField, Triple<CircleNode, TextNode, TextNode?>>()
     private var scale: Double = 100.0
     private var mousePos: Point = Point(0.0, 0.0)
@@ -60,6 +60,7 @@ object PentaViz {
 
             val t2 = if (field is ConnectionField) {
                 text {
+                    fontSize -= 2
                     hAlign = TextHAlign.MIDDLE
                     vAlign = TextVAlign.HANGING
                     textContent = field.altId
@@ -104,7 +105,13 @@ object PentaViz {
 //            y = size / 2
 //            radius = (PentaMath.r / PentaMath.R_ * size / 2.0)
 //        }
-            val highlightedPiece = gameState.findPieceAtPos(mousePos)
+
+            // do not highlight blocker pieces or pieces that are out of the game
+            val highlightedPiece = gameState.findPieceAtPos(mousePos)?.let {
+                if(it !is PlayerPiece) return@let null
+                if(gameState.figurePositions[it.id] == null) return@let null
+                it
+            }
             val highlightedField = if (highlightedPiece == null) PentaBoard.findFieldAtPos(mousePos) else null
 
             elements.forEach { (field, triple) ->
@@ -146,8 +153,9 @@ object PentaViz {
 
             viz.apply {
                 // clear old pieces
-                pieces.values.forEach { circle ->
+                pieces.values.forEach { (circle, text) ->
                     circle.remove()
+                    text?.remove()
                 }
                 pieces.clear()
 
@@ -158,7 +166,14 @@ object PentaViz {
                         strokeWidth = 1.0
                         stroke = 0.col
                     }
-                    pieces[piece.id] = c
+                    val t =
+                        if (piece is PlayerPiece) {
+                            text {
+                                textContent = piece.playerId
+                            }
+                        } else null
+
+                    pieces[piece.id] = c to t
 
                     updatePiece(piece)
                 }
@@ -167,8 +182,14 @@ object PentaViz {
         }
 
     fun updatePiece(piece: Piece) {
-        val highlightedPiece = gameState.findPieceAtPos(mousePos)
-        val circle = pieces[piece.id] ?: throw IllegalArgumentException("piece; $piece is not on the board")
+        val highlightedPiece = gameState.findPieceAtPos(mousePos)?.let {
+            // TODO: allow highlighting blockers when a piece is selected
+            if(it !is PlayerPiece && gameState.selectedPlayerPiece == null) return@let null
+            if(gameState.figurePositions[it.id] == null) return@let null
+            it
+        }
+
+        val (circle, text) = pieces[piece.id] ?: throw IllegalArgumentException("piece; $piece is not on the board")
 
 //        val radius = when (piece) {
 //            is BlockerPiece -> PentaMath.s / 2.5
@@ -192,6 +213,12 @@ object PentaViz {
                 }
             }
         }
+        text?.apply {
+            x = ((pos.x / PentaMath.R_)) * scale
+            y = ((pos.y / PentaMath.R_)) * scale
+            vAlign = TextVAlign.MIDDLE
+            hAlign = TextHAlign.MIDDLE
+        }
     }
 
     var hoveredField: AbstractField? = null
@@ -209,7 +236,7 @@ object PentaViz {
                 elements.forEach { (field, triple) ->
                     val (_, text1, text2) = triple
 
-                    if(field == hoverField) {
+                    if (field == hoverField) {
                         text1.visible = true
                         text2?.visible = true
                     } else {
@@ -227,6 +254,7 @@ object PentaViz {
                         hoveredPiece = it
                         hoveredField = null
 
+                        // TODO: refactor - instead of resize create `recolor()`
                         viz.resize(viz.width, viz.height)
                         viz.render()
                     }
@@ -238,6 +266,7 @@ object PentaViz {
                         hoveredField = it
                         hoveredPiece = null
 
+                        // TODO: refactor - instead of resize create `recolor()`
                         viz.resize(viz.width, viz.height)
                         viz.render()
                     }

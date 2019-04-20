@@ -166,6 +166,11 @@ data class GameState(
 //                selectedPlayerPiece = null
                 return
             }
+            if(sourcePos == targetPos) {
+                println("cannot move piece onto the same field as before")
+                return
+            }
+
             println("swapping $sourcePos <-> $targetPos")
 
 
@@ -246,6 +251,10 @@ data class GameState(
 
             val sourcePos = positions[playerPiece.id]!!
             val targetPos = field
+            if(sourcePos == targetPos) {
+                println("cannot move piece onto the same field as before")
+                return
+            }
 
             // check if targetField is empty
             if(positions.values.filter { it == targetPos }.isNotEmpty()) {
