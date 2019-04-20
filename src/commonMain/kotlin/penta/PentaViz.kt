@@ -21,6 +21,7 @@ import penta.figure.PlayerPiece
 
 object PentaViz {
     private val pieces: MutableMap<String, CircleNode> = mutableMapOf()
+    val elements = mutableMapOf<AbstractField, Triple<CircleNode, TextNode, TextNode?>>()
     private var scale: Double = 100.0
     private var mousePos: Point = Point(0.0, 0.0)
 
@@ -42,7 +43,6 @@ object PentaViz {
                 strokeWidth = 3.0
             }
         }
-        val elements = mutableListOf<Triple<AbstractField, CircleNode, TextNode>>()
         PentaBoard.fields.forEach { field ->
             println("adding: $field")
             val c = circle {
@@ -50,17 +50,27 @@ object PentaViz {
                 stroke = 0.col
                 fill = field.color
             }
-            val t = text {
-                textContent = field.id + ((field as? ConnectionField)?.altId?.let { "\n" + it } ?: "")
+            val t1 = text {
                 fontSize -= 2
                 hAlign = TextHAlign.MIDDLE
-                vAlign = TextVAlign.MIDDLE
+                vAlign = TextVAlign.BASELINE
+                this.textContent = field.id
+                visible = false
             }
-            elements += Triple(field, c, t)
+
+            val t2 = if (field is ConnectionField) {
+                text {
+                    hAlign = TextHAlign.MIDDLE
+                    vAlign = TextVAlign.HANGING
+                    textContent = field.altId
+                    visible = false
+                }
+            } else null
+            elements[field] = Triple(c, t1, t2)
         }
 
         onResize { newWidth, newHeight ->
-//            println("resize")
+            //            println("resize")
 //            println("height: $height > $newHeight")
 //            println("width: $width > $newWidth")
             scale = kotlin.math.min(newWidth, newHeight)
@@ -68,13 +78,13 @@ object PentaViz {
 
             gameState.findPieceAtPos(mousePos)
                 ?.also {
-//                    println("hovered: $it")
+                    //                    println("hovered: $it")
                 }
                 ?: PentaBoard.findFieldAtPos(mousePos)?.also {
-//                    println("hovered: $it")
+                    //                    println("hovered: $it")
                 }
                 ?: run {
-//                    println("Mouse Move:: $mousePos")
+                    //                    println("Mouse Move:: $mousePos")
                 }
 
             val halfCircleWidth = (0.25 / PentaMath.R_) * scale / 2
@@ -95,9 +105,10 @@ object PentaViz {
 //            radius = (PentaMath.r / PentaMath.R_ * size / 2.0)
 //        }
             val highlightedPiece = gameState.findPieceAtPos(mousePos)
-            val highlightedField = if(highlightedPiece == null) PentaBoard.findFieldAtPos(mousePos) else null
+            val highlightedField = if (highlightedPiece == null) PentaBoard.findFieldAtPos(mousePos) else null
 
-            elements.forEach { (field, circle, text) ->
+            elements.forEach { (field, triple) ->
+                val (circle, text1, text2) = triple
                 with(circle) {
                     x = ((field.pos.x / PentaMath.R_)) * scale
                     y = ((field.pos.y / PentaMath.R_)) * scale
@@ -107,7 +118,11 @@ object PentaViz {
                     else
                         field.color.brighten(2.0)
                 }
-                with(text) {
+                text1.apply {
+                    x = ((field.pos.x / PentaMath.R_)) * scale
+                    y = ((field.pos.y / PentaMath.R_)) * scale
+                }
+                text2?.apply {
                     x = ((field.pos.x / PentaMath.R_)) * scale
                     y = ((field.pos.y / PentaMath.R_)) * scale
                 }
@@ -190,6 +205,20 @@ object PentaViz {
 //            mousePos = ((evt.pos / scale)- Point(0.5, 0.5)) * PentaMath.R_ * 2
             mousePos = (evt.pos / scale) * PentaMath.R_
 
+            PentaBoard.findFieldAtPos(mousePos).let { hoverField ->
+                elements.forEach { (field, triple) ->
+                    val (_, text1, text2) = triple
+
+                    if(field == hoverField) {
+                        text1.visible = true
+                        text2?.visible = true
+                    } else {
+                        text1.visible = false
+                        text2?.visible = false
+                    }
+                }
+            }
+
             gameState.findPieceAtPos(mousePos)
                 ?.also {
                     if (hoveredPiece != it) {
@@ -214,7 +243,7 @@ object PentaViz {
                     }
                 }
                 ?: run {
-//                    println("Mouse Move:: ${mousePos}")
+                    //                    println("Mouse Move:: ${mousePos}")
                     if (hoveredField != null || hoveredPiece != null) {
                         hoveredField = null
                         hoveredPiece = null
@@ -225,7 +254,7 @@ object PentaViz {
 
         }
         on(KMouseClick) { evt ->
-//            println("MouseClick:: $evt")
+            //            println("MouseClick:: $evt")
 //            println("shiftKey:: ${evt.shiftKey}")
 //            println("ctrlKey:: ${evt.ctrlKey}")
 //            println("metaKey:: ${evt.metaKey}")
@@ -233,12 +262,12 @@ object PentaViz {
             mousePos = (evt.pos / scale) * PentaMath.R_
 
             val piece = gameState.findPieceAtPos(mousePos)
-            if(piece != null) {
+            if (piece != null) {
                 println("clickPiece($piece)")
                 gameState.clickPiece(piece)
             } else {
                 val field = PentaBoard.findFieldAtPos(mousePos)
-                if(field != null){
+                if (field != null) {
                     gameState.clickField(field)
                 }
             }
