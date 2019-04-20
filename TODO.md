@@ -1,7 +1,11 @@
 # TODO
 
+- [ ] UI
+  - [ ] display turn
+  - [ ] display piece/figure shapes
+
 - [ ] game interals
-  - [ ] figures
+  - [ ] figures/pieces
   - [ ] rules
   - [ ] notation
 

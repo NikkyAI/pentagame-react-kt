@@ -1,10 +1,13 @@
 package penta.field
 
 import io.data2viz.color.Color
-import io.data2viz.geom.Point
+import penta.PentaColor
 
 abstract class IntersectionField: AbstractField() {
+    abstract  val pentaColor: PentaColor
     override val radius: Double = PentaMath.c / 2
+
+    override val color: Color get() = pentaColor.color
 
     protected var connectedIntersectionFields: List<IntersectionField> = listOf()
     fun connectIntersection(vararg others: IntersectionField) {

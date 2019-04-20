@@ -28,7 +28,7 @@ object PentaBoard {
 //                id.toString()
                 id = "c${color.ordinal}",
                 pos = pos / 2 + (Point(0.5, 0.5) * PentaMath.R_),
-                color = color.color
+                pentaColor = color
             )
         }
         c = corners.toTypedArray()
@@ -44,7 +44,7 @@ object PentaBoard {
                 id = "j${color.ordinal}",
 //                id.toString(),
                 pos = pos / 2 + (Point(0.5, 0.5) * PentaMath.R_),
-                color = color.color
+                pentaColor = color
             )
         }
         j = joints.toTypedArray()

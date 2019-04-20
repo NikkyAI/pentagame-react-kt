@@ -3,6 +3,7 @@ import io.data2viz.geom.Point
 import io.data2viz.math.deg
 import io.data2viz.scale.ScalesChromatic
 import io.data2viz.viz.CircleNode
+import io.data2viz.viz.KMouseClick
 import io.data2viz.viz.KMouseMove
 import io.data2viz.viz.TextHAlign
 import io.data2viz.viz.TextNode
@@ -19,7 +20,7 @@ import penta.figure.Piece
 import penta.figure.PlayerPiece
 
 object PentaViz {
-    private val pieces: MutableMap<Piece, CircleNode> = mutableMapOf()
+    private val pieces: MutableMap<String, CircleNode> = mutableMapOf()
     private var scale: Double = 100.0
     private var mousePos: Point = Point(0.0, 0.0)
 
@@ -59,21 +60,21 @@ object PentaViz {
         }
 
         onResize { newWidth, newHeight ->
-            println("resize")
-            println("height: $height > $newHeight")
-            println("width: $width > $newWidth")
+//            println("resize")
+//            println("height: $height > $newHeight")
+//            println("width: $width > $newWidth")
             scale = kotlin.math.min(newWidth, newHeight)
-            println("scale: $scale")
+//            println("scale: $scale")
 
             gameState.findPieceAtPos(mousePos)
                 ?.also {
-                    println("selected: $it")
+//                    println("hovered: $it")
                 }
                 ?: PentaBoard.findFieldAtPos(mousePos)?.also {
-                    println("selected: $it")
+//                    println("hovered: $it")
                 }
                 ?: run {
-                    println("Mouse Move:: $mousePos")
+//                    println("Mouse Move:: $mousePos")
                 }
 
             val halfCircleWidth = (0.25 / PentaMath.R_) * scale / 2
@@ -112,9 +113,12 @@ object PentaViz {
                 }
             }
 
-            pieces.keys.forEach {
-                updatePiece(it, highlightedPiece)
+            gameState.figures.forEach {
+                updatePiece(it)
             }
+//            pieces.keys.forEach {
+//                updatePiece(it)
+//            }
         }
     }
 
@@ -122,8 +126,8 @@ object PentaViz {
         listOf(),
         mapOf()
     )
-        set(value) {
-            value.updatePiece = ::updatePiece
+        set(gameState) {
+            gameState.updatePiece = ::updatePiece
 
             viz.apply {
                 // clear old pieces
@@ -133,23 +137,23 @@ object PentaViz {
                 pieces.clear()
 
                 // init pieces
-                value.figurePositions.entries.forEach { (piece, field) ->
+                gameState.figures.forEach { piece ->
                     println("initialzing piece: $piece")
                     val c = circle {
                         strokeWidth = 1.0
                         stroke = 0.col
                     }
-                    pieces[piece] = c
+                    pieces[piece.id] = c
 
-                    val highlightedPiece = gameState.findPieceAtPos(mousePos)
-                    updatePiece(piece, highlightedPiece)
+                    updatePiece(piece)
                 }
             }
-            field = value
+            field = gameState
         }
 
-    fun updatePiece(piece: Piece, highlightedPiece: Piece?) {
-        val circle = pieces[piece] ?: throw IllegalArgumentException("piece; $piece is not on the board")
+    fun updatePiece(piece: Piece) {
+        val highlightedPiece = gameState.findPieceAtPos(mousePos)
+        val circle = pieces[piece.id] ?: throw IllegalArgumentException("piece; $piece is not on the board")
 
 //        val radius = when (piece) {
 //            is BlockerPiece -> PentaMath.s / 2.5
@@ -166,16 +170,17 @@ object PentaViz {
                 is BlockerPiece -> piece.blockerType.color
                 else -> throw IllegalStateException("unknown type ${piece::class}")
             }.let {
-                if(piece == highlightedPiece)
-                    it.brighten(2.0)
-                else
-                    it
+                when (piece) {
+                    gameState.selectedPlayerPiece -> it.brighten(3.0)
+                    highlightedPiece -> it.brighten(2.0)
+                    else -> it
+                }
             }
         }
     }
 
-    var selectedField: AbstractField? = null
-    var selectedPiece: Piece? = null
+    var hoveredField: AbstractField? = null
+    var hoveredPiece: Piece? = null
 
     fun Viz.addEvents() {
         on(KMouseMove) { evt ->
@@ -187,37 +192,56 @@ object PentaViz {
 
             gameState.findPieceAtPos(mousePos)
                 ?.also {
-                    if (selectedPiece != it) {
-                        println("selected: $it")
+                    if (hoveredPiece != it) {
+                        println("hover: $it")
 
-                        selectedPiece = it
-                        selectedField = null
+                        hoveredPiece = it
+                        hoveredField = null
 
                         viz.resize(viz.width, viz.height)
                         viz.render()
                     }
                 }
                 ?: PentaBoard.findFieldAtPos(mousePos)?.also {
-                    if (selectedField != it) {
-                        println("selected: $it")
+                    if (hoveredField != it) {
+                        println("hover: $it")
 
-                        selectedField = it
-                        selectedPiece = null
+                        hoveredField = it
+                        hoveredPiece = null
 
                         viz.resize(viz.width, viz.height)
                         viz.render()
                     }
                 }
                 ?: run {
-                    println("Mouse Move:: ${mousePos}")
-                    if (selectedField != null || selectedPiece != null) {
-                        selectedField = null
-                        selectedPiece = null
+//                    println("Mouse Move:: ${mousePos}")
+                    if (hoveredField != null || hoveredPiece != null) {
+                        hoveredField = null
+                        hoveredPiece = null
                         viz.resize(viz.width, viz.height)
                         viz.render()
                     }
                 }
 
+        }
+        on(KMouseClick) { evt ->
+//            println("MouseClick:: $evt")
+//            println("shiftKey:: ${evt.shiftKey}")
+//            println("ctrlKey:: ${evt.ctrlKey}")
+//            println("metaKey:: ${evt.metaKey}")
+//            println("ctrlKey:: ${evt.ctrlKey}")
+            mousePos = (evt.pos / scale) * PentaMath.R_
+
+            val piece = gameState.findPieceAtPos(mousePos)
+            if(piece != null) {
+                println("clickPiece($piece)")
+                gameState.clickPiece(piece)
+            } else {
+                val field = PentaBoard.findFieldAtPos(mousePos)
+                if(field != null){
+                    gameState.clickField(field)
+                }
+            }
         }
     }
 }
