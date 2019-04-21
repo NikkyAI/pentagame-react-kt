@@ -5,7 +5,6 @@ import penta.PentaColor
 
 abstract class IntersectionField: AbstractField() {
     abstract  val pentaColor: PentaColor
-    override val radius: Double = PentaMath.c / 2
 
     override val color: Color get() = pentaColor.color
 

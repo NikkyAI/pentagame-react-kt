@@ -22,4 +22,6 @@
   - [ ] js
   - [ ] jvm
   - [ ] android
+ 
+ - [ ] Test JS coroutines support / multithreading
   

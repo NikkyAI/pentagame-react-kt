@@ -9,6 +9,7 @@ data class CornerField(
     override val pos: Point,
     override val pentaColor: PentaColor
 ): IntersectionField() {
+    override val radius: Double = PentaMath.c / 2
     override val connected: List<AbstractField>
         get() = connectedFields
 

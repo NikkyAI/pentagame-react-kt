@@ -9,6 +9,7 @@ data class JointField(
     override val pos: Point,
     override val pentaColor: PentaColor
 ): IntersectionField() {
+    override val radius: Double = PentaMath.j / 2
     override val connected: List<AbstractField>
         get() = connectedFields
 }
