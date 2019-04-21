@@ -26,11 +26,18 @@ object PentaViz {
     private var scale: Double = 100.0
     private var mousePos: Point = Point(0.0, 0.0)
 
-    fun highlightedPieceAt(mousePos: Point): Piece? = gameState.findPieceAtPos(mousePos)?.let {
+    fun highlightedPieceAt(mousePos: Point): Piece? = gameState.findPiecesAtPos(mousePos).firstOrNull()?.let {
+        // do not highlight pieces that are off the board
+        if(gameState.figurePositions[it.id] == null) return@let null
         // allow highlighting blockers when a piece is selected
         if(it !is PlayerPiece && gameState.selectedPlayerPiece == null) return@let null
-        // TODO: remove highlighting pices when placing a blocker
-        if(gameState.figurePositions[it.id] == null) return@let null
+
+        // remove highlighting pieces when placing a blocker
+        if(
+            (gameState.selectedGrayPiece != null || gameState.selectedBlackPiece != null || gameState.selectingGrayPiece)
+            && it is PlayerPiece
+        ) return@let null
+
         it
     }
 
@@ -86,7 +93,7 @@ object PentaViz {
             scale = kotlin.math.min(newWidth, newHeight)
 //            println("scale: $scale")
 
-            gameState.findPieceAtPos(mousePos)
+            gameState.findPiecesAtPos(mousePos).firstOrNull()
                 ?.also {
                     //                    println("hovered: $it")
                 }
@@ -208,24 +215,30 @@ object PentaViz {
 
         val (circle, text) = pieces[piece.id] ?: throw IllegalArgumentException("piece; $piece is not on the board")
 
-//        val radius = when (piece) {
-//            is BlockerPiece -> PentaMath.s / 2.5
-//            is PlayerPiece -> PentaMath.s / 1.5
-//            else -> throw NotImplementedError("unhandled piece type: ${piece::class}")
-//        }
+
+        // TODO: highlight player pieces on turn when not placing black or gray
+
         val pos = piece.pos
         with(circle) {
             x = ((pos.x / PentaMath.R_)) * scale
             y = ((pos.y / PentaMath.R_)) * scale
             radius = piece.radius / PentaMath.R_ * scale
             fill = when (piece) {
-                is PlayerPiece -> piece.pentaColor.color.brighten(1.0)
+                is PlayerPiece -> {
+                    if(gameState.currentPlayer == piece.playerId)
+                        piece.color.brighten(1.0)
+                    else
+                        piece.color
+                }
                 is BlackBlockerPiece -> piece.color
                 is GrayBlockerPiece -> piece.color
                 else -> throw IllegalStateException("unknown type ${piece::class}")
             }.let {
                 when (piece) {
                     gameState.selectedPlayerPiece -> it.brighten(3.0)
+                    gameState.selectedBlackPiece -> it.brighten(4.0)
+//                    gameState.selectedGrayPiece -> if(gameState.selectedGrayPiece == null) it.brighten(1.0) else it
+                    gameState.selectedGrayPiece -> it.brighten(1.0)
                     highlightedPiece -> it.brighten(2.0)
                     else -> it
                 }
@@ -250,6 +263,7 @@ object PentaViz {
 //            mousePos = ((evt.pos / scale)- Point(0.5, 0.5)) * PentaMath.R_ * 2
             mousePos = (evt.pos / scale) * PentaMath.R_
 
+            // show text on hovered fields
             PentaBoard.findFieldAtPos(mousePos).let { hoverField ->
                 elements.forEach { (field, triple) ->
                     val (_, text1, text2) = triple
@@ -264,7 +278,7 @@ object PentaViz {
                 }
             }
 
-            gameState.findPieceAtPos(mousePos)
+            gameState.findPiecesAtPos(mousePos).firstOrNull()
                 ?.also {
                     if (hoveredPiece != it) {
                         println("hover: $it")
@@ -274,9 +288,9 @@ object PentaViz {
 
                         // TODO: refactor - instead of resize create `recolor()`
 //                        viz.resize(viz.width, viz.height)
-                        recolor()
-                        viz.render()
                     }
+                    recolor()
+                    viz.render()
                 }
                 ?: PentaBoard.findFieldAtPos(mousePos)?.also {
                     if (hoveredField != it) {
@@ -287,19 +301,19 @@ object PentaViz {
 
                         // TODO: refactor - instead of resize create `recolor()`
 //                        viz.resize(viz.width, viz.height)
-                        recolor()
-                        viz.render()
                     }
+                    recolor()
+                    viz.render()
                 }
                 ?: run {
-                    //                    println("Mouse Move:: ${mousePos}")
+//                    println("Mouse Move:: ${mousePos}")
                     if (hoveredField != null || hoveredPiece != null) {
                         hoveredField = null
                         hoveredPiece = null
 //                        viz.resize(viz.width, viz.height)
-                        recolor()
-                        viz.render()
                     }
+                    recolor()
+                    viz.render()
                 }
 
         }
@@ -311,7 +325,7 @@ object PentaViz {
 //            println("ctrlKey:: ${evt.ctrlKey}")
             mousePos = (evt.pos / scale) * PentaMath.R_
 
-            val piece = gameState.findPieceAtPos(mousePos)
+            val piece = gameState.findPiecesAtPos(mousePos).firstOrNull()
             if (piece != null) {
                 println("clickPiece($piece)")
                 gameState.clickPiece(piece)

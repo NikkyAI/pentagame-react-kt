@@ -24,7 +24,7 @@ data class GameState(
 
     private var turn: Int = 0
     val currentPlayer: String
-        get() = players[turn % players.count()]
+        get() = if(players.isNotEmpty()) players[turn % players.count()] else "nobody"
 
     var selectedPlayerPiece: PlayerPiece? = null
     var selectedBlackPiece: BlackBlockerPiece? = null
@@ -136,13 +136,7 @@ data class GameState(
         figures.forEach(::updatePiecePos)
     }
 
-    fun doMove(move: Move) {
-        // TODO: check if its the right turn
-        // TODO: check if valid
-        // TODO: record side effects
-    }
-
-    fun findPieceAtPos(mousePos: Point): Piece? = figures.find {
+    fun findPiecesAtPos(mousePos: Point) = figures.filter {
         (it.pos - mousePos).length < it.radius
     }
 
@@ -152,18 +146,29 @@ data class GameState(
         println("selected player piece: $selectedPlayerPiece")
         println("selected black piece: $selectedBlackPiece")
         println("selected gray piece: $selectedGrayPiece")
-        if (selectedPlayerPiece == null && clickedPiece is PlayerPiece && currentPlayer == clickedPiece.playerId) {
-            println("selecting: $clickedPiece")
-            selectedPlayerPiece = clickedPiece
-            PentaViz.viz.render()
+        if(positions[clickedPiece.id] == null) {
+            println("cannot click piece off the board")
             return
         }
-        if (selectedPlayerPiece == clickedPiece && clickedPiece is PlayerPiece && currentPlayer == clickedPiece.playerId) {
-            println("deselecting: $clickedPiece")
-            selectedPlayerPiece = null
-            PentaViz.viz.render()
-            return
+        if(
+        // make sure you are not selecting black or gray
+            selectedGrayPiece == null && selectedBlackPiece == null && !selectingGrayPiece
+            && clickedPiece is PlayerPiece && currentPlayer == clickedPiece.playerId
+        ) {
+            if (selectedPlayerPiece == null) {
+                println("selecting: $clickedPiece")
+                selectedPlayerPiece = clickedPiece
+                PentaViz.viz.render()
+                return
+            }
+            if (selectedPlayerPiece == clickedPiece) {
+                println("deselecting: $clickedPiece")
+                selectedPlayerPiece = null
+                PentaViz.viz.render()
+                return
+            }
         }
+
         if (selectingGrayPiece
             && selectedPlayerPiece == null
             && clickedPiece is GrayBlockerPiece
@@ -294,6 +299,14 @@ data class GameState(
                 if (positions.values.any { it == targetField }) {
                     println("target position not empty")
                     // TODO: if there is only one piece on the field, click that piece instead ?
+                    val pieces = positions.filterValues { it == targetField }.keys
+                        .map { id ->
+                            figures.find { it.id == id }
+                        }
+                    if(pieces.size == 1) {
+                        val piece = pieces.firstOrNull() ?: return
+                        clickPiece(piece)
+                    }
                     return
                 }
 
@@ -303,14 +316,13 @@ data class GameState(
                 println("moving: ${playerPiece.id} -> $targetField")
                 positions[playerPiece.id] = targetField
                 // TODO movePiece(...) -> set position, update source pos, update target fields
-                updatePiecesAtPos(sourcePos)
-                updatePiecesAtPos(targetField)
+//                updatePiecesAtPos(sourcePos)
+//                updatePiecesAtPos(targetField)
                 selectedPlayerPiece = null
 
                 if (targetField is JointField && targetField.pentaColor == playerPiece.pentaColor) {
                     positions[playerPiece.id] = null
-                    //                updatePiecePos(playerPiece)
-                    updatePiecesAtPos(null)
+//                    updatePiecesAtPos(null)
 
                     // set gamestate to `MOVE_GREY`
                     selectedGrayPiece = positions.filterValues { it == null }
@@ -331,7 +343,7 @@ data class GameState(
                 }
 
                 positions[blackPiece.id] = targetField
-                updatePiecesAtPos(targetField)
+//                updatePiecesAtPos(targetField)
                 selectedBlackPiece = null
 
             }
@@ -344,7 +356,7 @@ data class GameState(
                 }
 
                 positions[grayPiece.id] = targetField
-                updatePiecesAtPos(targetField)
+//                updatePiecesAtPos(targetField)
                 selectedGrayPiece = null
             }
         }
@@ -352,7 +364,14 @@ data class GameState(
         if (selectedBlackPiece == null && selectedGrayPiece == null && !selectingGrayPiece) {
             turn += 1
         }
+        updateAllPieces()
         PentaViz.viz.render()
+    }
+
+    private fun updateAllPieces() {
+        figures.forEach { piece ->
+            updatePiecePos(piece)
+        }
     }
 
     private fun updatePiecesAtPos(field: AbstractField?) {
