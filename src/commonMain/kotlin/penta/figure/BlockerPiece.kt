@@ -1,12 +1,7 @@
 package penta.figure
 
-import io.data2viz.geom.Point
-import penta.PentaColor
+import io.data2viz.color.Color
 
-data class BlockerPiece(
-    override val id: String,
-    val blockerType: BlockerType,
-    override var pos: Point,
-    override val radius: Double,
-    override val color: PentaColor
-): Piece()
+abstract class BlockerPiece: Piece() {
+    abstract val color: Color
+}

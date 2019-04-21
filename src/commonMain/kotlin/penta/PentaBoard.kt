@@ -17,7 +17,7 @@ object PentaBoard {
     val j: Array<JointField>
     init {
         val corners = PentaColor.values().map { color ->
-            //            val pos = PentaMath.fiveRoots(color.root) * PentaMath.r
+            //            val pos = PentaMath.fiveRoots(pentaColor.root) * PentaMath.r
             val angle = color.ordinal * -72.0
             val pos = Point(
                 cos(angle * DEG_TO_RAD),
@@ -33,7 +33,7 @@ object PentaBoard {
         }
         c = corners.toTypedArray()
         val joints = PentaColor.values().map { color ->
-            //            val pos = PentaMath.fiveRoots(color.root) * -PentaMath.inner_r
+            //            val pos = PentaMath.fiveRoots(pentaColor.root) * -PentaMath.inner_r
             val id = ((color.ordinal + 2) % 5 * 2) + 1
             val angle = color.ordinal * -72.0
             val pos = Point(

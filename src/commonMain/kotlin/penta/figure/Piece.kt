@@ -5,7 +5,7 @@ import penta.PentaColor
 
 abstract class Piece {
     abstract val id: String
-    abstract val color: PentaColor
+    abstract val pentaColor: PentaColor
     abstract var pos: Point
     abstract val radius: Double
 

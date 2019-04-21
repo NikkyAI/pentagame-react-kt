@@ -1,12 +1,15 @@
 package penta.figure
 
+import io.data2viz.color.Color
+import io.data2viz.color.Colors
 import io.data2viz.geom.Point
 import penta.PentaColor
 
-data class PlayerPiece(
+data class GrayBlockerPiece(
     override val id: String,
-    val playerId: String,
     override var pos: Point,
     override val radius: Double,
     override val pentaColor: PentaColor
-): Piece()
+): BlockerPiece() {
+    override val color: Color = Colors.Web.gray
+}

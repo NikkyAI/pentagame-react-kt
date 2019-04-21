@@ -26,7 +26,6 @@ object PentaMath {
         if (p.y == 0.0) return p
         return Point(
             ((p.x * sqrt(5.0) - 1.0) / 4.0), p.y
-                    /**(Complex.i)*/
                     * sqrt((5.0 + (p.x * sqrt(5.0))) / 8.0)
         )
     }

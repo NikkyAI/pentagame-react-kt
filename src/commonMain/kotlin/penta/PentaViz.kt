@@ -15,7 +15,8 @@ import penta.GameState
 import penta.PentaColor
 import penta.field.AbstractField
 import penta.field.ConnectionField
-import penta.figure.BlockerPiece
+import penta.figure.BlackBlockerPiece
+import penta.figure.GrayBlockerPiece
 import penta.figure.Piece
 import penta.figure.PlayerPiece
 
@@ -125,9 +126,9 @@ object PentaViz {
                     y = ((field.pos.y / PentaMath.R_)) * scale
                     radius = field.radius / PentaMath.R_ * scale
 //                    fill = if (field != highlightedField)
-//                        field.color
+//                        field.pentaColor
 //                    else
-//                        field.color.brighten(2.0)
+//                        field.pentaColor.brighten(2.0)
                 }
                 text1.apply {
                     x = ((field.pos.x / PentaMath.R_)) * scale
@@ -218,8 +219,9 @@ object PentaViz {
             y = ((pos.y / PentaMath.R_)) * scale
             radius = piece.radius / PentaMath.R_ * scale
             fill = when (piece) {
-                is PlayerPiece -> piece.color.color.brighten(1.0)
-                is BlockerPiece -> piece.blockerType.color
+                is PlayerPiece -> piece.pentaColor.color.brighten(1.0)
+                is BlackBlockerPiece -> piece.color
+                is GrayBlockerPiece -> piece.color
                 else -> throw IllegalStateException("unknown type ${piece::class}")
             }.let {
                 when (piece) {

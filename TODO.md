@@ -1,6 +1,7 @@
 # TODO
 
 - [ ] UI
+  - [ ] Display currently selected piece (player, black, gray)
   - [ ] display turn
   - [ ] display piece/figure shapes
 
