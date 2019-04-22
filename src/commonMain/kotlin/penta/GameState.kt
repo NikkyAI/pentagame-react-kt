@@ -46,7 +46,7 @@ data class GameState(
         val field: AbstractField? = positions[piece.id]
         var pos: Point = field?.pos ?: run {
             val radius = when (piece) {
-                is GrayBlockerPiece -> PentaMath.inner_r * -0.25
+                is GrayBlockerPiece -> PentaMath.inner_r * -0.2
                 is BlackBlockerPiece -> throw IllegalStateException("black piece: $piece cannot be off the board")
                 is PlayerPiece -> PentaMath.inner_r * -0.5
                 else -> throw NotImplementedError("unhandled piece type: ${piece::class}")
@@ -64,35 +64,32 @@ data class GameState(
             } / 2 + (Point(0.5, 0.5) * PentaMath.R_)
         }
         if (piece is PlayerPiece && field is CornerField) {
-            // TODO: find all pieces on field and order them
+            // find all pieces on field and order them
             val pieceIds: List<String> = positions.filterValues { it == field }.keys
                 .sorted()
-            // TODO: find index of piece on field
+            // find index of piece on field
             val pieceNumber = pieceIds.indexOf(piece.id).toDouble()
-            val playerIndex = players.indexOf(piece.playerId).toDouble()
-//            val angle = (((piece.pentaColor.ordinal * -72.0) + (playerIndex / players.size * 360.0)+360.0) % 360.0).deg
             val angle =
                 (((field.pentaColor.ordinal * 72.0) + (pieceNumber / pieceIds.size * 360.0) + 360.0) % 360.0).deg
-//            val halfCircleWidth = (1.0 / PentaMath.R_) * scale / 2
             pos = Point(
-                pos.x + (0.5) * angle.cos,
-                pos.y + (0.5) * angle.sin
+                pos.x + (0.55) * angle.cos,
+                pos.y + (0.55) * angle.sin
             )
         }
         if (piece is PlayerPiece && field == null) {
-            // TODO: find all pieces on field and order them
+            // find all pieces on field and order them
             val playerPieces = positions.filterValues { it == field }.keys
                 .map { id -> figures.find { it.id == id }!! }
                 .filterIsInstance<PlayerPiece>()
                 .filter { it.pentaColor == piece.pentaColor }
                 .sortedBy { it.id }
-            // TODO: find index of piece on field
+            // find index of piece on field
             val pieceNumber = playerPieces.indexOf(piece).toDouble()
             val angle =
-                (((piece.pentaColor.ordinal * -72.0) + (pieceNumber / playerPieces.size * 360.0) + 360.0) % 360.0).deg
+                (((piece.pentaColor.ordinal * -72.0) + (pieceNumber / playerPieces.size * 360.0) + 360.0 + 180.0) % 360.0).deg
             pos = Point(
-                pos.x + (0.4) * angle.cos,
-                pos.y + (0.4) * angle.sin
+                pos.x + (0.55) * angle.cos,
+                pos.y + (0.55) * angle.sin
             )
         }
         piece.pos = pos
@@ -105,7 +102,7 @@ data class GameState(
             BlackBlockerPiece(
                 "b$i",
                 Point(0.0, 0.0),
-                PentaMath.s / 2.5 / 2,
+                PentaMath.s / 2.5,
                 PentaColor.values()[i]
             ).also {
                 positions[it.id] = PentaBoard.j[i]
@@ -115,7 +112,7 @@ data class GameState(
             GrayBlockerPiece(
                 "g$i",
                 Point(0.0, 0.0),
-                PentaMath.s / 2.5 / 2,
+                PentaMath.s / 2.5,
                 PentaColor.values()[i]
             ).also {
                 positions[it.id] = null
@@ -127,7 +124,7 @@ data class GameState(
                     "p$p$i",
                     players[p],
                     Point(0.0, 0.0),
-                    PentaMath.s / 1.5 / 2,
+                    PentaMath.s / 2.3,
                     PentaColor.values()[i]
                 ).also {
                     positions[it.id] = PentaBoard.c[i]
