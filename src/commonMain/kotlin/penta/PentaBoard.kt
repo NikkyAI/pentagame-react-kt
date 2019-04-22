@@ -33,7 +33,7 @@ object PentaBoard {
         }
         c = corners.toTypedArray()
         val joints = PentaColor.values().map { color ->
-            //            val pos = PentaMath.fiveRoots(pentaColor.root) * -PentaMath.inner_r
+//            val pos = PentaMath.fiveRoots(pentaColor.root) * -PentaMath.inner_r
             val id = ((color.ordinal + 2) % 5 * 2) + 1
             val angle = color.ordinal * -72.0
             val pos = Point(

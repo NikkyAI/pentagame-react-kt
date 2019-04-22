@@ -140,12 +140,53 @@ data class GameState(
         (it.pos - mousePos).length < it.radius
     }
 
+    fun canClickPiece(clickedPiece: Piece): Boolean {
+        if(positions[clickedPiece.id] == null) {
+            return false
+        }
+        if(
+            // make sure you are not selecting black or gray
+            selectedGrayPiece == null && selectedBlackPiece == null && !selectingGrayPiece
+            && clickedPiece is PlayerPiece && currentPlayer == clickedPiece.playerId
+        ) {
+            if (selectedPlayerPiece == null) {
+                return true
+            }
+            if (selectedPlayerPiece == clickedPiece) {
+                return true
+            }
+        }
+
+        if (selectingGrayPiece
+            && selectedPlayerPiece == null
+            && clickedPiece is GrayBlockerPiece
+        ) {
+            return true
+        }
+
+        if (selectedPlayerPiece != null && currentPlayer == selectedPlayerPiece!!.playerId) {
+            val playerPiece = selectedPlayerPiece!!
+            val sourcePos = positions[playerPiece.id] ?: run {
+                return false
+            }
+            val targetPos = positions[clickedPiece.id] ?: return false
+            if (sourcePos == targetPos) {
+                return false
+            }
+            return true
+        }
+        return false
+    }
+
     fun clickPiece(clickedPiece: Piece) {
         // TODO: check turn
         println("currentPlayer: $currentPlayer")
         println("selected player piece: $selectedPlayerPiece")
         println("selected black piece: $selectedBlackPiece")
         println("selected gray piece: $selectedGrayPiece")
+
+        if(!canClickPiece(clickedPiece)) return
+
         if(positions[clickedPiece.id] == null) {
             println("cannot click piece off the board")
             return
@@ -182,40 +223,44 @@ data class GameState(
         if (selectedPlayerPiece != null && currentPlayer == selectedPlayerPiece!!.playerId) {
             val playerPiece = selectedPlayerPiece!!
             // TODO: doMove
-            val sourcePos = positions[playerPiece.id] ?: run {
+            val sourceField = positions[playerPiece.id] ?: run {
                 println("piece if off the board already")
                 return
             }
-            val targetPos = positions[clickedPiece.id]
-            if (targetPos == null) {
+            val targetField = positions[clickedPiece.id]
+            if (targetField == null) {
                 println("$clickedPiece is not on the board")
 //                selectedPlayerPiece = null
                 return
             }
-            if (sourcePos == targetPos) {
+            if (sourceField == targetField) {
                 println("cannot move piece onto the same field as before")
                 return
             }
 
-            println("swapping $sourcePos <-> $targetPos")
+            println("swapping $sourceField <-> $targetField")
 
-            // TODO: check if move is possible
+            if(!canMove(sourceField, targetField)) {
+                println("can not find path")
+                return
+            }
+
             // swap pieces
 
-            println("moving: ${playerPiece.id} -> $targetPos")
-            positions[playerPiece.id] = targetPos
+            println("moving: ${playerPiece.id} -> $targetField")
+            positions[playerPiece.id] = targetField
             // TODO movePiece(...) -> set position, update source pos, update target fields
-            updatePiecesAtPos(sourcePos)
-            updatePiecesAtPos(targetPos)
+            updatePiecesAtPos(sourceField)
+            updatePiecesAtPos(targetField)
             selectedPlayerPiece = null
 
             when (clickedPiece) {
                 is PlayerPiece -> {
 
-                    if (sourcePos is JointField && sourcePos.pentaColor == clickedPiece.pentaColor) {
+                    if (sourceField is JointField && sourceField.pentaColor == clickedPiece.pentaColor) {
                         // take piece off the board
                         positions[clickedPiece.id] = null
-                        updatePiecesAtPos(targetPos)
+                        updatePiecesAtPos(targetField)
 //                        updatePiecePos(clickedPiece)
                         updatePiecesAtPos(null)
 
@@ -224,10 +269,10 @@ data class GameState(
                         // TODO: set gamestate to `MOVE_GREY`
                     } else {
                         // move normally
-                        println("moving: ${clickedPiece.id} -> ${sourcePos.id}")
-                        positions[clickedPiece.id] = sourcePos
-                        updatePiecesAtPos(targetPos)
-                        updatePiecesAtPos(sourcePos)
+                        println("moving: ${clickedPiece.id} -> ${sourceField.id}")
+                        positions[clickedPiece.id] = sourceField
+                        updatePiecesAtPos(targetField)
+                        updatePiecesAtPos(sourceField)
                     }
                     // TODO: also check if this is the matching JointField for the other piece?
                     // and leave board
@@ -255,7 +300,7 @@ data class GameState(
 
             // CHECK if targetPos is the target field for the clickedPiece
 
-            if (targetPos is JointField && targetPos.pentaColor == playerPiece.pentaColor) {
+            if (targetField is JointField && targetField.pentaColor == playerPiece.pentaColor) {
                 // take piece off the board
                 positions[playerPiece.id] = null
                 updatePiecesAtPos(null)
@@ -280,17 +325,65 @@ data class GameState(
         println("no action on click")
     }
 
-    fun clickField(targetField: AbstractField) {
-        println("currentPlayer: $currentPlayer")
-        println("selected player piece: $selectedPlayerPiece")
-        println("selected black piece: $selectedBlackPiece")
-        println("selected gray piece: $selectedGrayPiece")
+    fun canClickField(targetField: AbstractField): Boolean {
+        if(
+            (selectedPlayerPiece == null && selectedGrayPiece == null && selectedBlackPiece == null)
+            && positions.none { (k,v) -> v == targetField }
+        ) {
+            return false
+        }
         when {
             selectedPlayerPiece != null && currentPlayer == selectedPlayerPiece!!.playerId -> {
                 val playerPiece = selectedPlayerPiece!!
 
                 val sourcePos = positions[playerPiece.id]!!
                 if (sourcePos == targetField) {
+                    return false
+                }
+
+                // check if targetField is empty
+                if (positions.values.any { it == targetField }) {
+                    val pieces = positions.filterValues { it == targetField }.keys
+                        .map { id ->
+                            figures.find { it.id == id }
+                        }
+                    pieces.firstOrNull() ?: return false
+                    return true
+                }
+            }
+            selectedBlackPiece != null -> {
+                if (positions.values.any { it == targetField }) {
+//                    println("target position not empty")
+                    return false
+                }
+            }
+            selectedGrayPiece != null -> {
+                if (positions.values.any { it == targetField }) {
+//                    println("target position not empty")
+                    return false
+                }
+            }
+            selectedPlayerPiece == null && selectedBlackPiece == null && selectedGrayPiece == null -> {
+                // do not allow clicking on field when selecting piece
+                return false
+            }
+        }
+        return true
+    }
+
+    fun clickField(targetField: AbstractField) {
+        println("currentPlayer: $currentPlayer")
+        println("selected player piece: $selectedPlayerPiece")
+        println("selected black piece: $selectedBlackPiece")
+        println("selected gray piece: $selectedGrayPiece")
+        if(!canClickField(targetField)) return
+        when {
+            selectedPlayerPiece != null && currentPlayer == selectedPlayerPiece!!.playerId -> {
+                val playerPiece = selectedPlayerPiece!!
+
+
+                val sourceField = positions[playerPiece.id]!!
+                if (sourceField == targetField) {
                     println("cannot move piece onto the same field as before")
                     return
                 }
@@ -310,6 +403,10 @@ data class GameState(
                     return
                 }
 
+                if(!canMove(sourceField, targetField)) {
+                    println("can not find path")
+                    return
+                }
                 // TODO: check if move is possible
                 // swap pieces
 
@@ -382,6 +479,31 @@ data class GameState(
         }
     }
 
-    fun canMove(start: AbstractField, end: AbstractField) {
+    fun canMove(start: AbstractField, end: AbstractField): Boolean {
+        val backtrack = mutableSetOf<AbstractField>()
+        val next = mutableSetOf<AbstractField>(start)
+        while(next.isNotEmpty()) {
+            val toIterate = next.toList()
+            next.clear()
+            toIterate.map { nextField ->
+                println("checking: ${nextField.id}")
+                nextField.connected.forEach { connectedField ->
+                    if(connectedField == end) return true
+                    if(connectedField in backtrack) return@forEach
+
+                    val free = positions.filterValues { field ->
+                        field == connectedField
+                    }.isEmpty()
+                    if(!free) return@forEach
+
+                    if(connectedField !in backtrack) {
+                        backtrack += connectedField
+                        next += connectedField
+                    }
+                }
+            }
+        }
+
+        return false
     }
 }

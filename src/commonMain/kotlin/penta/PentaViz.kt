@@ -31,6 +31,7 @@ object PentaViz {
         if(gameState.figurePositions[it.id] == null) return@let null
         // allow highlighting blockers when a piece is selected
         if(it !is PlayerPiece && gameState.selectedPlayerPiece == null) return@let null
+        if(it is PlayerPiece && gameState.currentPlayer != it.playerId) return@let null
 
         // remove highlighting pieces when placing a blocker
         if(
@@ -199,10 +200,10 @@ object PentaViz {
         elements.forEach { (field, triple) ->
             val (circle, text1, text2) = triple
             with(circle) {
-                fill = if (field != highlightedField)
-                    field.color
-                else
+                fill = if (field == highlightedField && gameState.canClickField(field))
                     field.color.brighten(2.0)
+                else
+                    field.color
             }
         }
         gameState.figures.forEach {
@@ -215,7 +216,6 @@ object PentaViz {
 
         val (circle, text) = pieces[piece.id] ?: throw IllegalArgumentException("piece; $piece is not on the board")
 
-
         // TODO: highlight player pieces on turn when not placing black or gray
 
         val pos = piece.pos
@@ -225,7 +225,7 @@ object PentaViz {
             radius = piece.radius / PentaMath.R_ * scale
             fill = when (piece) {
                 is PlayerPiece -> {
-                    if(gameState.currentPlayer == piece.playerId)
+                    if (gameState.currentPlayer == piece.playerId && gameState.canClickPiece(piece))
                         piece.color.brighten(1.0)
                     else
                         piece.color
@@ -235,7 +235,7 @@ object PentaViz {
                 else -> throw IllegalStateException("unknown type ${piece::class}")
             }.let {
                 when (piece) {
-                    gameState.selectedPlayerPiece -> it.brighten(3.0)
+                    gameState.selectedPlayerPiece -> it.brighten(2.0)
                     gameState.selectedBlackPiece -> it.brighten(4.0)
 //                    gameState.selectedGrayPiece -> if(gameState.selectedGrayPiece == null) it.brighten(1.0) else it
                     gameState.selectedGrayPiece -> it.brighten(1.0)
@@ -279,46 +279,68 @@ object PentaViz {
             }
 
             gameState.findPiecesAtPos(mousePos).firstOrNull()
-                ?.also {
+                ?.let {
+                    if (
+                        (it !is PlayerPiece)
+                        || (it.playerId != gameState.currentPlayer)
+                    ) {
+                        hoveredPiece = null
+//                        recolor()
+//                        viz.render()
+                        return@let null
+                    }
                     if (hoveredPiece != it) {
-                        println("hover: $it")
+                        // TODO: canClick for highlighting
+                        // can only highlight player piece
+                        println("hover piece: $it")
 
                         hoveredPiece = it
                         hoveredField = null
 
                         // TODO: refactor - instead of resize create `recolor()`
 //                        viz.resize(viz.width, viz.height)
+                        recolor()
+                        viz.render()
                     }
-                    recolor()
-                    viz.render()
+                    it
                 }
-                ?: PentaBoard.findFieldAtPos(mousePos)?.also {
+                ?: PentaBoard.findFieldAtPos(mousePos)?.let {
+                    if (
+                        gameState.selectedPlayerPiece == null
+                        && gameState.selectedGrayPiece == null
+                        && gameState.selectedBlackPiece == null
+                    ) {
+                        hoveredField = null
+                        hoveredPiece = null
+                        recolor()
+                        viz.render()
+                        return@let null
+                    }
                     if (hoveredField != it) {
-                        println("hover: $it")
+                        println("hover field: $it")
 
                         hoveredField = it
                         hoveredPiece = null
 
                         // TODO: refactor - instead of resize create `recolor()`
 //                        viz.resize(viz.width, viz.height)
+                        recolor()
+                        viz.render()
                     }
-                    recolor()
-                    viz.render()
+                    it
                 }
                 ?: run {
-//                    println("Mouse Move:: ${mousePos}")
-                    if (hoveredField != null || hoveredPiece != null) {
+                    //                    println("Mouse Move:: ${mousePos}")
+//                    if (hoveredField != null || hoveredPiece != null) {
                         hoveredField = null
                         hoveredPiece = null
-//                        viz.resize(viz.width, viz.height)
-                    }
-                    recolor()
-                    viz.render()
+                        recolor()
+                        viz.render()
+//                    }
                 }
-
         }
         on(KMouseClick) { evt ->
-            //            println("MouseClick:: $evt")
+//            println("MouseClick:: $evt")
 //            println("shiftKey:: ${evt.shiftKey}")
 //            println("ctrlKey:: ${evt.ctrlKey}")
 //            println("metaKey:: ${evt.metaKey}")
