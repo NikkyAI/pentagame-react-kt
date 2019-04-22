@@ -25,16 +25,17 @@ object PentaViz {
     val elements = mutableMapOf<AbstractField, Triple<CircleNode, TextNode, TextNode?>>()
     private var scale: Double = 100.0
     private var mousePos: Point = Point(0.0, 0.0)
+    lateinit var turnDisplay: TextNode
 
     fun highlightedPieceAt(mousePos: Point): Piece? = gameState.findPiecesAtPos(mousePos).firstOrNull()?.let {
         // do not highlight pieces that are off the board
-        if(gameState.figurePositions[it.id] == null) return@let null
+        if (gameState.figurePositions[it.id] == null) return@let null
         // allow highlighting blockers when a piece is selected
-        if(it !is PlayerPiece && gameState.selectedPlayerPiece == null) return@let null
-        if(it is PlayerPiece && gameState.currentPlayer != it.playerId) return@let null
+        if (it !is PlayerPiece && gameState.selectedPlayerPiece == null) return@let null
+        if (it is PlayerPiece && gameState.currentPlayer != it.playerId) return@let null
 
         // remove highlighting pieces when placing a blocker
-        if(
+        if (
             (gameState.selectedGrayPiece != null || gameState.selectedBlackPiece != null || gameState.selectingGrayPiece)
             && it is PlayerPiece
         ) return@let null
@@ -48,6 +49,11 @@ object PentaViz {
         val scaleHCL = ScalesChromatic.Continuous.linearHCL {
             domain = PentaColor.values().map { it.ordinal * 72.0 * 3 }
             range = PentaColor.values().map { it.color }
+        }
+        turnDisplay = text {
+            vAlign = TextVAlign.HANGING
+            hAlign = TextHAlign.LEFT
+            fontSize += 4
         }
 //    val outerCircle = circle {
 //        stroke = scaleHCL
@@ -192,6 +198,7 @@ object PentaViz {
                 }
             }
             field = gameState
+            updateBoard(false)
         }
 
     fun recolor() {
@@ -211,6 +218,27 @@ object PentaViz {
         }
     }
 
+    fun updateBoard(render: Boolean = true) {
+        turnDisplay.apply {
+            val player = gameState.currentPlayer
+            val turn = gameState.turn
+            textContent = "Player: $player, Turn: $turn, " + if (gameState.selectedPlayerPiece != null) {
+                "move PlayerPiece (${gameState.selectedPlayerPiece!!.id})"
+            } else if (gameState.selectedBlackPiece != null) {
+                "set black (${gameState.selectedBlackPiece!!.id})"
+            } else if (gameState.selectedGrayPiece != null) {
+                "set grey (${gameState.selectedGrayPiece!!.id})"
+            } else if (gameState.selectingGrayPiece) {
+                "select gray piece"
+            } else {
+                "select PlayerPiece"
+            }
+        }
+        if (render) {
+            viz.render()
+        }
+    }
+
     fun updatePiece(piece: Piece) {
         val highlightedPiece = highlightedPieceAt(mousePos)
 
@@ -225,7 +253,11 @@ object PentaViz {
             radius = piece.radius / PentaMath.R_ * scale
             fill = when (piece) {
                 is PlayerPiece -> {
-                    if (gameState.currentPlayer == piece.playerId && gameState.canClickPiece(piece))
+                    if (
+                        gameState.selectedPlayerPiece == null
+                        && gameState.currentPlayer == piece.playerId
+                        && gameState.canClickPiece(piece)
+                    )
                         piece.color.brighten(1.0)
                     else
                         piece.color
@@ -332,15 +364,15 @@ object PentaViz {
                 ?: run {
                     //                    println("Mouse Move:: ${mousePos}")
 //                    if (hoveredField != null || hoveredPiece != null) {
-                        hoveredField = null
-                        hoveredPiece = null
-                        recolor()
-                        viz.render()
+                    hoveredField = null
+                    hoveredPiece = null
+                    recolor()
+                    viz.render()
 //                    }
                 }
         }
         on(KMouseClick) { evt ->
-//            println("MouseClick:: $evt")
+            //            println("MouseClick:: $evt")
 //            println("shiftKey:: ${evt.shiftKey}")
 //            println("ctrlKey:: ${evt.ctrlKey}")
 //            println("metaKey:: ${evt.metaKey}")

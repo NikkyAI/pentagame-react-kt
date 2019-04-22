@@ -22,7 +22,9 @@ data class GameState(
 ) {
     var updatePiece: (Piece) -> Unit = { piece -> }
 
-    private var turn: Int = 0
+    var turn: Int = 0
+    private set
+
     val currentPlayer: String
         get() = if(players.isNotEmpty()) players[turn % players.count()] else "nobody"
 
@@ -199,13 +201,13 @@ data class GameState(
             if (selectedPlayerPiece == null) {
                 println("selecting: $clickedPiece")
                 selectedPlayerPiece = clickedPiece
-                PentaViz.viz.render()
+                PentaViz.updateBoard()
                 return
             }
             if (selectedPlayerPiece == clickedPiece) {
                 println("deselecting: $clickedPiece")
                 selectedPlayerPiece = null
-                PentaViz.viz.render()
+                PentaViz.updateBoard()
                 return
             }
         }
@@ -217,12 +219,11 @@ data class GameState(
             println("selecting: $clickedPiece")
             selectedGrayPiece = clickedPiece
             selectingGrayPiece = false
-            PentaViz.viz.render()
+            PentaViz.updateBoard()
             return
         }
         if (selectedPlayerPiece != null && currentPlayer == selectedPlayerPiece!!.playerId) {
             val playerPiece = selectedPlayerPiece!!
-            // TODO: doMove
             val sourceField = positions[playerPiece.id] ?: run {
                 println("piece if off the board already")
                 return
@@ -264,9 +265,18 @@ data class GameState(
 //                        updatePiecePos(clickedPiece)
                         updatePiecesAtPos(null)
 
-                        // other player moved this player into the joinfield, do we still let them set a grey
-                        // this will overcomplicate things
-                        // TODO: set gamestate to `MOVE_GREY`
+                        // other player moved this player into the joinfield, do we still let them set a gray?
+                        // will this overcomplicate things ?
+                        // TODO: currently maxed at a single gray piece, even if removing 2 at once
+
+                        selectedGrayPiece = positions.filterValues { it == null }
+                            .keys.map { id -> figures.find { it.id == id } }
+                            .filterIsInstance<GrayBlockerPiece>()
+                            .firstOrNull()
+                        if (selectedGrayPiece == null) {
+                            selectingGrayPiece = true
+                        }
+
                     } else {
                         // move normally
                         println("moving: ${clickedPiece.id} -> ${sourceField.id}")
@@ -319,7 +329,7 @@ data class GameState(
             if (selectedBlackPiece == null && selectedGrayPiece == null && !selectingGrayPiece) {
                 turn += 1
             }
-            PentaViz.viz.render()
+            PentaViz.updateBoard()
             return
         }
         println("no action on click")
@@ -462,7 +472,7 @@ data class GameState(
             turn += 1
         }
         updateAllPieces()
-        PentaViz.viz.render()
+        PentaViz.updateBoard()
     }
 
     private fun updateAllPieces() {

@@ -162,7 +162,7 @@ val packageJs = tasks.create("packageJs") {
 
         htmlOutput.deleteRecursively()
         htmlOutput.mkdir()
-        val jsOutput = htmlOutput.resolve("js-min").apply {
+        val jsOutput = htmlOutput.resolve("js").apply {
             mkdir()
         }
 
@@ -177,7 +177,7 @@ val packageJs = tasks.create("packageJs") {
             appendHTML().html {
                 head {
                     script(src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.5/require.min.js") {
-                        this.attributes["data-main"] = "js-min/penta.js"
+                        this.attributes["data-main"] = "js/penta.js"
                     }
                     style {
                         unsafe {

@@ -12,12 +12,12 @@
 
 - [ ] game state machine
   - [ ] variable user count
-  - [ ] users taking turns
+  - [x] users taking turns
   - [ ] parsing move from notation
   - [ ] apply move, keep track of affected pieces
     - [ ] undo moves in reverse order
 
-- [ ] Djikstras Algoritm
+- [x] path checking
 
 - [ ] multiplatform
   - [ ] js
@@ -26,3 +26,6 @@
  
  - [ ] Test JS coroutines support / multithreading
   
+- [ ] minification
+  - [ ] UglifyJs
+  - [ ] ProGuard
