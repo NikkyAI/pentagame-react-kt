@@ -1,3 +1,4 @@
+import io.data2viz.color.Colors
 import io.data2viz.color.col
 import io.data2viz.geom.Point
 import io.data2viz.math.deg
@@ -138,7 +139,7 @@ object PentaViz {
                 with(circle) {
                     x = ((field.pos.x / PentaMath.R_)) * scale
                     y = ((field.pos.y / PentaMath.R_)) * scale
-                    radius = field.radius / PentaMath.R_ * scale
+                    radius = (field.radius / PentaMath.R_ * scale)  - (strokeWidth ?: 0.0)
 //                    fill = if (field != highlightedField)
 //                        field.pentaColor
 //                    else
@@ -182,8 +183,8 @@ object PentaViz {
                 gameState.figures.forEach { piece ->
                     println("initialzing piece: $piece")
                     val c = circle {
-                        strokeWidth = 1.0
-                        stroke = 0.col
+                        strokeWidth = 4.0
+                        stroke = piece.color
                     }
                     val t =
                         if (piece is PlayerPiece) {
@@ -250,8 +251,8 @@ object PentaViz {
         with(circle) {
             x = ((pos.x / PentaMath.R_)) * scale
             y = ((pos.y / PentaMath.R_)) * scale
-            radius = piece.radius / PentaMath.R_ * scale
-            fill = when (piece) {
+
+            val fillColor = when (piece) {
                 is PlayerPiece -> {
                     if (
                         gameState.selectedPlayerPiece == null
@@ -265,16 +266,34 @@ object PentaViz {
                 is BlackBlockerPiece -> piece.color
                 is GrayBlockerPiece -> piece.color
                 else -> throw IllegalStateException("unknown type ${piece::class}")
-            }.let {
+            }
+            fill = fillColor
+            stroke = fillColor.let {
                 when (piece) {
-                    gameState.selectedPlayerPiece -> it.brighten(2.0)
-                    gameState.selectedBlackPiece -> it.brighten(4.0)
+                    gameState.selectedPlayerPiece -> {
+                        strokeWidth = 3.0
+                        it.brighten(2.0)
+                    }
+                    gameState.selectedBlackPiece -> {
+                        strokeWidth = 3.0
+                        it.brighten(2.0)
+                    }
 //                    gameState.selectedGrayPiece -> if(gameState.selectedGrayPiece == null) it.brighten(1.0) else it
-                    gameState.selectedGrayPiece -> it.brighten(1.0)
-                    highlightedPiece -> it.brighten(2.0)
-                    else -> it
+                    gameState.selectedGrayPiece -> {
+                        strokeWidth = 3.0
+                        it.brighten(1.0)
+                    }
+                    highlightedPiece -> {
+                        strokeWidth = 3.0
+                        it.brighten(2.0)
+                    }
+                    else -> {
+                        strokeWidth = 1.0
+                        Colors.Web.black
+                    }
                 }
             }
+            radius = (piece.radius / PentaMath.R_ * scale) - (strokeWidth ?: 0.0)
         }
         text?.apply {
             x = ((pos.x / PentaMath.R_)) * scale

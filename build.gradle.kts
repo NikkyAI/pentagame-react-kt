@@ -42,7 +42,10 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation(kotlin("stdlib-common"))
-                implementation(Data2Viz.common_dep)
+                implementation(Data2Viz.common_dep) {
+                    exclude(mapOf("group" to "io.data2viz.geojson", "module" to "geojson-common"))
+                    exclude(mapOf("group" to "io.data2viz", "module" to "d2v-geo-common"))
+                }
             }
         }
         val commonTest by getting {
@@ -53,12 +56,15 @@ kotlin {
         }
 
         // Default source set for JVM-specific sources and dependencies:
-        val jvmmain = jvm()
-        jvmmain.compilations["main"].defaultSourceSet {
+        val jvmMain = jvm()
+        jvmMain.compilations["main"].defaultSourceSet {
             dependencies {
                 implementation(kotlin("stdlib-jdk8"))
-                implementation(Data2Viz.jfx_dep)
-                implementation("no.tornado:tornadofx:1.7.18")
+                implementation(Data2Viz.jfx_dep) {
+                    exclude(mapOf("group" to "io.data2viz.geojson", "module" to "geojson-jvm"))
+                    exclude(mapOf("group" to "io.data2viz", "module" to "d2v-geo-jvm"))
+                }
+                implementation(TornadoFX.dep)
             }
         }
         // JVM-specific tests and their dependencies:
@@ -70,7 +76,10 @@ kotlin {
 
         js().compilations["main"].defaultSourceSet {
             dependencies {
-                implementation(Data2Viz.js_dep)
+                implementation(Data2Viz.js_dep) {
+                    exclude(mapOf("group" to "io.data2viz.geojson", "module" to "geojson-js"))
+                    exclude(mapOf("group" to "io.data2viz", "module" to "d2v-geo-js"))
+                }
             }
         }
         js().compilations.all {
