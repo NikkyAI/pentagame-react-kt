@@ -1,5 +1,9 @@
 # TODO
 
+- [ ] BUGS
+  - [ ] black cannot be placed on itself when getting abrakadaber
+  - [ ] highlighting on pieces is not complete
+
 - [ ] UI
   - [ ] Display currently selected piece (player, black, gray)
   - [ ] display turn
@@ -11,7 +15,7 @@
   - [ ] notation
 
 - [ ] game state machine
-  - [ ] variable user count
+  - [x] variable user count
   - [x] users taking turns
   - [ ] parsing move from notation
   - [ ] apply move, keep track of affected pieces
@@ -20,8 +24,8 @@
 - [x] path checking
 
 - [ ] multiplatform
-  - [ ] js
-  - [ ] jvm
+  - [x] js
+  - [x] jvm
   - [ ] android
  
  - [ ] Test JS coroutines support / multithreading

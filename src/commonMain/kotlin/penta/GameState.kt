@@ -1,5 +1,6 @@
 package penta
 
+
 import PentaBoard
 import PentaMath
 import PentaViz
@@ -13,6 +14,7 @@ import penta.figure.GrayBlockerPiece
 import penta.figure.Piece
 import penta.figure.PlayerPiece
 import penta.math.length
+import kotlin.jvm.JvmStatic
 
 data class GameState(
     // player ids
@@ -177,6 +179,10 @@ data class GameState(
         return false
     }
 
+    /**
+     * click on a piece
+     * @param clickedPiece game piece that was clicked on
+     */
     fun clickPiece(clickedPiece: Piece) {
         // TODO: check turn
         println("currentPlayer: $currentPlayer")

@@ -1,6 +1,5 @@
 package penta.field
 
-import io.data2viz.color.Color
 import io.data2viz.geom.Point
 import penta.PentaColor
 

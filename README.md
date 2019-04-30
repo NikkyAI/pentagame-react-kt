@@ -1,5 +1,8 @@
 # Pentagame
 
+github: [htps://github.com/NikkyAi/pentagame](htps://github.com/NikkyAi/pentagame)
+
+
 ## Building
 
 ### JVM

@@ -1,5 +1,6 @@
 import io.data2viz.math.DEG_TO_RAD
 import penta.PentaColor
+import io.data2viz.color.Colors
 import io.data2viz.geom.Point
 import penta.field.AbstractField
 import penta.field.ConnectionField
@@ -64,8 +65,8 @@ object PentaBoard {
                     id = "${current.id}${next.id}/${i + 1}",
                     altId = "${next.id}${current.id}/${outerSteps - i}",
                     pos = pos / 2 + (Point(0.5, 0.5) * PentaMath.R_),
-//                    Colors.Web.white,
-                    color = interpolatedColors[i]
+                    color = Colors.Web.white
+//                    color = interpolatedColors[i]
                 )
             }
             angle -= 72.0 / 4
@@ -107,8 +108,8 @@ object PentaBoard {
                 id = "${current.id}${next.id}/${i + 1}",
                 altId = "${next.id}${current.id}/${steps - i}",
                 pos = pos,
-//                Colors.Web.white,
-                color = interpolatedColors[i]
+                color = Colors.Web.white
+//                color = interpolatedColors[i]
             )
         }
         current.connect(connectingNodes.first())

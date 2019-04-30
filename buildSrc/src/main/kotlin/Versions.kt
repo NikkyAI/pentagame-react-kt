@@ -1,6 +1,6 @@
 object Jetbrains {
     object Kotlin {
-        val version = "1.3.30"
+        val version = "1.3.31"
     }
 }
 

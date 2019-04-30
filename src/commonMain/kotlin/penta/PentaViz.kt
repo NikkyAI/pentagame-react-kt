@@ -1,7 +1,6 @@
 import io.data2viz.color.Colors
 import io.data2viz.color.col
 import io.data2viz.geom.Point
-import io.data2viz.math.deg
 import io.data2viz.scale.ScalesChromatic
 import io.data2viz.viz.CircleNode
 import io.data2viz.viz.KMouseClick
@@ -61,11 +60,16 @@ object PentaViz {
 //        strokeWidth = 1.0
 //        this.stroke =  0.col
 //    }
-        val outerCircle = (0..360 * 3).map {
-            line {
-                stroke = scaleHCL(360.0 * 3 - it.toDouble())
-                strokeWidth = 3.0
-            }
+//        val outerCircle = (0..360 * 3).map {
+//            line {
+//                stroke = scaleHCL(360.0 * 3 - it.toDouble())
+//                strokeWidth = 2.0
+//            }
+//        }
+        val outerCircle = circle {
+            stroke = Colors.Web.black
+            strokeWidth = 4.0
+//            this.fill = Colors.Web.white
         }
         PentaBoard.fields.forEach { field ->
             println("adding: $field")
@@ -113,16 +117,21 @@ object PentaViz {
                 }
 
             val halfCircleWidth = (0.25 / PentaMath.R_) * scale / 2
-            outerCircle.forEachIndexed { index, lineNode ->
-                val angle = index.deg / 3
+//            outerCircle.forEachIndexed { index, lineNode ->
+//                val angle = index.deg / 3
+//
+//                with(lineNode) {
+//                    x1 = (PentaMath.r / PentaMath.R_ * scale / 2 - halfCircleWidth) * angle.cos + scale / 2
+//                    x2 = (PentaMath.r / PentaMath.R_ * scale / 2 + halfCircleWidth) * angle.cos + scale / 2
+//                    y1 = (PentaMath.r / PentaMath.R_ * scale / 2 - halfCircleWidth) * angle.sin + scale / 2
+//                    y2 = (PentaMath.r / PentaMath.R_ * scale / 2 + halfCircleWidth) * angle.sin + scale / 2
+//                }
+//            }
+            outerCircle.apply {
+                x = 0.5 * scale
+                y = 0.5 * scale
 
-                with(lineNode) {
-                    x1 = (PentaMath.r / PentaMath.R_ * scale / 2 - halfCircleWidth) * angle.cos + scale / 2
-                    x2 = (PentaMath.r / PentaMath.R_ * scale / 2 + halfCircleWidth) * angle.cos + scale / 2
-                    y1 = (PentaMath.r / PentaMath.R_ * scale / 2 - halfCircleWidth) * angle.sin + scale / 2
-                    y2 = (PentaMath.r / PentaMath.R_ * scale / 2 + halfCircleWidth) * angle.sin + scale / 2
-                }
-
+                radius =  (PentaMath.r / PentaMath.R_ * scale) / 2
             }
 //        with(outerCircle) {
 //            x = size / 2
@@ -139,7 +148,7 @@ object PentaViz {
                 with(circle) {
                     x = ((field.pos.x / PentaMath.R_)) * scale
                     y = ((field.pos.y / PentaMath.R_)) * scale
-                    radius = (field.radius / PentaMath.R_ * scale)  - (strokeWidth ?: 0.0)
+                    radius = (field.radius / PentaMath.R_ * scale) //  - (strokeWidth ?: 0.0)
 //                    fill = if (field != highlightedField)
 //                        field.pentaColor
 //                    else
