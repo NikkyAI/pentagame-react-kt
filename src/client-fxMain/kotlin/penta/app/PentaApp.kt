@@ -1,4 +1,4 @@
-package app
+package penta.app
 
 import javafx.application.Application
 import tornadofx.*

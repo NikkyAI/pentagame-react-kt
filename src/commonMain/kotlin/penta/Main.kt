@@ -1,5 +1,0 @@
-package penta
-
-fun main() {
-
-}

@@ -2,6 +2,7 @@
 
 github: [htps://github.com/NikkyAi/pentagame](htps://github.com/NikkyAi/pentagame)
 
+online: [demo](https://nikky.crew.c-base.org/pentagame)
 
 ## Building
 

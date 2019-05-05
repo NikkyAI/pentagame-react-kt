@@ -1,3 +1,5 @@
+package penta.util
+
 import io.data2viz.color.Color
 import io.data2viz.scale.ScalesChromatic
 

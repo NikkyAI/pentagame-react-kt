@@ -1,4 +1,4 @@
-package penta.math
+package penta.util
 
 import io.data2viz.geom.Point
 import io.data2viz.math.deg

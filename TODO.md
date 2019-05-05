@@ -1,7 +1,8 @@
 # TODO
 
 - [ ] BUGS
-  - [ ] black cannot be placed on itself when getting abrakadaber
+  - [ ] black cannot be placed on itself when getting abrakadaba
+  - [ ] getting passivly moved out will move you out on the next turn
   - [ ] highlighting on pieces is not complete
 
 - [ ] UI
@@ -33,3 +34,5 @@
 - [ ] minification
   - [ ] UglifyJs
   - [ ] ProGuard
+  
+- [ ] look at js serviceworkers

@@ -7,8 +7,8 @@ import penta.field.ConnectionField
 import penta.field.CornerField
 import penta.field.IntersectionField
 import penta.field.JointField
-import penta.math.interpolate
-import penta.math.length
+import penta.util.interpolate
+import penta.util.length
 import kotlin.math.cos
 import kotlin.math.sin
 

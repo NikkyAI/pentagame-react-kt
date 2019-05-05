@@ -13,8 +13,7 @@ import penta.figure.BlackBlockerPiece
 import penta.figure.GrayBlockerPiece
 import penta.figure.Piece
 import penta.figure.PlayerPiece
-import penta.math.length
-import kotlin.jvm.JvmStatic
+import penta.util.length
 
 data class GameState(
     // player ids
@@ -44,6 +43,8 @@ data class GameState(
     private val positions: MutableMap<String, AbstractField?> = mutableMapOf()
     val figurePositions: Map<String, AbstractField?> get() = positions
 
+    // TODO: move to client
+    // TODO: not common code
     fun updatePiecePos(piece: Piece) {
         val field: AbstractField? = positions[piece.id]
         var pos: Point = field?.pos ?: run {
@@ -137,6 +138,7 @@ data class GameState(
         figures.forEach(::updatePiecePos)
     }
 
+    // TODO: clientside
     fun findPiecesAtPos(mousePos: Point) = figures.filter {
         (it.pos - mousePos).length < it.radius
     }
@@ -179,6 +181,7 @@ data class GameState(
         return false
     }
 
+    // TODO: clientside
     /**
      * click on a piece
      * @param clickedPiece game piece that was clicked on
@@ -338,6 +341,7 @@ data class GameState(
         println("no action on click")
     }
 
+    // TODO: clientside
     fun canClickField(targetField: AbstractField): Boolean {
         if(
             (selectedPlayerPiece == null && selectedGrayPiece == null && selectedBlackPiece == null)
@@ -384,6 +388,7 @@ data class GameState(
         return true
     }
 
+    // TODO: clientside
     fun clickField(targetField: AbstractField) {
         println("currentPlayer: $currentPlayer")
         println("selected player piece: $selectedPlayerPiece")
@@ -478,12 +483,14 @@ data class GameState(
         PentaViz.updateBoard()
     }
 
+    // TODO: clientside
     private fun updateAllPieces() {
         figures.forEach { piece ->
             updatePiecePos(piece)
         }
     }
 
+    // TODO: clientside
     private fun updatePiecesAtPos(field: AbstractField?) {
         positions.filterValues { it == field }.keys.map { id ->
             figures.find { it.id == id }!!

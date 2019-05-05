@@ -1,4 +1,4 @@
-package app
+package penta.app
 
 import io.data2viz.viz.JFxVizRenderer
 import javafx.scene.layout.Priority

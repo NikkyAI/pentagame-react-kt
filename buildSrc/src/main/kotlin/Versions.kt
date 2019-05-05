@@ -26,3 +26,7 @@ object TornadoFX {
     const val version = "1.7.18"
     val dep = "no.tornado:tornadofx:$version"
 }
+
+object Ktor {
+    const val version = "1.2.0-rc"
+}

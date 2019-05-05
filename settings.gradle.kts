@@ -13,6 +13,12 @@ pluginManagement {
             if(requested.id.id == "kotlin-dce-js") {
                 useModule("org.jetbrains.kotlin:kotlin-gradle-plugin:${requested.version}")
             }
+            if(requested.id.id == "kotlinx-serialization") {
+                useModule("org.jetbrains.kotlin:kotlin-serialization:${requested.version}")
+            }
+            if(requested.id.id == "proguard") {
+                useModule("net.sf.proguard:proguard-gradle:${requested.version}")
+            }
 //            when(requested.id.id) { }
 //                "kotlin2js" -> useModule("org.jetbrains.kotlin:kotlin-gradle-plugin:${requested.version}")
 //                "kotlin-dce-js" -> useModule("org.jetbrains.kotlin:kotlin-gradle-plugin:${requested.version}")
@@ -22,4 +28,6 @@ pluginManagement {
     }
 }
 
-rootProject.name = 'penta'
+enableFeaturePreview("GRADLE_METADATA")
+
+rootProject.name = "penta"

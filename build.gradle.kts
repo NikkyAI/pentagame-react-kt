@@ -11,41 +11,78 @@ import kotlinx.html.unsafe
 import org.jetbrains.kotlin.gradle.plugin.KotlinTarget
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinJvmCompilation
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinOnlyTarget
+import proguard.ClassSpecification
+
+buildscript {
+    dependencies {
+        classpath("net.sf.proguard:proguard-gradle:6.0.1")
+    }
+}
 
 plugins {
     kotlin("multiplatform") version Jetbrains.Kotlin.version
+    id("kotlinx-serialization") version Jetbrains.Kotlin.version
 
     // jvm
     id("com.github.johnrengelman.shadow") version "5.0.0"
     // js
-//    id("kotlin2js") version Jetbrains.Kotlin.version
     id("kotlin-dce-js") version Jetbrains.Kotlin.version
 //    id("org.jetbrains.kotlin.frontend") version "0.0.45"
     application
+    `maven-publish`
 }
-
-//apply(plugin = "kotlin-dce-js")
 
 repositories {
     mavenLocal()
     mavenCentral()
+    jcenter()
+    maven(url = "https://dl.bintray.com/kotlin/kotlinx") {
+        name = "kotlinx"
+    }
+    maven(url = "https://dl.bintray.com/kotlin/ktor") {
+        name = "ktor"
+    }
 //    maven(url = "https://dl.bintray.com/data2viz/data2viz/") {
 //        name = "d2v"
 //    }
 }
 
+group = "moe.nikky.penta"
+
 kotlin {
-    jvm() // Creates a JVM target with the default name 'jvm'
-    js()  // JS target named 'js'
+    val server = jvm("server") // Creates a JVM target with the default name "jvm"
+    val clientFX = jvm("client-fx") // Creates a JVM target with the default name "jvm"
+    val clientJS = js("client-js")  // JS target named "js"
 
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation(kotlin("stdlib-common"))
-                implementation(Data2Viz.common_dep) {
+                api(kotlin("stdlib-common"))
+                api(Data2Viz.common_dep) {
                     exclude(mapOf("group" to "io.data2viz.geojson", "module" to "geojson-common"))
                     exclude(mapOf("group" to "io.data2viz", "module" to "d2v-geo-common"))
                 }
+                // serialization
+                api("org.jetbrains.kotlinx:kotlinx-serialization-runtime-common:0.11.0")
+            }
+        }
+//        val commonLogic by creating {
+//            dependsOn(commonMain)
+//            dependencies {
+//                implementation(kotlin("stdlib-common"))
+//
+//            }
+//        }
+        val commonClient by creating {
+            dependsOn(commonMain)
+            dependencies {
+                api(kotlin("stdlib-common"))
+                api(Data2Viz.common_dep) {
+                    exclude(mapOf("group" to "io.data2viz.geojson", "module" to "geojson-common"))
+                    exclude(mapOf("group" to "io.data2viz", "module" to "d2v-geo-common"))
+                }
+                api(ktor("client-core"))
+//                api(ktor("client-websocket"))
             }
         }
         val commonTest by getting {
@@ -55,45 +92,75 @@ kotlin {
             }
         }
 
-        // Default source set for JVM-specific sources and dependencies:
-        val jvmMain = jvm()
-        jvmMain.compilations["main"].defaultSourceSet {
+        server.compilations["main"].defaultSourceSet {
+            dependsOn(commonMain)
             dependencies {
-                implementation(kotlin("stdlib-jdk8"))
+                api(kotlin("stdlib-jdk8"))
+                // KTOR
+                implementation(ktor("server-core", Ktor.version))
+                implementation(ktor("server-cio", Ktor.version))
+                implementation(ktor("websockets", Ktor.version))
+
+                // TODO: move data2viz only into commonClient
                 implementation(Data2Viz.jfx_dep) {
                     exclude(mapOf("group" to "io.data2viz.geojson", "module" to "geojson-jvm"))
                     exclude(mapOf("group" to "io.data2viz", "module" to "d2v-geo-jvm"))
                 }
-                implementation(TornadoFX.dep)
-            }
-        }
-        // JVM-specific tests and their dependencies:
-        jvm().compilations["test"].defaultSourceSet {
-            dependencies {
-                implementation(kotlin("test-junit"))
             }
         }
 
-        js().compilations["main"].defaultSourceSet {
-            dependencies {
-                implementation(Data2Viz.js_dep) {
-                    exclude(mapOf("group" to "io.data2viz.geojson", "module" to "geojson-js"))
-                    exclude(mapOf("group" to "io.data2viz", "module" to "d2v-geo-js"))
+        // Default source set for JVM-specific sources and dependencies:
+//        val jvmMain = jvm()
+        clientFX.apply {
+            compilations["main"].defaultSourceSet {
+                dependsOn(commonClient)
+                dependencies {
+                    implementation(kotlin("stdlib-jdk8"))
+                    implementation(Data2Viz.jfx_dep) {
+                        exclude(mapOf("group" to "io.data2viz.geojson", "module" to "geojson-jvm"))
+                        exclude(mapOf("group" to "io.data2viz", "module" to "d2v-geo-jvm"))
+                    }
+                    implementation(TornadoFX.dep)
+                    implementation(ktor("client-cio"))
+//                    implementation(ktor("client-websockets"))
+                }
+            }
+            // JVM-specific tests and their dependencies:
+            compilations["test"].defaultSourceSet {
+                dependencies {
+                    implementation(kotlin("test-junit"))
                 }
             }
         }
-        js().compilations.all {
-            kotlinOptions {
-                sourceMap = true
-                moduleKind = "umd"
-                metaInfo = true
-            }
-        }
-        js().compilations["test"].defaultSourceSet {
 
+        clientJS.apply {
+            compilations["main"].defaultSourceSet {
+                dependsOn(commonClient)
+                dependencies {
+                    api(kotlin("stdlib-js"))
+                    implementation(Data2Viz.js_dep) {
+                        exclude(mapOf("group" to "io.data2viz.geojson", "module" to "geojson-js"))
+                        exclude(mapOf("group" to "io.data2viz", "module" to "d2v-geo-js"))
+                    }
+                    implementation(ktor("client-core-js"))
+//                    implementation(ktor("client-cio"))
+//                    implementation(ktor("client-websocket"))
+                }
+                compilations["test"].defaultSourceSet {
+
+                }
+                compilations.all {
+                    kotlinOptions {
+                        sourceMap = true
+                        moduleKind = "umd"
+                        metaInfo = true
+                    }
+                }
+            }
         }
     }
 }
+
 
 kotlin.sourceSets.all {
     languageSettings.progressiveMode = true
@@ -129,22 +196,120 @@ kotlin.targets.forEach { target: KotlinTarget ->
 //    archivesBaseName = ""
 //}
 
+application {
+    mainClassName = "penta.app.PentaAppKt"
+}
+
 val shadowJar = tasks.getByName<ShadowJar>("shadowJar") {
-    archiveClassifier.set("")
+    archiveClassifier.set("client")
 
     group = "shadow"
-    val target = kotlin.targets.getByName("jvm") as KotlinOnlyTarget<KotlinJvmCompilation>
+
+    val target = kotlin.targets.getByName("client-fx") as KotlinOnlyTarget<KotlinJvmCompilation>
     from(target.compilations.getByName("main").output)
     val runtimeClasspath = target.compilations.getByName("main").runtimeDependencyFiles as Configuration
     configurations = listOf(runtimeClasspath)
     logger.lifecycle("task shadow jar")
 }
 
-application {
-    mainClassName = "app.PentaAppKt"
+val shadowJarServer = tasks.create<ShadowJar>("shadowJarServer") {
+    archiveClassifier.set("server")
+
+    group = "shadow"
+
+    manifest {
+        attributes(mapOf("Main-Class" to "io.ktor.server.cio.EngineMain"))
+    }
+
+    val target = kotlin.targets.getByName("server") as KotlinOnlyTarget<KotlinJvmCompilation>
+    from(target.compilations.getByName("main").output)
+    val runtimeClasspath = target.compilations.getByName("main").runtimeDependencyFiles as Configuration
+    configurations = listOf(runtimeClasspath)
+    logger.lifecycle("task shadow jar")
+}
+
+val minimizedServerJar = tasks.create<proguard.gradle.ProGuardTask>("minimizedServerJar") {
+    dependsOn(shadowJarServer)
+    outputs.upToDateWhen { false }
+    group = "proguard"
+
+    injars(shadowJarServer.archiveFile)
+    outjars(shadowJarServer.archiveFile.get().asFile.let {
+        it.parentFile.resolve(it.nameWithoutExtension + "-min.jar")
+    })
+    libraryjars(System.getProperty("java.home") + "/lib/rt.jar")
+    libraryjars(System.getProperty("java.home") + "/lib/jfxrt.jar")
+    printmapping("build/libs/penta-server.map")
+    ignorewarnings()
+    dontobfuscate()
+    dontoptimize()
+    dontwarn()
+
+    val keepClasses = listOf(
+        "io.ktor.server.cio.EngineMain", // The EngineMain you use, cio in this case.
+        "kotlin.reflect.jvm.internal.**",
+        "kotlin.text.RegexOption",
+        "org.slf4j.impl.StaticLoggerBinder",
+        "penta.**"
+    )
+
+    for (keepClass in keepClasses) {
+        keep(
+            mutableMapOf(
+                "access" to "public",
+                "name" to keepClass
+            ),
+            closureOf<ClassSpecification> {
+                method(mapOf("access" to "public"))
+                method(mapOf("access" to "private"))
+            }
+        )
+    }
+}
+val minimizedClientJar = tasks.create<proguard.gradle.ProGuardTask>("minimizedClientJar") {
+    dependsOn(shadowJar)
+    outputs.upToDateWhen { false }
+    group = "proguard"
+
+    injars(shadowJar.archiveFile)
+    outjars(shadowJar.archiveFile.get().asFile.let {
+        it.parentFile.resolve(it.nameWithoutExtension + "-min.jar")
+    })
+    libraryjars(System.getProperty("java.home") + "/lib/rt.jar")
+    printmapping("build/libs/penta-client.map")
+    ignorewarnings()
+    dontobfuscate()
+    dontoptimize()
+    dontwarn()
+    dontskipnonpubliclibraryclassmembers()
+
+    val keepClasses = listOf(
+        "kotlin.reflect.jvm.internal.**",
+        "kotlin.text.RegexOption",
+        "org.slf4j.impl.StaticLoggerBinder",
+        "penta.**",
+//        "tornadofx.**",
+        "org.osgi.**",
+        "org.apache.**",
+        "watchDog.main"
+    )
+
+    for (keepClass in keepClasses) {
+        keep(
+            mutableMapOf(
+                "access" to "public",
+                "name" to keepClass
+            ),
+            closureOf<ClassSpecification> {
+                method(mapOf("access" to "public"))
+                method(mapOf("access" to "private"))
+            }
+        )
+    }
 }
 
 val run = tasks.getByName<JavaExec>("run") {
+    group = "application"
     dependsOn(shadowJar)
 
     classpath(shadowJar.archiveFile)
@@ -154,11 +319,27 @@ val run = tasks.getByName<JavaExec>("run") {
     }
 }
 
-val runDceJsKotlin = tasks.getByName("runDceJsKotlin")
+val runServer = tasks.create<JavaExec>("runServer") {
+    group = "application"
+
+    this.main = "io.ktor.server.cio.EngineMain"
+
+    dependsOn(shadowJarServer)
+
+    classpath(shadowJarServer.archiveFile)
+
+    workingDir = file("run").apply {
+        mkdirs()
+    }
+}
+
+// JAVASCRIPT
+
+val runDce = tasks.getByName("runDceClient-jsKotlin")
 
 val packageJs = tasks.create("packageJs") {
     group = "build"
-    dependsOn(runDceJsKotlin)
+    dependsOn(runDce)
 
     doLast {
         val jsInput = buildDir
@@ -185,12 +366,13 @@ val packageJs = tasks.create("packageJs") {
             appendln("<!DOCTYPE html>")
             appendHTML().html {
                 head {
-                    script(src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.5/require.min.js") {
+                    script(src = "https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.5/require.min.js") {
                         this.attributes["data-main"] = "js/penta.js"
                     }
                     style {
                         unsafe {
-                            this.raw("""
+                            this.raw(
+                                """
                                 |
                                 |    html, body {
                                 |      width: 100%;
@@ -201,7 +383,8 @@ val packageJs = tasks.create("packageJs") {
                                 |      display: block;  /* No floating content on sides */
                                 |    }
                                 |
-                            """.trimMargin())
+                            """.trimMargin()
+                            )
                         }
                     }
                 }
@@ -218,5 +401,5 @@ val packageJs = tasks.create("packageJs") {
 }
 
 tasks.withType(JavaExec::class.java).all {
-    
+
 }
