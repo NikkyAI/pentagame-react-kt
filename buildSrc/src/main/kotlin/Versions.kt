@@ -5,7 +5,9 @@ object Jetbrains {
 }
 
 object Data2Viz {
-    private const val version = "0.7.2-RC1"
+//    private const val version = "0.7.2-RC1"
+    private const val version = "master-SNAPSHOT"
+    const val group = "com.github.data2viz.data2viz" //"io.data2viz"
 
 //    open class D2VDep(val component: String) {
 //        val common = "io.data2viz:d2v-$component-common:$version"
@@ -17,9 +19,9 @@ object Data2Viz {
 //    val core = D2VDep("core")
 //    val axis = D2VDep("axis")
 //    val color = D2VDep("color")
-    const val common_dep = "io.data2viz:d2v-data2viz-common:$version"
-    const val jfx_dep = "io.data2viz:d2v-data2viz-jfx:$version"
-    const val js_dep = "io.data2viz:d2v-data2viz-js:$version"
+    const val common_dep = "$group:d2v-data2viz-common:$version"
+    const val jfx_dep = "$group:d2v-data2viz-jfx:$version"
+    const val js_dep = "$group:d2v-data2viz-js:$version"
 }
 
 object TornadoFX {

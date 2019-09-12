@@ -3,13 +3,12 @@ import io.data2viz.color.col
 import io.data2viz.geom.Point
 import io.data2viz.scale.ScalesChromatic
 import io.data2viz.viz.CircleNode
-import io.data2viz.viz.KMouseClick
-import io.data2viz.viz.KMouseMove
+import io.data2viz.viz.KPointerClick
+import io.data2viz.viz.KPointerMove
 import io.data2viz.viz.TextHAlign
 import io.data2viz.viz.TextNode
 import io.data2viz.viz.TextVAlign
 import io.data2viz.viz.Viz
-import io.data2viz.viz.on
 import io.data2viz.viz.viz
 import penta.GameState
 import penta.PentaColor
@@ -26,6 +25,7 @@ object PentaViz {
     private var scale: Double = 100.0
     private var mousePos: Point = Point(0.0, 0.0)
     lateinit var turnDisplay: TextNode
+//    lateinit var centerDisplay: Pair<CircleNode, TextNode>
 
     fun highlightedPieceAt(mousePos: Point): Piece? = gameState.findPiecesAtPos(mousePos).firstOrNull()?.let {
         // do not highlight pieces that are off the board
@@ -55,6 +55,18 @@ object PentaViz {
             hAlign = TextHAlign.LEFT
             fontSize += 4
         }
+//        centerDisplay = Pair(
+//            circle {
+//                strokeWidth = 2.0
+//                stroke = 0.col
+//                fill = Colors.Web.white
+//            },
+//            text {
+//                hAlign = TextHAlign.MIDDLE
+//                vAlign = TextVAlign.BASELINE
+//            }
+//        )
+
 //    val outerCircle = circle {
 //        stroke = scaleHCL
 //        strokeWidth = 1.0
@@ -133,6 +145,15 @@ object PentaViz {
 
                 radius =  (PentaMath.r / PentaMath.R_ * scale) / 2
             }
+//            PentaViz.centerDisplay.first.apply {
+//                x = 0.5 * scale
+//                y = 0.5 * scale
+//                radius = (1.0 / PentaMath.R_ * scale)
+//            }
+//            PentaViz.centerDisplay.second.apply {
+//                x = 0.5 * scale
+//                y = 0.5 * scale
+//            }
 //        with(outerCircle) {
 //            x = size / 2
 //            y = size / 2
@@ -244,6 +265,7 @@ object PentaViz {
                 "select PlayerPiece"
             }
         }
+//        centerDisplay.second.textContent = turnDisplay.textContent
         if (render) {
             viz.render()
         }
@@ -316,7 +338,7 @@ object PentaViz {
     var hoveredPiece: Piece? = null
 
     fun Viz.addEvents() {
-        on(KMouseMove) { evt ->
+        on(KPointerMove) { evt ->
             // println("Mouse Move:: ${evt.pos}")
 
             // convert pos back
@@ -399,7 +421,7 @@ object PentaViz {
 //                    }
                 }
         }
-        on(KMouseClick) { evt ->
+        on(KPointerClick) { evt ->
             //            println("MouseClick:: $evt")
 //            println("shiftKey:: ${evt.shiftKey}")
 //            println("ctrlKey:: ${evt.ctrlKey}")

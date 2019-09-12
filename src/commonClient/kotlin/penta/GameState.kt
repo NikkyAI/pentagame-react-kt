@@ -73,7 +73,7 @@ data class GameState(
             // find index of piece on field
             val pieceNumber = pieceIds.indexOf(piece.id).toDouble()
             val angle =
-                (((field.pentaColor.ordinal * 72.0) + (pieceNumber / pieceIds.size * 360.0) + 360.0) % 360.0).deg
+                (((field.pentaColor.ordinal * -72.0) + (pieceNumber / pieceIds.size * 360.0) + 360.0) % 360.0).deg
             pos = Point(
                 pos.x + (0.55) * angle.cos,
                 pos.y + (0.55) * angle.sin

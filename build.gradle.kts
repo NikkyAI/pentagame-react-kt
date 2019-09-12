@@ -1,6 +1,8 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+import kotlinx.html.a
 import kotlinx.html.body
 import kotlinx.html.canvas
+import kotlinx.html.div
 import kotlinx.html.head
 import kotlinx.html.html
 import kotlinx.html.id
@@ -45,6 +47,9 @@ repositories {
 //    maven(url = "https://dl.bintray.com/data2viz/data2viz/") {
 //        name = "d2v"
 //    }
+    maven(url = "https://jitpack.io") {
+        name = "jitpack"
+    }
 }
 
 group = "moe.nikky.penta"
@@ -59,8 +64,8 @@ kotlin {
             dependencies {
                 api(kotlin("stdlib-common"))
                 api(Data2Viz.common_dep) {
-                    exclude(mapOf("group" to "io.data2viz.geojson", "module" to "geojson-common"))
-                    exclude(mapOf("group" to "io.data2viz", "module" to "d2v-geo-common"))
+                    exclude(mapOf("group" to Data2Viz.group, "module" to "geojson-common"))
+                    exclude(mapOf("group" to Data2Viz.group, "module" to "d2v-geo-common"))
                 }
                 // serialization
                 api("org.jetbrains.kotlinx:kotlinx-serialization-runtime-common:0.11.0")
@@ -78,8 +83,8 @@ kotlin {
             dependencies {
                 api(kotlin("stdlib-common"))
                 api(Data2Viz.common_dep) {
-                    exclude(mapOf("group" to "io.data2viz.geojson", "module" to "geojson-common"))
-                    exclude(mapOf("group" to "io.data2viz", "module" to "d2v-geo-common"))
+                    exclude(mapOf("group" to Data2Viz.group, "module" to "geojson-common"))
+                    exclude(mapOf("group" to Data2Viz.group, "module" to "d2v-geo-common"))
                 }
                 api(ktor("client-core"))
 //                api(ktor("client-websocket"))
@@ -103,8 +108,8 @@ kotlin {
 
                 // TODO: move data2viz only into commonClient
                 implementation(Data2Viz.jfx_dep) {
-                    exclude(mapOf("group" to "io.data2viz.geojson", "module" to "geojson-jvm"))
-                    exclude(mapOf("group" to "io.data2viz", "module" to "d2v-geo-jvm"))
+                    exclude(mapOf("group" to Data2Viz.group, "module" to "geojson-jvm"))
+                    exclude(mapOf("group" to Data2Viz.group, "module" to "d2v-geo-jvm"))
                 }
             }
         }
@@ -117,8 +122,8 @@ kotlin {
                 dependencies {
                     implementation(kotlin("stdlib-jdk8"))
                     implementation(Data2Viz.jfx_dep) {
-                        exclude(mapOf("group" to "io.data2viz.geojson", "module" to "geojson-jvm"))
-                        exclude(mapOf("group" to "io.data2viz", "module" to "d2v-geo-jvm"))
+                        exclude(mapOf("group" to Data2Viz.group, "module" to "geojson-jvm"))
+                        exclude(mapOf("group" to Data2Viz.group, "module" to "d2v-geo-jvm"))
                     }
                     implementation(TornadoFX.dep)
                     implementation(ktor("client-cio"))
@@ -139,8 +144,8 @@ kotlin {
                 dependencies {
                     api(kotlin("stdlib-js"))
                     implementation(Data2Viz.js_dep) {
-                        exclude(mapOf("group" to "io.data2viz.geojson", "module" to "geojson-js"))
-                        exclude(mapOf("group" to "io.data2viz", "module" to "d2v-geo-js"))
+                        exclude(mapOf("group" to Data2Viz.group, "module" to "geojson-js"))
+                        exclude(mapOf("group" to Data2Viz.group, "module" to "d2v-geo-js"))
                     }
                     implementation(ktor("client-core-js"))
 //                    implementation(ktor("client-cio"))
@@ -344,7 +349,7 @@ val packageJs = tasks.create("packageJs") {
     doLast {
         val jsInput = buildDir
             .resolve("kotlin-js-min")
-            .resolve("js")
+            .resolve("client-js")
             .resolve("main")
 
         val htmlOutput = buildDir

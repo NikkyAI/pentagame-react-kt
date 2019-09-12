@@ -4,6 +4,10 @@ github: [htps://github.com/NikkyAi/pentagame](htps://github.com/NikkyAi/pentagam
 
 online: [demo](https://nikky.crew.c-base.org/pentagame)
 
+2 player: https://nikky.crew.c-base.org/pentagame/#2  
+3 player: https://nikky.crew.c-base.org/pentagame/#3  
+4 player: https://nikky.crew.c-base.org/pentagame/#4  
+
 ## Building
 
 ### JVM

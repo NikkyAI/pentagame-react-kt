@@ -19,7 +19,7 @@ class CanvasView : View("PentaGame") {
             minWidth(WIDTH)
             val viz = PentaViz.viz
             PentaViz.gameState = GameState(
-                listOf("a", "b", "c"),
+                listOf("a", "b"),
                 mapOf()
             )
             with(viz) {

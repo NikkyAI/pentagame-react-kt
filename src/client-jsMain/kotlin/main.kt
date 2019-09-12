@@ -5,6 +5,7 @@ import io.ktor.client.engine.js.Js
 import io.ktor.client.features.websocket.WebSockets
 import org.w3c.dom.HTMLCanvasElement
 import org.w3c.dom.events.EventListener
+import org.w3c.dom.url.URL
 import penta.GameState
 import kotlin.browser.document
 import kotlin.browser.window
@@ -18,6 +19,12 @@ fun main() {
     val canvasId = "viz"
     val canvas = requireNotNull(document.getElementById(canvasId) as HTMLCanvasElement?)
     { "No canvas in the document corresponding to $canvasId" }
+
+    val url = URL(document.URL)
+    val hash = url.hash.ifEmpty { null }?.substringAfter('#')
+    println("hash: $hash")
+    val playerCount = hash?.toInt() ?: 2
+    require(playerCount in (2..4)) { "player number must be within 2..4" }
 
     window.addEventListener("resize",
         EventListener { event ->
@@ -41,7 +48,7 @@ fun main() {
         width = canvas.width.toDouble()
 
         PentaViz.gameState = GameState(
-            listOf("a", "b", "c"),
+            (0 until playerCount).map { ('a'+it).toString() },
             mapOf()
         )
 
