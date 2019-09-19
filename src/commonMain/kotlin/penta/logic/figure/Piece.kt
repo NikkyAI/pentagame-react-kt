@@ -1,4 +1,4 @@
-package penta.figure
+package penta.logic.figure
 
 import io.data2viz.color.Color
 import io.data2viz.geom.Point

@@ -6,13 +6,13 @@ import PentaMath
 import PentaViz
 import io.data2viz.geom.Point
 import io.data2viz.math.deg
-import penta.field.AbstractField
-import penta.field.CornerField
-import penta.field.JointField
-import penta.figure.BlackBlockerPiece
-import penta.figure.GrayBlockerPiece
-import penta.figure.Piece
-import penta.figure.PlayerPiece
+import penta.logic.field.AbstractField
+import penta.logic.field.CornerField
+import penta.logic.field.JointField
+import penta.logic.figure.BlackBlockerPiece
+import penta.logic.figure.GrayBlockerPiece
+import penta.logic.figure.Piece
+import penta.logic.figure.PlayerPiece
 import penta.util.length
 
 data class GameState(

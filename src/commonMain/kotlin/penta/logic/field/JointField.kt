@@ -1,4 +1,4 @@
-package penta.field
+package penta.logic.field
 
 import io.data2viz.geom.Point
 import penta.PentaColor

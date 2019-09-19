@@ -2,11 +2,11 @@ import io.data2viz.math.DEG_TO_RAD
 import penta.PentaColor
 import io.data2viz.color.Colors
 import io.data2viz.geom.Point
-import penta.field.AbstractField
-import penta.field.ConnectionField
-import penta.field.CornerField
-import penta.field.IntersectionField
-import penta.field.JointField
+import penta.logic.field.AbstractField
+import penta.logic.field.ConnectionField
+import penta.logic.field.CornerField
+import penta.logic.field.IntersectionField
+import penta.logic.field.JointField
 import penta.util.interpolate
 import penta.util.length
 import kotlin.math.cos

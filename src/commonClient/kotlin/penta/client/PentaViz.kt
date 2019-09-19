@@ -12,12 +12,12 @@ import io.data2viz.viz.Viz
 import io.data2viz.viz.viz
 import penta.GameState
 import penta.PentaColor
-import penta.field.AbstractField
-import penta.field.ConnectionField
-import penta.figure.BlackBlockerPiece
-import penta.figure.GrayBlockerPiece
-import penta.figure.Piece
-import penta.figure.PlayerPiece
+import penta.logic.field.AbstractField
+import penta.logic.field.ConnectionField
+import penta.logic.figure.BlackBlockerPiece
+import penta.logic.figure.GrayBlockerPiece
+import penta.logic.figure.Piece
+import penta.logic.figure.PlayerPiece
 
 object PentaViz {
     private val pieces: MutableMap<String, Pair<CircleNode, TextNode?>> = mutableMapOf()

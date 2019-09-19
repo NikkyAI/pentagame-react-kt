@@ -47,7 +47,7 @@ repositories {
 //    maven(url = "https://dl.bintray.com/data2viz/data2viz/") {
 //        name = "d2v"
 //    }
-    maven(url = "https://jitpack.io") {
+    maven(url = "https://www.jitpack.io") {
         name = "jitpack"
     }
 }

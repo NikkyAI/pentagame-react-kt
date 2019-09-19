@@ -1,7 +1,7 @@
 package penta
 
-import penta.field.AbstractField
-import penta.figure.Piece
+import penta.logic.field.AbstractField
+import penta.logic.figure.Piece
 import kotlin.jvm.JvmOverloads
 
 // TODO: add MoveGray?, MoveBlack?
