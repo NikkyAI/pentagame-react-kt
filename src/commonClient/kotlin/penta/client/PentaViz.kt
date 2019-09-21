@@ -278,7 +278,7 @@ object PentaViz {
 
         when(playerId) {
             "square" -> {
-                angles(4, 45.deg).map {  angle ->
+                angles(4, 0.deg).map {  angle ->
                     val point = point(angle, maxRadius, center)
                     lineTo(point.x, point.y)
                 }
