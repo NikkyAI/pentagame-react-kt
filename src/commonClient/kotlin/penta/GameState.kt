@@ -1,6 +1,5 @@
 package penta
 
-
 import PentaBoard
 import PentaMath
 import PentaViz
@@ -13,21 +12,30 @@ import penta.logic.figure.BlackBlockerPiece
 import penta.logic.figure.GrayBlockerPiece
 import penta.logic.figure.Piece
 import penta.logic.figure.PlayerPiece
+import penta.notation.PentaNotation
 import penta.util.length
 
 data class GameState(
     // player ids
     val players: List<String>,
     // player id to team id
-    val teams: Map<String, Int>
+    val teams: Map<String, Int>,
+    val updateLogPanel: (String) -> Unit = {}
 ) {
     var updatePiece: (Piece) -> Unit = { piece -> }
 
     var turn: Int = 0
-    private set
+        private set(newVal) {
+            field = newVal
+            println("setting turn = $newVal")
+        }
+
+    var winner: String? = null
+
+    var forceMoveNextPlayer: Boolean = false
 
     val currentPlayer: String
-        get() = if(players.isNotEmpty()) players[turn % players.count()] else "nobody"
+        get() = if (players.isNotEmpty()) players[turn % players.count()] else "nobody"
 
     var selectedPlayerPiece: PlayerPiece? = null
     var selectedBlackPiece: BlackBlockerPiece? = null
@@ -42,6 +50,8 @@ data class GameState(
     val figures: Array<Piece>
     private val positions: MutableMap<String, AbstractField?> = mutableMapOf()
     val figurePositions: Map<String, AbstractField?> get() = positions
+
+    private val history: MutableList<PentaNotation> = mutableListOf()
 
     // TODO: move to client
     // TODO: not common code
@@ -121,7 +131,7 @@ data class GameState(
                 positions[it.id] = null
             }
         }
-        val players = (0 until players.size).flatMap { p ->
+        val playerPieces = (0 until players.size).flatMap { p ->
             (0 until 5).map { i ->
                 PlayerPiece(
                     "p$p$i",
@@ -134,8 +144,10 @@ data class GameState(
                 }
             }
         }
-        figures = (blacks + greys + players).toTypedArray()
+        figures = (blacks + greys + playerPieces).toTypedArray()
         figures.forEach(::updatePiecePos)
+
+        history += PentaNotation.InitGame(players)
     }
 
     // TODO: clientside
@@ -144,11 +156,14 @@ data class GameState(
     }
 
     fun canClickPiece(clickedPiece: Piece): Boolean {
-        if(positions[clickedPiece.id] == null) {
+        if (winner != null && turn % players.size == 0) {
             return false
         }
-        if(
-            // make sure you are not selecting black or gray
+        if (positions[clickedPiece.id] == null) {
+            return false
+        }
+        if (
+        // make sure you are not selecting black or gray
             selectedGrayPiece == null && selectedBlackPiece == null && !selectingGrayPiece
             && clickedPiece is PlayerPiece && currentPlayer == clickedPiece.playerId
         ) {
@@ -193,13 +208,13 @@ data class GameState(
         println("selected black piece: $selectedBlackPiece")
         println("selected gray piece: $selectedGrayPiece")
 
-        if(!canClickPiece(clickedPiece)) return
+        if (!canClickPiece(clickedPiece)) return
 
-        if(positions[clickedPiece.id] == null) {
+        if (positions[clickedPiece.id] == null) {
             println("cannot click piece off the board")
             return
         }
-        if(
+        if (
         // make sure you are not selecting black or gray
             selectedGrayPiece == null && selectedBlackPiece == null && !selectingGrayPiece
             && clickedPiece is PlayerPiece && currentPlayer == clickedPiece.playerId
@@ -247,7 +262,7 @@ data class GameState(
 
             println("swapping $sourceField <-> $targetField")
 
-            if(!canMove(sourceField, targetField)) {
+            if (!canMove(sourceField, targetField)) {
                 println("can not find path")
                 return
             }
@@ -264,32 +279,38 @@ data class GameState(
             when (clickedPiece) {
                 is PlayerPiece -> {
 
+                    // TODO: enforce moving player out when it is sitting on a jointfield instead
                     if (sourceField is JointField && sourceField.pentaColor == clickedPiece.pentaColor) {
-                        // take piece off the board
-                        positions[clickedPiece.id] = null
-                        updatePiecesAtPos(targetField)
-//                        updatePiecePos(clickedPiece)
-                        updatePiecesAtPos(null)
-
-                        // other player moved this player into the joinfield, do we still let them set a gray?
-                        // will this overcomplicate things ?
-                        // TODO: currently maxed at a single gray piece, even if removing 2 at once
-
-                        selectedGrayPiece = positions.filterValues { it == null }
-                            .keys.map { id -> figures.find { it.id == id } }
-                            .filterIsInstance<GrayBlockerPiece>()
-                            .firstOrNull()
-                        if (selectedGrayPiece == null) {
-                            selectingGrayPiece = true
-                        }
-
-                    } else {
-                        // move normally
-                        println("moving: ${clickedPiece.id} -> ${sourceField.id}")
-                        positions[clickedPiece.id] = sourceField
-                        updatePiecesAtPos(targetField)
-                        updatePiecesAtPos(sourceField)
-                    }
+                        forceMoveNextPlayer = true
+//                        // take piece off the board
+//                        positions[clickedPiece.id] = null
+//                        updatePiecesAtPos(targetField)
+////                        updatePiecePos(clickedPiece)
+//                        updatePiecesAtPos(null)
+//
+//                        // other player moved this player into the joinfield, do we still let them set a gray?
+//                        // will this overcomplicate things ?
+//                        // currently maxed at a single gray piece, even if removing 2 at once
+//
+//                        selectedGrayPiece = positions.filterValues { it == null }
+//                            .keys.map { id -> figures.find { it.id == id } }
+//                            .filterIsInstance<GrayBlockerPiece>()
+//                            .firstOrNull()
+//                        if (selectedGrayPiece == null) {
+//                            selectingGrayPiece = true
+//                        }
+//
+                    } //else {
+                    // move normally
+                    println("moving: ${clickedPiece.id} -> ${sourceField.id}")
+                    positions[clickedPiece.id] = sourceField
+                    updatePiecesAtPos(targetField)
+                    updatePiecesAtPos(sourceField)
+//                    }
+                    history += PentaNotation.SwapPlayerPiece(
+                        piece = playerPiece, otherPiece = clickedPiece,
+                        origin = sourceField, target = targetField
+                    )
                     // TODO: also check if this is the matching JointField for the other piece?
                     // and leave board
                 }
@@ -297,6 +318,12 @@ data class GameState(
                     println("taking ${clickedPiece.id} off the board")
                     positions[clickedPiece.id] = null
                     updatePiecePos(clickedPiece)
+                    history += PentaNotation.MovePlayerPiece(
+                        piece = playerPiece, origin = sourceField, target = targetField,
+                        moveGray = PentaNotation.MoveGray(
+                            piece = clickedPiece, origin = targetField, target = null
+                        )
+                    )
                 }
                 is BlackBlockerPiece -> {
                     selectedBlackPiece = clickedPiece
@@ -309,6 +336,9 @@ data class GameState(
 //                    positions[clickedPiece.id] = sourcePos
 //                    updatePiecesAtPos(sourcePos)
 
+                    history += PentaNotation.MovePlayerPiece(
+                        piece = playerPiece, origin = sourceField, target = targetField
+                    )
                     selectedBlackPiece = clickedPiece
 //                    updatePiecesAtPos(targetPos)
                 }
@@ -329,13 +359,19 @@ data class GameState(
                 if (selectedGrayPiece == null) {
                     selectingGrayPiece = true
                 }
+                checkWin(playerPiece.playerId)
             }
 
             // do not increase turn when placing grey or black
-            if (selectedBlackPiece == null && selectedGrayPiece == null && !selectingGrayPiece) {
+            if (selectedBlackPiece == null && selectedBlackPiece == null && selectedGrayPiece == null && !selectingGrayPiece) {
                 turn += 1
             }
+            if(forceMoveNextPlayer) {
+                forceMovePlayerPiece(currentPlayer)
+            }
             PentaViz.updateBoard()
+            println(history.last().serialize())
+            updateLogPanel(history.joinToString("\n") { it.serialize() })
             return
         }
         println("no action on click")
@@ -343,9 +379,12 @@ data class GameState(
 
     // TODO: clientside
     fun canClickField(targetField: AbstractField): Boolean {
-        if(
+        if (winner != null && turn % players.size == 0) {
+            return false
+        }
+        if (
             (selectedPlayerPiece == null && selectedGrayPiece == null && selectedBlackPiece == null)
-            && positions.none { (k,v) -> v == targetField }
+            && positions.none { (k, v) -> v == targetField }
         ) {
             return false
         }
@@ -394,11 +433,10 @@ data class GameState(
         println("selected player piece: $selectedPlayerPiece")
         println("selected black piece: $selectedBlackPiece")
         println("selected gray piece: $selectedGrayPiece")
-        if(!canClickField(targetField)) return
+        if (!canClickField(targetField)) return
         when {
             selectedPlayerPiece != null && currentPlayer == selectedPlayerPiece!!.playerId -> {
                 val playerPiece = selectedPlayerPiece!!
-
 
                 val sourceField = positions[playerPiece.id]!!
                 if (sourceField == targetField) {
@@ -414,22 +452,25 @@ data class GameState(
                         .map { id ->
                             figures.find { it.id == id }
                         }
-                    if(pieces.size == 1) {
+                    if (pieces.size == 1) {
                         val piece = pieces.firstOrNull() ?: return
                         clickPiece(piece)
                     }
                     return
                 }
 
-                if(!canMove(sourceField, targetField)) {
+                if (!canMove(sourceField, targetField)) {
                     println("can not find path")
                     return
                 }
-                // TODO: check if move is possible
-                // swap pieces
 
+                // swap pieces
                 println("moving: ${playerPiece.id} -> $targetField")
+
                 positions[playerPiece.id] = targetField
+                history += PentaNotation.MovePlayerPiece(
+                    piece = playerPiece, origin = sourceField, target = targetField, moveBlack = null, moveGray = null
+                )
                 // TODO movePiece(...) -> set position, update source pos, update target fields
 //                updatePiecesAtPos(sourcePos)
 //                updatePiecesAtPos(targetField)
@@ -447,6 +488,7 @@ data class GameState(
                     if (selectedGrayPiece == null) {
                         selectingGrayPiece = true
                     }
+                    checkWin(playerPiece.playerId)
                 }
             }
             selectedBlackPiece != null -> {
@@ -456,11 +498,15 @@ data class GameState(
                     println("target position not empty")
                     return
                 }
+                val originPos = positions[blackPiece.id]!!
 
                 positions[blackPiece.id] = targetField
+                val lastMove = history.last()
+                require(lastMove is PentaNotation.MovePlayerPiece) { "last move was not the expected move type" }
+                lastMove.moveBlack =
+                    PentaNotation.MoveBlack(piece = blackPiece, origin = originPos, target = targetField)
 //                updatePiecesAtPos(targetField)
                 selectedBlackPiece = null
-
             }
             selectedGrayPiece != null -> {
                 val grayPiece = selectedGrayPiece!!
@@ -469,18 +515,76 @@ data class GameState(
                     println("target position not empty")
                     return
                 }
+                val originPos = positions[grayPiece.id]
 
                 positions[grayPiece.id] = targetField
+                val lastMove = history.last()
+                require(lastMove is PentaNotation.PlayerMovement) { "last move was not the expected move type" }
+                lastMove.moveGray = PentaNotation.MoveGray(
+                    piece = grayPiece,
+                    origin = lastMove.moveGray?.origin ?: null,
+                    target = targetField
+                )
 //                updatePiecesAtPos(targetField)
                 selectedGrayPiece = null
             }
         }
         // do not increase turn when placing grey or black
-        if (selectedBlackPiece == null && selectedGrayPiece == null && !selectingGrayPiece) {
+        if (selectedBlackPiece == null && selectedBlackPiece == null && selectedGrayPiece == null && !selectingGrayPiece) {
             turn += 1
+        }
+        if(forceMoveNextPlayer) {
+            forceMovePlayerPiece(currentPlayer)
         }
         updateAllPieces()
         PentaViz.updateBoard()
+
+        println(history.last().serialize())
+        updateLogPanel(history.joinToString("\n") { it.serialize() })
+    }
+
+    private fun forceMovePlayerPiece(player: String) {
+        if(selectingGrayPiece || selectingGrayPiece) return
+        val playerPieces = figures.filterIsInstance<PlayerPiece>().filter { it.playerId == player }
+        for (playerPiece in playerPieces) {
+            val field = positions[playerPiece.id] as? JointField ?: continue
+            if (field.pentaColor != playerPiece.pentaColor) continue
+
+            positions[playerPiece.id] = null
+            history += PentaNotation.MovePlayerPiece(piece = playerPiece, origin = field, target = field)
+
+            updatePiecesAtPos(null)
+//                updatePiecePos(playerPiece)
+            // set gamestate to `MOVE_GREY`
+            selectedGrayPiece = positions.filterValues { it == null }
+                .keys.map { id -> figures.find { it.id == id } }
+                .filterIsInstance<GrayBlockerPiece>()
+                .firstOrNull()
+            if (selectedGrayPiece == null) {
+                selectingGrayPiece = true
+            }
+            checkWin(playerPiece.playerId)
+
+            updateAllPieces()
+            PentaViz.updateBoard()
+
+            forceMoveNextPlayer = false
+            return
+        }
+    }
+
+    private fun checkWin(player: String) {
+        if (winner != null) return
+        val playerPieces = figures.filterIsInstance<PlayerPiece>().filter { it.playerId == player }
+        val piecePositions: List<AbstractField?> = playerPieces.map { piece -> positions[piece.id] }
+        val offBoardPieces = playerPieces.filter { positions[it.id] == null }
+        if (offBoardPieces.size >= 3) {
+            println("pieces: ${offBoardPieces.joinToString { it.id }} are off the board")
+            println("player $player won")
+            winner = player
+            history += PentaNotation.Win(playerId = player)
+            updateLogPanel(history.joinToString("\n") { it.serialize() })
+        }
     }
 
     // TODO: clientside
@@ -502,21 +606,21 @@ data class GameState(
     fun canMove(start: AbstractField, end: AbstractField): Boolean {
         val backtrack = mutableSetOf<AbstractField>()
         val next = mutableSetOf<AbstractField>(start)
-        while(next.isNotEmpty()) {
+        while (next.isNotEmpty()) {
             val toIterate = next.toList()
             next.clear()
             toIterate.map { nextField ->
                 println("checking: ${nextField.id}")
                 nextField.connected.forEach { connectedField ->
-                    if(connectedField == end) return true
-                    if(connectedField in backtrack) return@forEach
+                    if (connectedField == end) return true
+                    if (connectedField in backtrack) return@forEach
 
                     val free = positions.filterValues { field ->
                         field == connectedField
                     }.isEmpty()
-                    if(!free) return@forEach
+                    if (!free) return@forEach
 
-                    if(connectedField !in backtrack) {
+                    if (connectedField !in backtrack) {
                         backtrack += connectedField
                         next += connectedField
                     }

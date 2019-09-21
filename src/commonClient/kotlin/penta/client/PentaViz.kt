@@ -143,7 +143,7 @@ object PentaViz {
                 x = 0.5 * scale
                 y = 0.5 * scale
 
-                radius =  (PentaMath.r / PentaMath.R_ * scale) / 2
+                radius = (PentaMath.r / PentaMath.R_ * scale) / 2
             }
 //            PentaViz.centerDisplay.first.apply {
 //                x = 0.5 * scale
@@ -253,17 +253,15 @@ object PentaViz {
         turnDisplay.apply {
             val player = gameState.currentPlayer
             val turn = gameState.turn
-            textContent = "Player: $player, Turn: $turn, " + if (gameState.selectedPlayerPiece != null) {
-                "move PlayerPiece (${gameState.selectedPlayerPiece!!.id})"
-            } else if (gameState.selectedBlackPiece != null) {
-                "set black (${gameState.selectedBlackPiece!!.id})"
-            } else if (gameState.selectedGrayPiece != null) {
-                "set grey (${gameState.selectedGrayPiece!!.id})"
-            } else if (gameState.selectingGrayPiece) {
-                "select gray piece"
-            } else {
-                "select PlayerPiece"
-            }
+            textContent = "Player: $player, Turn: $turn, " +
+                if(gameState.winner != null) ", winner: ${gameState.winner}" else "" +
+                when {
+                    gameState.selectedPlayerPiece != null -> "move PlayerPiece (${gameState.selectedPlayerPiece!!.id})"
+                    gameState.selectedBlackPiece != null -> "set black (${gameState.selectedBlackPiece!!.id})"
+                    gameState.selectedGrayPiece != null -> "set grey (${gameState.selectedGrayPiece!!.id})"
+                    gameState.selectingGrayPiece -> "select gray piece"
+                    else -> "select PlayerPiece"
+                }
         }
 //        centerDisplay.second.textContent = turnDisplay.textContent
         if (render) {

@@ -8,10 +8,14 @@ import penta.GameState
 import tornadofx.*
 
 class CanvasView : View("PentaGame") {
+    val extraWidth = 1.0
     override val root = borderpane {
         hgrow = Priority.ALWAYS
         vgrow = Priority.ALWAYS
 //        this.minHeight = height
+        val textarea = textarea("") {
+            isEditable = false
+        }
         val canvas = canvas(WIDTH, HEIGHT) {
             hgrow = Priority.ALWAYS
             vgrow = Priority.ALWAYS
@@ -21,7 +25,7 @@ class CanvasView : View("PentaGame") {
             PentaViz.gameState = GameState(
                 listOf("a", "b"),
                 mapOf()
-            )
+            ) { content -> textarea.text = content }
             with(viz) {
                 width = this@canvas.width
                 height = this@canvas.height
@@ -49,10 +53,11 @@ class CanvasView : View("PentaGame") {
 
         }
         this.center = canvas
+        this.right = textarea
 
         widthProperty().onChange { newWidth ->
-            if(newWidth > 250)
-                canvas.width = newWidth
+            if(newWidth > 250 + 250)
+                canvas.width = newWidth * 0.5
         }
         heightProperty().onChange { newHeight ->
             if(newHeight > 250)
