@@ -47,7 +47,7 @@ fun main() {
         height = canvas.height.toDouble()
         width = canvas.width.toDouble()
 
-        val playerSymbols = listOf("▲", "■", "❌", "●")
+        val playerSymbols = listOf("square", "triangle", "cross", "circle")
 
         PentaViz.gameState = GameState(
             playerSymbols.subList(0, playerCount),

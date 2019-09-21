@@ -25,10 +25,7 @@ data class GameState(
     var updatePiece: (Piece) -> Unit = { piece -> }
 
     var turn: Int = 0
-        private set(newVal) {
-            field = newVal
-            println("setting turn = $newVal")
-        }
+        private set
 
     var winner: String? = null
 

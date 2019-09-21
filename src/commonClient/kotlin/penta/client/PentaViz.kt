@@ -1,10 +1,13 @@
 import io.data2viz.color.Colors
 import io.data2viz.color.col
 import io.data2viz.geom.Point
+import io.data2viz.math.Angle
+import io.data2viz.math.deg
 import io.data2viz.scale.ScalesChromatic
 import io.data2viz.viz.CircleNode
 import io.data2viz.viz.KPointerClick
 import io.data2viz.viz.KPointerMove
+import io.data2viz.viz.PathNode
 import io.data2viz.viz.TextHAlign
 import io.data2viz.viz.TextNode
 import io.data2viz.viz.TextVAlign
@@ -18,9 +21,11 @@ import penta.logic.figure.BlackBlockerPiece
 import penta.logic.figure.GrayBlockerPiece
 import penta.logic.figure.Piece
 import penta.logic.figure.PlayerPiece
+import kotlin.math.pow
+import kotlin.math.sqrt
 
 object PentaViz {
-    private val pieces: MutableMap<String, Pair<CircleNode, TextNode?>> = mutableMapOf()
+    private val pieces: MutableMap<String, Pair<CircleNode, PathNode?>> = mutableMapOf()
     val elements = mutableMapOf<AbstractField, Triple<CircleNode, TextNode, TextNode?>>()
     private var scale: Double = 100.0
     private var mousePos: Point = Point(0.0, 0.0)
@@ -53,7 +58,7 @@ object PentaViz {
         turnDisplay = text {
             vAlign = TextVAlign.HANGING
             hAlign = TextHAlign.LEFT
-            fontSize += 5
+            fontSize += 4
         }
 //        centerDisplay = Pair(
 //            circle {
@@ -203,9 +208,9 @@ object PentaViz {
 
             viz.apply {
                 // clear old pieces
-                pieces.values.forEach { (circle, text) ->
+                pieces.values.forEach { (circle, path) ->
                     circle.remove()
-                    text?.remove()
+                    path?.remove()
                 }
                 pieces.clear()
 
@@ -216,14 +221,19 @@ object PentaViz {
                         strokeWidth = 4.0
                         stroke = piece.color
                     }
-                    val t =
+
+                    val p =
                         if (piece is PlayerPiece) {
-                            text {
-                                textContent = piece.playerId
+                            path {
+                                vAlign = TextVAlign.MIDDLE
+                                hAlign = TextHAlign.MIDDLE
+
+                                strokeWidth = 2.0
+                                stroke = Colors.Web.black
                             }
                         } else null
 
-                    pieces[piece.id] = c to t
+                    pieces[piece.id] = Pair(c, p)
 
                     updatePiece(piece)
                 }
@@ -249,19 +259,98 @@ object PentaViz {
         }
     }
 
+    fun PathNode.drawPlayer(playerId: String, center: Point, maxRadius: Double) {
+        clearPath()
+
+        val r = maxRadius / 2
+
+        fun point(angle: Angle, radius: Double, center: Point = Point(0.0,0.0)): Point {
+            return Point(angle.cos * radius, angle.sin * radius) + center
+        }
+
+        fun angles(n: Int, start: Angle = 0.deg): List<Angle> {
+            val step = 360.deg / n
+
+            return (0..n).map { i ->
+                (start + (step * i))
+            }
+        }
+
+        when(playerId) {
+            "square" -> {
+                angles(4, 45.deg).map {  angle ->
+                    val point = point(angle, maxRadius, center)
+                    lineTo(point.x, point.y)
+                }
+            }
+            "triangle" -> {
+                angles(3, -90.deg).map {  angle ->
+                    val point = point(angle, maxRadius, center)
+                    lineTo(point.x, point.y)
+                }
+            }
+            "cross" -> {
+
+                val width = 15
+
+                val p1 = point((45-width).deg, maxRadius, center)
+                val p2 = point((45+width).deg, maxRadius, center)
+
+                val c = sqrt((p2.x-p1.x).pow(2) + (p2.y-p1.y).pow(2))
+
+                val a = c / sqrt(2.0)
+
+                val points = listOf(
+                    point((45-width).deg, maxRadius, center),
+                    point((45+width).deg, maxRadius, center),
+                    point((90).deg, a, center),
+                    point((135-width).deg, maxRadius, center),
+                    point((135+width).deg, maxRadius, center),
+                    point((180).deg, a, center),
+                    point((45 + 180 - width).deg, maxRadius, center),
+                    point((45 + 180 + width).deg, maxRadius, center),
+                    point((270).deg, a, center),
+                    point((135 + 180 - width).deg, maxRadius, center),
+                    point((135 + 180 + width).deg, maxRadius, center),
+                    point((360).deg, a, center)
+                )
+                points.forEach {
+                    lineTo(it.x, it.y)
+                }
+
+
+//                lineTo(center.x, center.y)
+//                angles(2, 45.deg).map {  angle ->
+//                    val point = point(angle, maxRadius, center)
+//                    lineTo(point.x, point.y)
+//                }
+//                lineTo(center.x, center.y)
+//                angles(2, 135.deg).map {  angle ->
+//                    val point = point(angle, maxRadius, center)
+//                    lineTo(point.x, point.y)
+//                }
+            }
+            "circle" -> {
+                arc(center.x, center.y, maxRadius, 0.0, 180.0, false)
+            }
+        }
+
+        closePath()
+    }
+
     fun updateBoard(render: Boolean = true) {
         turnDisplay.apply {
             val player = gameState.currentPlayer
             val turn = gameState.turn
             textContent = "Player: $player, Turn: $turn, " +
-                if(gameState.winner != null) ", winner: ${gameState.winner}" else "" +
-                when {
-                    gameState.selectedPlayerPiece != null -> "move PlayerPiece (${gameState.selectedPlayerPiece!!.id})"
-                    gameState.selectedBlackPiece != null -> "set black (${gameState.selectedBlackPiece!!.id})"
-                    gameState.selectedGrayPiece != null -> "set grey (${gameState.selectedGrayPiece!!.id})"
-                    gameState.selectingGrayPiece -> "select gray piece"
-                    else -> "select PlayerPiece"
-                }
+                if (gameState.winner != null) ", winner: ${gameState.winner}" else "" +
+                    when {
+                        gameState.selectedPlayerPiece != null -> "move PlayerPiece (${gameState.selectedPlayerPiece!!.id})"
+                        gameState.selectedBlackPiece != null -> "set black (${gameState.selectedBlackPiece!!.id})"
+                        gameState.selectedGrayPiece != null -> "set grey (${gameState.selectedGrayPiece!!.id})"
+                        gameState.selectingGrayPiece -> "select gray piece"
+                        else -> "select PlayerPiece"
+                    }
         }
 //        centerDisplay.second.textContent = turnDisplay.textContent
         if (render) {
@@ -272,30 +361,34 @@ object PentaViz {
     fun updatePiece(piece: Piece) {
         val highlightedPiece = highlightedPieceAt(mousePos)
 
-        val (circle, text) = pieces[piece.id] ?: throw IllegalArgumentException("piece; $piece is not on the board")
+        val (circle, path) = pieces[piece.id] ?: throw IllegalArgumentException("piece; $piece is not on the board")
 
         // TODO: highlight player pieces on turn when not placing black or gray
 
         val pos = piece.pos
+        val fillColor = when (piece) {
+            is PlayerPiece -> {
+                if (
+                    gameState.selectedPlayerPiece == null
+                    && gameState.currentPlayer == piece.playerId
+                    && gameState.canClickPiece(piece)
+                )
+                    piece.color.brighten(1.0)
+                else
+                    piece.color
+            }
+            is BlackBlockerPiece -> piece.color
+            is GrayBlockerPiece -> piece.color
+            else -> throw IllegalStateException("unknown type ${piece::class}")
+        }
         with(circle) {
             x = ((pos.x / PentaMath.R_)) * scale
             y = ((pos.y / PentaMath.R_)) * scale
 
-            val fillColor = when (piece) {
-                is PlayerPiece -> {
-                    if (
-                        gameState.selectedPlayerPiece == null
-                        && gameState.currentPlayer == piece.playerId
-                        && gameState.canClickPiece(piece)
-                    )
-                        piece.color.brighten(1.0)
-                    else
-                        piece.color
-                }
-                is BlackBlockerPiece -> piece.color
-                is GrayBlockerPiece -> piece.color
-                else -> throw IllegalStateException("unknown type ${piece::class}")
+            if(piece is PlayerPiece && path != null) {
+                visible = false
             }
+
             fill = fillColor
             stroke = fillColor.let {
                 when (piece) {
@@ -324,11 +417,21 @@ object PentaViz {
             }
             radius = (piece.radius / PentaMath.R_ * scale) - (strokeWidth ?: 0.0)
         }
-        text?.apply {
-            x = ((pos.x / PentaMath.R_)) * scale
-            y = ((pos.y / PentaMath.R_)) * scale
-            vAlign = TextVAlign.MIDDLE
-            hAlign = TextHAlign.MIDDLE
+//        text?.apply {
+//            x = ((pos.x / PentaMath.R_)) * scale
+//            y = ((pos.y / PentaMath.R_)) * scale
+//            vAlign = TextVAlign.MIDDLE
+//            hAlign = TextHAlign.MIDDLE
+//            visible = false
+//        }
+        path?.apply {
+            val playerPiece = piece as? PlayerPiece ?: throw IllegalStateException("piece should be a playerpiece")
+            val x = ((pos.x / PentaMath.R_)) * scale
+            val y = ((pos.y / PentaMath.R_)) * scale
+            val maxRadius = (playerPiece.radius / PentaMath.R_ * scale)
+            drawPlayer(playerId = playerPiece.playerId, center = Point(x = x, y = y), maxRadius = maxRadius)
+            fill = fillColor
+            stroke = circle.stroke
         }
     }
 

@@ -23,9 +23,11 @@ class CanvasView : View("PentaGame") {
             minWidth(WIDTH)
             val viz = PentaViz.viz
             PentaViz.gameState = GameState(
-                listOf("■", "▲"),
+                listOf("square", "triangle", "cross", "circle"),
                 mapOf()
-            ) { content -> textarea.text = content }
+            ) { content ->
+                textarea.text = content
+            }
             with(viz) {
                 width = this@canvas.width
                 height = this@canvas.height
