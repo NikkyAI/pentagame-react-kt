@@ -5,9 +5,9 @@ object Jetbrains {
 }
 
 object Data2Viz {
-//    private const val version = "0.7.2-RC1"
-    private const val version = "master-SNAPSHOT"
-    const val group = "com.github.data2viz.data2viz" //"io.data2viz"
+    private const val version = "0.8.0-RC1"
+//    private const val version = "master-SNAPSHOT"
+    const val group = "io.data2viz"
 
 //    open class D2VDep(val component: String) {
 //        val common = "io.data2viz:d2v-$component-common:$version"

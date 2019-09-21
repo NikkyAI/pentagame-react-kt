@@ -47,8 +47,10 @@ fun main() {
         height = canvas.height.toDouble()
         width = canvas.width.toDouble()
 
+        val playerSymbols = listOf("▲", "■", "❌", "●")
+
         PentaViz.gameState = GameState(
-            (0 until playerCount).map { ('a'+it).toString() },
+            playerSymbols.subList(0, playerCount),
             mapOf()
         )
 

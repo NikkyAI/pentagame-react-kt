@@ -44,12 +44,12 @@ repositories {
     maven(url = "https://dl.bintray.com/kotlin/ktor") {
         name = "ktor"
     }
-//    maven(url = "https://dl.bintray.com/data2viz/data2viz/") {
-//        name = "d2v"
-//    }
-    maven(url = "https://www.jitpack.io") {
-        name = "jitpack"
+    maven(url = "https://dl.bintray.com/data2viz/data2viz/") {
+        name = "d2v"
     }
+//    maven(url = "https://www.jitpack.io") {
+//        name = "jitpack"
+//    }
 }
 
 group = "moe.nikky.penta"

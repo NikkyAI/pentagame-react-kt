@@ -53,7 +53,7 @@ object PentaViz {
         turnDisplay = text {
             vAlign = TextVAlign.HANGING
             hAlign = TextHAlign.LEFT
-            fontSize += 4
+            fontSize += 5
         }
 //        centerDisplay = Pair(
 //            circle {
