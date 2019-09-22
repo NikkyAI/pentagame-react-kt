@@ -1,6 +1,6 @@
 object Jetbrains {
     object Kotlin {
-        val version = "1.3.31"
+        val version = "1.3.50"
     }
 }
 
@@ -31,4 +31,8 @@ object TornadoFX {
 
 object Ktor {
     const val version = "1.2.0-rc"
+}
+
+object Serialization {
+    const val version = "0.12.0"
 }

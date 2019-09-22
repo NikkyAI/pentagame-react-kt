@@ -259,10 +259,8 @@ object PentaViz {
         }
     }
 
-    fun PathNode.drawPlayer(playerId: String, center: Point, maxRadius: Double) {
+    private fun PathNode.drawPlayer(playerId: String, center: Point, maxRadius: Double) {
         clearPath()
-
-        val r = maxRadius / 2
 
         fun point(angle: Angle, radius: Double, center: Point = Point(0.0,0.0)): Point {
             return Point(angle.cos * radius, angle.sin * radius) + center

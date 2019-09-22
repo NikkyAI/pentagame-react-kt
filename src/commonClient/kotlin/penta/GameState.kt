@@ -5,6 +5,8 @@ import PentaMath
 import PentaViz
 import io.data2viz.geom.Point
 import io.data2viz.math.deg
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonConfiguration
 import penta.logic.field.AbstractField
 import penta.logic.field.CornerField
 import penta.logic.field.JointField
@@ -12,7 +14,7 @@ import penta.logic.figure.BlackBlockerPiece
 import penta.logic.figure.GrayBlockerPiece
 import penta.logic.figure.Piece
 import penta.logic.figure.PlayerPiece
-import penta.notation.PentaNotation
+import penta.notation.PentaMove
 import penta.util.length
 
 data class GameState(
@@ -48,7 +50,9 @@ data class GameState(
     private val positions: MutableMap<String, AbstractField?> = mutableMapOf()
     val figurePositions: Map<String, AbstractField?> get() = positions
 
-    private val history: MutableList<PentaNotation> = mutableListOf()
+    val json = Json(JsonConfiguration(unquoted = true), context = PentaMove.context)
+
+    private val history: MutableList<PentaMove> = mutableListOf()
 
     // TODO: move to client
     // TODO: not common code
@@ -144,7 +148,7 @@ data class GameState(
         figures = (blacks + greys + playerPieces).toTypedArray()
         figures.forEach(::updatePiecePos)
 
-        history += PentaNotation.InitGame(players)
+        history += PentaMove.InitGame(players)
     }
 
     // TODO: clientside
@@ -304,9 +308,10 @@ data class GameState(
                     updatePiecesAtPos(targetField)
                     updatePiecesAtPos(sourceField)
 //                    }
-                    history += PentaNotation.SwapPlayerPiece(
-                        piece = playerPiece, otherPiece = clickedPiece,
-                        origin = sourceField, target = targetField
+                    history += PentaMove.SwapPlayerPiece(
+                        playerPiece = playerPiece.id, playerId = playerPiece.playerId,
+                        otherPiece = clickedPiece.id, otherPlayerId = clickedPiece.playerId,
+                        origin = sourceField.id, target = targetField.id
                     )
                     // TODO: also check if this is the matching JointField for the other piece?
                     // and leave board
@@ -315,10 +320,11 @@ data class GameState(
                     println("taking ${clickedPiece.id} off the board")
                     positions[clickedPiece.id] = null
                     updatePiecePos(clickedPiece)
-                    history += PentaNotation.MovePlayerPiece(
-                        piece = playerPiece, origin = sourceField, target = targetField,
-                        moveGray = PentaNotation.MoveGray(
-                            piece = clickedPiece, origin = targetField, target = null
+                    history += PentaMove.MovePlayerPiece(
+                        playerPiece = playerPiece.id, playerId = playerPiece.playerId,
+                        origin = sourceField.id, target = targetField.id,
+                        moveGray = PentaMove.MoveGray(
+                            grayBlockerPiece = clickedPiece.id, origin = targetField.id, target = null
                         )
                     )
                 }
@@ -333,8 +339,8 @@ data class GameState(
 //                    positions[clickedPiece.id] = sourcePos
 //                    updatePiecesAtPos(sourcePos)
 
-                    history += PentaNotation.MovePlayerPiece(
-                        piece = playerPiece, origin = sourceField, target = targetField
+                    history += PentaMove.MovePlayerPiece(
+                        playerPiece = playerPiece.id, playerId = playerPiece.playerId, origin = sourceField.id, target = targetField.id
                     )
                     selectedBlackPiece = clickedPiece
 //                    updatePiecesAtPos(targetPos)
@@ -368,7 +374,7 @@ data class GameState(
             }
             PentaViz.updateBoard()
             println(history.last().serialize())
-            updateLogPanel(history.joinToString("\n") { it.serialize() })
+            updateLogPanel(history.joinToString("\n") { json.stringify(PentaMove.serializer(), it) })
             return
         }
         println("no action on click")
@@ -465,8 +471,9 @@ data class GameState(
                 println("moving: ${playerPiece.id} -> $targetField")
 
                 positions[playerPiece.id] = targetField
-                history += PentaNotation.MovePlayerPiece(
-                    piece = playerPiece, origin = sourceField, target = targetField, moveBlack = null, moveGray = null
+                history += PentaMove.MovePlayerPiece(
+                    playerPiece = playerPiece.id, playerId = playerPiece.playerId,
+                    origin = sourceField.id, target = targetField.id, moveBlack = null, moveGray = null
                 )
                 // TODO movePiece(...) -> set position, update source pos, update target fields
 //                updatePiecesAtPos(sourcePos)
@@ -499,9 +506,11 @@ data class GameState(
 
                 positions[blackPiece.id] = targetField
                 val lastMove = history.last()
-                require(lastMove is PentaNotation.MovePlayerPiece) { "last move was not the expected move type" }
-                lastMove.moveBlack =
-                    PentaNotation.MoveBlack(piece = blackPiece, origin = originPos, target = targetField)
+                require(lastMove is PentaMove.MovePlayerPiece) { "last move was not the expected move type" }
+                lastMove.moveBlack = PentaMove.MoveBlack(
+                    blackBlockerPiece = blackPiece.id,
+                    origin = originPos.id, target = targetField.id
+                )
 //                updatePiecesAtPos(targetField)
                 selectedBlackPiece = null
             }
@@ -516,11 +525,11 @@ data class GameState(
 
                 positions[grayPiece.id] = targetField
                 val lastMove = history.last()
-                require(lastMove is PentaNotation.PlayerMovement) { "last move was not the expected move type" }
-                lastMove.moveGray = PentaNotation.MoveGray(
-                    piece = grayPiece,
+                require(lastMove is PentaMove.PlayerMovement) { "last move was not the expected move type" }
+                lastMove.moveGray = PentaMove.MoveGray(
+                    grayBlockerPiece = grayPiece.id,
                     origin = lastMove.moveGray?.origin ?: null,
-                    target = targetField
+                    target = targetField.id
                 )
 //                updatePiecesAtPos(targetField)
                 selectedGrayPiece = null
@@ -537,7 +546,7 @@ data class GameState(
         PentaViz.updateBoard()
 
         println(history.last().serialize())
-        updateLogPanel(history.joinToString("\n") { it.serialize() })
+        updateLogPanel(history.joinToString("\n") { json.stringify(PentaMove.serializer(), it) })
     }
 
     private fun forceMovePlayerPiece(player: String) {
@@ -548,7 +557,9 @@ data class GameState(
             if (field.pentaColor != playerPiece.pentaColor) continue
 
             positions[playerPiece.id] = null
-            history += PentaNotation.MovePlayerPiece(piece = playerPiece, origin = field, target = field)
+            history += PentaMove.MovePlayerPiece(
+                playerPiece = playerPiece.id, playerId = playerPiece.id, origin = field.id, target = field.id
+            )
 
             updatePiecesAtPos(null)
 //                updatePiecePos(playerPiece)
@@ -579,7 +590,7 @@ data class GameState(
             println("pieces: ${offBoardPieces.joinToString { it.id }} are off the board")
             println("player $player won")
             winner = player
-            history += PentaNotation.Win(playerId = player)
+            history += PentaMove.Win(playerId = player)
             updateLogPanel(history.joinToString("\n") { it.serialize() })
         }
     }

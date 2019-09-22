@@ -1,8 +1,6 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
-import kotlinx.html.a
 import kotlinx.html.body
 import kotlinx.html.canvas
-import kotlinx.html.div
 import kotlinx.html.head
 import kotlinx.html.html
 import kotlinx.html.id
@@ -68,7 +66,7 @@ kotlin {
                     exclude(mapOf("group" to Data2Viz.group, "module" to "d2v-geo-common"))
                 }
                 // serialization
-                api("org.jetbrains.kotlinx:kotlinx-serialization-runtime-common:0.11.0")
+                api("org.jetbrains.kotlinx:kotlinx-serialization-runtime-common:${Serialization.version}")
             }
         }
 //        val commonLogic by creating {
@@ -111,6 +109,7 @@ kotlin {
                     exclude(mapOf("group" to Data2Viz.group, "module" to "geojson-jvm"))
                     exclude(mapOf("group" to Data2Viz.group, "module" to "d2v-geo-jvm"))
                 }
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-runtime:${Serialization.version}")
             }
         }
 
@@ -128,6 +127,8 @@ kotlin {
                     implementation(TornadoFX.dep)
                     implementation(ktor("client-cio"))
 //                    implementation(ktor("client-websockets"))
+
+                    implementation("org.jetbrains.kotlinx:kotlinx-serialization-runtime:${Serialization.version}")
                 }
             }
             // JVM-specific tests and their dependencies:
@@ -150,6 +151,7 @@ kotlin {
                     implementation(ktor("client-core-js"))
 //                    implementation(ktor("client-cio"))
 //                    implementation(ktor("client-websocket"))
+                    implementation("org.jetbrains.kotlinx:kotlinx-serialization-runtime-js:${Serialization.version}")
                 }
                 compilations["test"].defaultSourceSet {
 
