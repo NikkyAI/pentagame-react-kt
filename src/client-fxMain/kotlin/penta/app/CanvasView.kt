@@ -4,7 +4,7 @@ import io.data2viz.viz.JFxVizRenderer
 import javafx.scene.layout.Priority
 import PentaViz
 import PentaViz.addEvents
-import penta.GameState
+import penta.ClientGameState
 import tornadofx.*
 
 class CanvasView : View("PentaGame") {
@@ -22,9 +22,8 @@ class CanvasView : View("PentaGame") {
             minHeight(HEIGHT)
             minWidth(WIDTH)
             val viz = PentaViz.viz
-            PentaViz.gameState = GameState(
-                listOf("square", "triangle", "cross", "circle"),
-                mapOf()
+            PentaViz.gameState = ClientGameState(
+                listOf("square", "triangle")//, "cross", "circle")
             ) { content ->
                 textarea.text = content
             }

@@ -13,14 +13,11 @@ import io.data2viz.viz.TextNode
 import io.data2viz.viz.TextVAlign
 import io.data2viz.viz.Viz
 import io.data2viz.viz.viz
-import penta.GameState
+import penta.ClientGameState
 import penta.PentaColor
 import penta.logic.field.AbstractField
 import penta.logic.field.ConnectionField
-import penta.logic.figure.BlackBlockerPiece
-import penta.logic.figure.GrayBlockerPiece
-import penta.logic.figure.Piece
-import penta.logic.figure.PlayerPiece
+import penta.logic.Piece
 import kotlin.math.pow
 import kotlin.math.sqrt
 
@@ -36,13 +33,13 @@ object PentaViz {
         // do not highlight pieces that are off the board
         if (gameState.figurePositions[it.id] == null) return@let null
         // allow highlighting blockers when a piece is selected
-        if (it !is PlayerPiece && gameState.selectedPlayerPiece == null) return@let null
-        if (it is PlayerPiece && gameState.currentPlayer != it.playerId) return@let null
+        if (it !is Piece.Player && gameState.selectedPlayerPiece == null) return@let null
+        if (it is Piece.Player && gameState.currentPlayer != it.playerId) return@let null
 
         // remove highlighting pieces when placing a blocker
         if (
             (gameState.selectedGrayPiece != null || gameState.selectedBlackPiece != null || gameState.selectingGrayPiece)
-            && it is PlayerPiece
+            && it is Piece.Player
         ) return@let null
 
         it
@@ -199,10 +196,7 @@ object PentaViz {
         }
     }
 
-    var gameState = GameState(
-        listOf(),
-        mapOf()
-    )
+    var gameState = ClientGameState(listOf())
         set(gameState) {
             gameState.updatePiece = ::updatePiece
 
@@ -223,7 +217,7 @@ object PentaViz {
                     }
 
                     val p =
-                        if (piece is PlayerPiece) {
+                        if (piece is Piece.Player) {
                             path {
                                 vAlign = TextVAlign.MIDDLE
                                 hAlign = TextHAlign.MIDDLE
@@ -347,7 +341,7 @@ object PentaViz {
                         gameState.selectedBlackPiece != null -> "set black (${gameState.selectedBlackPiece!!.id})"
                         gameState.selectedGrayPiece != null -> "set grey (${gameState.selectedGrayPiece!!.id})"
                         gameState.selectingGrayPiece -> "select gray piece"
-                        else -> "select PlayerPiece"
+                        else -> "select Piece.Player"
                     }
         }
 //        centerDisplay.second.textContent = turnDisplay.textContent
@@ -365,7 +359,7 @@ object PentaViz {
 
         val pos = piece.pos
         val fillColor = when (piece) {
-            is PlayerPiece -> {
+            is Piece.Player -> {
                 if (
                     gameState.selectedPlayerPiece == null
                     && gameState.currentPlayer == piece.playerId
@@ -375,15 +369,15 @@ object PentaViz {
                 else
                     piece.color
             }
-            is BlackBlockerPiece -> piece.color
-            is GrayBlockerPiece -> piece.color
+            is Piece.BlackBlocker -> piece.color
+            is Piece.GrayBlocker -> piece.color
             else -> throw IllegalStateException("unknown type ${piece::class}")
         }
         with(circle) {
             x = ((pos.x / PentaMath.R_)) * scale
             y = ((pos.y / PentaMath.R_)) * scale
 
-            if(piece is PlayerPiece && path != null) {
+            if(piece is Piece.Player && path != null) {
                 visible = false
             }
 
@@ -423,7 +417,7 @@ object PentaViz {
 //            visible = false
 //        }
         path?.apply {
-            val playerPiece = piece as? PlayerPiece ?: throw IllegalStateException("piece should be a playerpiece")
+            val playerPiece = piece as? Piece.Player ?: throw IllegalStateException("piece should be a playerpiece")
             val x = ((pos.x / PentaMath.R_)) * scale
             val y = ((pos.y / PentaMath.R_)) * scale
             val maxRadius = (playerPiece.radius / PentaMath.R_ * scale)
@@ -462,7 +456,7 @@ object PentaViz {
             gameState.findPiecesAtPos(mousePos).firstOrNull()
                 ?.let {
                     if (
-                        (it !is PlayerPiece)
+                        (it !is Piece.Player)
                         || (it.playerId != gameState.currentPlayer)
                     ) {
                         hoveredPiece = null

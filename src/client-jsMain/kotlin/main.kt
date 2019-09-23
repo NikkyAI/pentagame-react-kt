@@ -6,7 +6,7 @@ import io.ktor.client.features.websocket.WebSockets
 import org.w3c.dom.HTMLCanvasElement
 import org.w3c.dom.events.EventListener
 import org.w3c.dom.url.URL
-import penta.GameState
+import penta.ClientGameState
 import kotlin.browser.document
 import kotlin.browser.window
 import kotlin.math.min
@@ -49,7 +49,7 @@ fun main() {
 
         val playerSymbols = listOf("square", "triangle", "cross", "circle")
 
-        PentaViz.gameState = GameState(
+        PentaViz.gameState = ClientGameState(
             playerSymbols.subList(0, playerCount),
             mapOf()
         )

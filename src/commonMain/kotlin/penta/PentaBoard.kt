@@ -27,7 +27,7 @@ object PentaBoard {
             val id = color.ordinal * 2
             CornerField(
 //                id.toString()
-                id = "c${color.ordinal}",
+                id = "${'A' +color.ordinal}",
                 pos = pos / 2 + (Point(0.5, 0.5) * PentaMath.R_),
                 pentaColor = color
             )
@@ -42,7 +42,7 @@ object PentaBoard {
                 sin(angle * DEG_TO_RAD)
             ) * -PentaMath.inner_r
             JointField(
-                id = "j${color.ordinal}",
+                id = "${'a' + color.ordinal}",
 //                id.toString(),
                 pos = pos / 2 + (Point(0.5, 0.5) * PentaMath.R_),
                 pentaColor = color
@@ -62,8 +62,8 @@ object PentaBoard {
                 )
                 // TODO: connect
                 ConnectionField(
-                    id = "${current.id}${next.id}/${i + 1}",
-                    altId = "${next.id}${current.id}/${outerSteps - i}",
+                    id = "${current.id}-${i + 1}-${next.id}",
+                    altId = "${next.id}-${outerSteps - i}-${current.id}",
                     pos = pos / 2 + (Point(0.5, 0.5) * PentaMath.R_),
                     color = Colors.Web.white
 //                    color = interpolatedColors[i]
@@ -105,8 +105,8 @@ object PentaBoard {
         val connectingNodes = (0 until steps).map { i ->
             val pos = interpolatedPos[i]
             ConnectionField(
-                id = "${current.id}${next.id}/${i + 1}",
-                altId = "${next.id}${current.id}/${steps - i}",
+                id = "${current.id}-${i + 1}-${next.id}",
+                altId = "${next.id}-${steps - i}-${current.id}",
                 pos = pos,
                 color = Colors.Web.white
 //                color = interpolatedColors[i]

@@ -7,14 +7,14 @@ import kotlinx.serialization.modules.SerializersModule
 
 @Polymorphic
 @Serializable(PolymorphicSerializer::class)
-sealed class PentaMove() {
+sealed class PentaNotation() {
     abstract fun serialize(): String
 
     val token: String?
         get() = this::class.simpleName
 
     @Serializable
-    class InitGame(val players: List<String>): PentaMove() {
+    class InitGame(val players: List<String>): PentaNotation() {
         override fun serialize(): String =
             "$token ${players.joinToString(",", "[", "]")}"
     }
@@ -36,7 +36,7 @@ sealed class PentaMove() {
         override val origin: String,
         override val target: String,
         override var moveGray: MoveGray? = null
-    ): PentaMove(), PlayerMovement {
+    ): PentaNotation(), PlayerMovement {
         override fun serialize(): String {
             return "$token ${playerId} ${playerPiece} ${origin} <-> ${target} ${otherPiece} ${otherPlayerId} [gray ${moveGray?.serialize()}]"
         }
@@ -50,7 +50,7 @@ sealed class PentaMove() {
         override val target: String,
         var moveBlack: MoveBlack? = null,
         override var moveGray: MoveGray? = null
-    ): PentaMove(), PlayerMovement {
+    ): PentaNotation(), PlayerMovement {
         override fun serialize(): String {
             return "$token ${playerId} ${playerPiece} ${origin} -> ${target} [black ${moveBlack?.serialize()}] [gray ${moveGray?.serialize()}]"
         }
@@ -61,7 +61,7 @@ sealed class PentaMove() {
         val blackBlockerPiece: String,
         val origin: String,
         val target: String
-    ): PentaMove() {
+    ): PentaNotation() {
         override fun serialize(): String {
             return "$token ${blackBlockerPiece} ${origin} -> ${target}"
         }
@@ -72,7 +72,7 @@ sealed class PentaMove() {
         val grayBlockerPiece: String,
         val origin: String?,
         val target: String?
-    ): PentaMove() {
+    ): PentaNotation() {
         override fun serialize(): String {
             return "$token ${grayBlockerPiece} ${origin} -> ${target}"
         }
@@ -81,7 +81,7 @@ sealed class PentaMove() {
     @Serializable
     class Win(
         val playerId: String
-    ): PentaMove() {
+    ): PentaNotation() {
         override fun serialize(): String {
             return "$token $playerId"
         }
@@ -89,7 +89,7 @@ sealed class PentaMove() {
 
     companion object {
         val context = SerializersModule {
-            polymorphic<PentaMove> {
+            polymorphic<PentaNotation> {
                 InitGame::class with InitGame.serializer()
                 SwapPlayerPiece::class with SwapPlayerPiece.serializer()
                 MovePlayerPiece::class with MovePlayerPiece.serializer()
@@ -98,7 +98,7 @@ sealed class PentaMove() {
                 Win::class with Win.serializer()
             }
         }
-        fun deserialize(notation: String): PentaMove {
+        fun deserialize(notation: String): PentaNotation {
             TODO("implement the parser")
         }
 
