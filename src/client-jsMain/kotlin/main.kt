@@ -50,8 +50,7 @@ fun main() {
         val playerSymbols = listOf("square", "triangle", "cross", "circle")
 
         PentaViz.gameState = ClientGameState(
-            playerSymbols.subList(0, playerCount),
-            mapOf()
+            playerSymbols.subList(0, playerCount)
         )
 
         resize(width, height)
