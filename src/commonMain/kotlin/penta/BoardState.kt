@@ -312,7 +312,7 @@ open class BoardState(
             val playerPieces = figures.filterIsInstance<Piece.Player>().filter { it.playerId == player }
             val offBoardPieces = playerPieces.filter { positions[it.id] == null }
 
-            offBoardPieces.size >= 1
+            offBoardPieces.size >= 3
         }
         if(winners.isNotEmpty()) {
             winner = winners.joinToString(", ")
