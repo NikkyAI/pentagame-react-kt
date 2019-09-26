@@ -57,38 +57,20 @@ object PentaViz {
             hAlign = TextHAlign.LEFT
             fontSize += 4
         }
-//        centerDisplay = Pair(
-//            circle {
-//                strokeWidth = 2.0
-//                stroke = 0.col
-//                fill = Colors.Web.white
-//            },
-//            text {
-//                hAlign = TextHAlign.MIDDLE
-//                vAlign = TextVAlign.BASELINE
-//            }
-//        )
-
-//    val outerCircle = circle {
-//        stroke = scaleHCL
-//        strokeWidth = 1.0
-//        this.stroke =  0.col
-//    }
-//        val outerCircle = (0..360 * 3).map {
-//            line {
-//                stroke = scaleHCL(360.0 * 3 - it.toDouble())
-//                strokeWidth = 2.0
-//            }
-//        }
-        val outerCircle = circle {
+        val backgroundCircle = circle {
             stroke = Colors.Web.black
+            fill = 0x28292b.col
+        }
+        val outerCircle = circle {
+            stroke = Colors.Web.lightgrey
+//            fill = Colors.Web.lightgrey
             strokeWidth = 4.0
 //            this.fill = Colors.Web.white
         }
         PentaBoard.fields.forEach { field ->
             println("adding: $field")
             val c = circle {
-                strokeWidth = 2.0
+                strokeWidth = 1.0
                 stroke = 0.col
                 fill = field.color
             }
@@ -141,6 +123,12 @@ object PentaViz {
 //                    y2 = (PentaMath.r / PentaMath.R_ * scale / 2 + halfCircleWidth) * angle.sin + scale / 2
 //                }
 //            }
+            backgroundCircle.apply {
+                x = 0.5 * scale
+                y = 0.5 * scale
+
+                radius = (1.0 * scale) / 2
+            }
             outerCircle.apply {
                 x = 0.5 * scale
                 y = 0.5 * scale
@@ -187,54 +175,95 @@ object PentaViz {
                 }
             }
 
-            gameState.figures.forEach {
-                updatePiece(it)
+            if(gameState.initialized) {
+                gameState.figures.forEach {
+                    updatePiece(it)
+                }
             }
+
 //            pieces.keys.forEach {
 //                updatePiece(it)
 //            }
         }
     }
 
-    var gameState = ClientGameState(listOf())
-        set(gameState) {
-            gameState.updatePiece = ::updatePiece
+    var gameState = ClientGameState(listOf(""))
+//        set(gameState) {
+//            gameState.updatePiece = ::updatePiece
+//
+//            viz.apply {
+//                // clear old pieces
+//                pieces.values.forEach { (circle, path) ->
+//                    circle.remove()
+//                    path?.remove()
+//                }
+//                pieces.clear()
+//
+//                // init pieces
+//                gameState.figures.forEach { piece ->
+//                    println("initialzing piece: $piece")
+//                    val c = circle {
+//                        strokeWidth = 4.0
+//                        stroke = piece.color
+//                    }
+//
+//                    val p =
+//                        if (piece is Piece.Player) {
+//                            path {
+//                                vAlign = TextVAlign.MIDDLE
+//                                hAlign = TextHAlign.MIDDLE
+//
+//                                strokeWidth = 2.0
+//                                stroke = Colors.Web.black
+//                            }
+//                        } else null
+//
+//                    pieces[piece.id] = Pair(c, p)
+//
+//                    updatePiece(piece)
+//                }
+//            }
+//            field = gameState
+//            updateBoard(false)
+//        }
 
-            viz.apply {
-                // clear old pieces
-                pieces.values.forEach { (circle, path) ->
-                    circle.remove()
-                    path?.remove()
-                }
-                pieces.clear()
+    fun resetBoard() {
+        gameState.updatePiece = ::updatePiece
 
-                // init pieces
-                gameState.figures.forEach { piece ->
-                    println("initialzing piece: $piece")
-                    val c = circle {
-                        strokeWidth = 4.0
-                        stroke = piece.color
-                    }
-
-                    val p =
-                        if (piece is Piece.Player) {
-                            path {
-                                vAlign = TextVAlign.MIDDLE
-                                hAlign = TextHAlign.MIDDLE
-
-                                strokeWidth = 2.0
-                                stroke = Colors.Web.black
-                            }
-                        } else null
-
-                    pieces[piece.id] = Pair(c, p)
-
-                    updatePiece(piece)
-                }
+        viz.apply {
+            // clear old pieces
+            pieces.values.forEach { (circle, path) ->
+                circle.remove()
+                path?.remove()
             }
-            field = gameState
-            updateBoard(false)
+            pieces.clear()
+
+            // init pieces
+            gameState.figures.forEach { piece ->
+                println("initialzing piece: $piece")
+                val c = circle {
+                    strokeWidth = 4.0
+                    stroke = piece.color
+                }
+
+                val p =
+                    if (piece is Piece.Player) {
+                        path {
+                            vAlign = TextVAlign.MIDDLE
+                            hAlign = TextHAlign.MIDDLE
+
+                            strokeWidth = 2.0
+                            stroke = Colors.Web.black
+                        }
+                    } else null
+
+                pieces[piece.id] = Pair(c, p)
+
+                updatePiece(piece)
+            }
+            updateBoard()
         }
+    }
 
     fun recolor() {
         val highlightedPiece = highlightedPieceAt(mousePos)
@@ -248,9 +277,12 @@ object PentaViz {
                     field.color
             }
         }
-        gameState.figures.forEach {
-            updatePiece(it)
+        if(gameState.initialized) {
+            gameState.figures.forEach {
+                updatePiece(it)
+            }
         }
+
     }
 
     private fun PathNode.drawPlayer(playerId: String, center: Point, maxRadius: Double) {
@@ -331,6 +363,7 @@ object PentaViz {
     }
 
     fun updateBoard(render: Boolean = true) {
+        // TODO: background: #28292b
         turnDisplay.apply {
             val player = gameState.currentPlayer
             val turn = gameState.turn

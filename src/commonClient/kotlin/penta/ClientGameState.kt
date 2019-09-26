@@ -6,10 +6,11 @@ import io.data2viz.geom.Point
 import io.data2viz.math.deg
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonConfiguration
+import kotlinx.serialization.list
 import kotlinx.serialization.modules.SerializersModule
+import penta.logic.Piece
 import penta.logic.field.AbstractField
 import penta.logic.field.CornerField
-import penta.logic.Piece
 import penta.util.length
 
 class ClientGameState(
@@ -18,12 +19,16 @@ class ClientGameState(
 //    // player id to team id
 //    val teams: Map<String, Int>,
     override val updateLogPanel: (String) -> Unit = {}
-): BoardState(players = players) {
+) : BoardState() {
     var updatePiece: (Piece) -> Unit = { piece -> }
 
     init {
         figures.forEach(::updatePiecePos)
-//        processMove(PentaMove.InitGame(players), render = false)
+    }
+
+    fun initialize(players: List<String>) {
+        println("initializing with $players")
+        processMove(PentaMove.InitGame(players))
     }
 
 //    var turn: Int = 0
@@ -109,48 +114,6 @@ class ClientGameState(
         piece.pos = pos
         updatePiece(piece)
     }
-
-
-
-    // init figures and positions
-//    init {
-//        val blacks = (0 until 5).map { i ->
-//            Piece.BlackBlocker(
-//                "b$i",
-//                Point(0.0, 0.0),
-//                PentaMath.s / 2.5,
-//                PentaColor.values()[i]
-//            ).also {
-//                positions[it.id] = PentaBoard.j[i]
-//            }
-//        }
-//        val greys = (0 until 5).map { i ->
-//            Piece.GrayBlocker(
-//                "g$i",
-//                Point(0.0, 0.0),
-//                PentaMath.s / 2.5,
-//                PentaColor.values()[i]
-//            ).also {
-//                positions[it.id] = null
-//            }
-//        }
-//        val playerPieces = (0 until players.size).flatMap { p ->
-//            (0 until 5).map { i ->
-//                Piece.Player(
-//                    "p$p$i",
-//                    players[p],
-//                    Point(0.0, 0.0),
-//                    PentaMath.s / 2.3,
-//                    PentaColor.values()[i]
-//                ).also {
-//                    positions[it.id] = PentaBoard.c[i]
-//                }
-//            }
-//        }
-//        figures = (blacks + greys + playerPieces).toTypedArray()
-//        figures.forEach(::updatePiecePos)
-//
-
 
     // TODO: clientside
     fun findPiecesAtPos(mousePos: Point) = figures.filter {
@@ -271,7 +234,7 @@ class ClientGameState(
 
             val move: PentaMove = when (clickedPiece) {
                 is Piece.Player -> {
-                    if(playerPiece.playerId == clickedPiece.playerId) {
+                    if (playerPiece.playerId == clickedPiece.playerId) {
                         PentaMove.SwapOwnPiece(
                             playerPiece = playerPiece, otherPlayerPiece = clickedPiece,
                             from = sourceField, to = targetField
@@ -285,38 +248,11 @@ class ClientGameState(
                     }
                 }
                 is Piece.GrayBlocker -> {
-//                    println("taking ${clickedPiece.id} off the board")
-//                    positions[clickedPiece.id] = null
-//                    updatePiecePos(clickedPiece)
-//                    history += PentaNotation.MovePlayerPiece(
-//                        playerPiece = playerPiece.id, playerId = playerPiece.playerId,
-//                        origin = sourceField.id, target = targetField.id,
-//                        moveGray = PentaNotation.MoveGray(
-//                            grayBlockerPiece = clickedPiece.id, origin = targetField.id, target = null
-//                        )
-//                    )
-                    // TODO: pass to BoardState
                     PentaMove.MovePlayer(
                         playerPiece = playerPiece, from = sourceField, to = targetField
                     )
                 }
                 is Piece.BlackBlocker -> {
-//                    selectedBlackPiece = clickedPiece
-
-                    // TODO: set gamestate to `MOVE_BLACK`
-                    // TODO: implement moving black piece
-                    // TODO("implement moving black piece")
-
-                    // temporary
-//                    positions[clickedPiece.id] = sourcePos
-//                    updatePiecesAtPos(sourcePos)
-
-//                    history += PentaNotation.MovePlayerPiece(
-//                        playerPiece = playerPiece.id, playerId = playerPiece.playerId, origin = sourceField.id, target = targetField.id
-//                    )
-//                    updatePiecesAtPos(targetPos)
-
-                    // TODO: pass to BoardState
                     PentaMove.MovePlayer(
                         playerPiece = playerPiece, from = sourceField, to = targetField
                     )
@@ -324,34 +260,6 @@ class ClientGameState(
             }
             processMove(move)
 
-            // CHECK if targetPos is the target field for the clickedPiece
-
-//            if (targetField is JointField && targetField.pentaColor == playerPiece.pentaColor) {
-//                // take piece off the board
-//                positions[playerPiece.id] = null
-//                updatePiecesAtPos(null)
-////                updatePiecePos(playerPiece)
-//                // set gamestate to `MOVE_GREY`
-//                selectedGrayPiece = positions.filterValues { it == null }
-//                    .keys.map { id -> figures.find { it.id == id } }
-//                    .filterIsInstance<Piece.GrayBlocker>()
-//                    .firstOrNull()
-//                if (selectedGrayPiece == null) {
-//                    selectingGrayPiece = true
-//                }
-//                checkWin(playerPiece.playerId)
-//            }
-
-            // do not increase turn when placing grey or black
-//            if (selectedBlackPiece == null && selectedBlackPiece == null && selectedGrayPiece == null && !selectingGrayPiece) {
-//                turn += 1
-//            }
-//            if(forceMoveNextPlayer) {
-//                forceMovePlayerPiece(currentPlayer)
-//            }
-//            PentaViz.updateBoard()
-//            println(history.last().serialize())
-//            updateLogPanel(history.joinToString("\n") { json.stringify(PentaNotation.serializer(), it) })
             return
         }
         println("no action on click")
@@ -359,7 +267,16 @@ class ClientGameState(
 
     override fun updateBoard() {
         PentaViz.updateBoard()
-        updateLogPanel(history.flatMap { it.toSerializableList() }.joinToString("\n") { json.stringify(SerialNotation.serializer(), it)})
+        updateLogPanel(
+            json.stringify(SerialNotation.serializer().list,
+                history.flatMap {
+                   it.toSerializableList()
+                }
+            ) + "\n" +
+                history.joinToString("\n") {
+                    it.asNotation()
+                }
+        )
     }
 
     // TODO: clientside
@@ -451,30 +368,6 @@ class ClientGameState(
 
                 println("moving: ${playerPiece.id} -> $targetField")
 
-//                positions[playerPiece.id] = targetField
-//                history += PentaNotation.MovePlayerPiece(
-//                    playerPiece = playerPiece.id, playerId = playerPiece.playerId,
-//                    origin = sourceField.id, target = targetField.id, moveBlack = null, moveGray = null
-//                )
-
-
-//                selectedPlayerPiece = null
-//
-//                if (targetField is JointField && targetField.pentaColor == playerPiece.pentaColor) {
-//                    positions[playerPiece.id] = null
-////                    updatePiecesAtPos(null)
-//
-//                    // set gamestate to `MOVE_GREY`
-//                    selectedGrayPiece = figurePositions.filterValues { it == null }
-//                        .keys.map { id -> figures.find { it.id == id } }
-//                        .filterIsInstance<Piece.GrayBlocker>()
-//                        .firstOrNull()
-//                    if (selectedGrayPiece == null) {
-//                        selectingGrayPiece = true
-//                    }
-//                    checkWin(playerPiece.playerId)
-//                }
-
                 PentaMove.MovePlayer(
                     playerPiece = playerPiece, from = sourceField, to = targetField
                 )
@@ -487,7 +380,7 @@ class ClientGameState(
                     return
                 }
                 val lastMove = history.last() as PentaMove.Move
-                if(lastMove !is PentaMove.CanSetBlack) {
+                if (lastMove !is PentaMove.CanSetBlack) {
                     println("last move cannot set black")
                     return
                 }
@@ -514,65 +407,12 @@ class ClientGameState(
             }
         }
         processMove(move)
-//        // do not increase turn when placing grey or black
-//        if (selectedBlackPiece == null && selectedBlackPiece == null && selectedGrayPiece == null && !selectingGrayPiece) {
-//            turn += 1
-//        }
-//        if(forceMoveNextPlayer) {
-//            forceMovePlayerPiece(currentPlayer)
-//        }
-//        updateAllPieces()
-//        PentaViz.updateBoard()
-//
-//        println(history.last().serialize())
-//        updateLogPanel(history.joinToString("\n") { json.stringify(PentaNotation.serializer(), it) })
     }
 
-//    private fun forceMovePlayerPiece(player: String) {
-//        if(selectingGrayPiece || selectingGrayPiece) return
-//        val playerPieces = figures.filterIsInstance<Piece.Player>().filter { it.playerId == player }
-//        for (playerPiece in playerPieces) {
-//            val field = positions[playerPiece.id] as? JointField ?: continue
-//            if (field.pentaColor != playerPiece.pentaColor) continue
-//
-//            positions[playerPiece.id] = null
-//            history += PentaNotation.MovePlayerPiece(
-//                playerPiece = playerPiece.id, playerId = playerPiece.id, origin = field.id, target = field.id
-//            )
-//
-//            updatePiecesAtPos(null)
-////                updatePiecePos(playerPiece)
-//            // set gamestate to `MOVE_GREY`
-//            selectedGrayPiece = positions.filterValues { it == null }
-//                .keys.map { id -> figures.find { it.id == id } }
-//                .filterIsInstance<Piece.GrayBlocker>()
-//                .firstOrNull()
-//            if (selectedGrayPiece == null) {
-//                selectingGrayPiece = true
-//            }
-//            checkWin(playerPiece.playerId)
-//
-//            updateAllPieces()
-//            PentaViz.updateBoard()
-//
-//            forceMoveNextPlayer = false
-//            return
-//        }
-//    }
-
-//    private fun checkWin(player: String) {
-//        if (winner != null) return
-//        val playerPieces = figures.filterIsInstance<Piece.Player>().filter { it.playerId == player }
-//        val piecePositions: List<AbstractField?> = playerPieces.map { piece -> positions[piece.id] }
-//        val offBoardPieces = playerPieces.filter { positions[it.id] == null }
-//        if (offBoardPieces.size >= 3) {
-//            println("pieces: ${offBoardPieces.joinToString { it.id }} are off the board")
-//            println("player $player won")
-//            winner = player
-//            history += PentaNotation.Win(playerId = player)
-//            updateLogPanel(history.joinToString("\n") { it.serialize() })
-//        }
-//    }
+    override fun resetBoard() {
+        PentaViz.gameState = this
+        PentaViz.resetBoard()
+    }
 
     // TODO: clientside
     override fun updateAllPieces() {

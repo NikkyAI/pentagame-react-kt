@@ -5,9 +5,9 @@ A, B, . . .  | | players
 A, B, C, D, E | | outer nodes (corners)
 a, b, c, d, e | | inner nodes (goals, crossings, junctions)
 a, b, c, d, e | | pieces
-→ | -> | move without swap
+→ | --> | move without swap
 ↔ | <-> | swap own pieces
-⇆ | | swap foreign piece
+⇆ | <+> | swap foreign piece
 ⇔ | <=> | cooperative swap (4-player)
 × | x| replacing a block
 (. . .) | | a move (of a piece)

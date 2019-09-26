@@ -65,7 +65,7 @@ object PentaBoard {
                     id = "${current.id}-${i + 1}-${next.id}",
                     altId = "${next.id}-${outerSteps - i}-${current.id}",
                     pos = pos / 2 + (Point(0.5, 0.5) * PentaMath.R_),
-                    color = Colors.Web.white
+                    color = Colors.Web.lightgrey
 //                    color = interpolatedColors[i]
                 )
             }
@@ -108,7 +108,7 @@ object PentaBoard {
                 id = "${current.id}-${i + 1}-${next.id}",
                 altId = "${next.id}-${steps - i}-${current.id}",
                 pos = pos,
-                color = Colors.Web.white
+                color = Colors.Web.lightgrey
 //                color = interpolatedColors[i]
             )
         }

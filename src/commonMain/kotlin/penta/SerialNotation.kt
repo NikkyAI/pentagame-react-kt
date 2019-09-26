@@ -9,7 +9,7 @@ import kotlinx.serialization.modules.SerializersModuleBuilder
 @Serializable(PolymorphicSerializer::class)
 sealed class SerialNotation {
     @Serializable
-    class MovePlayer(
+    data class MovePlayer(
         val player: String,
         val piece: String,
         val from: String,
@@ -19,7 +19,7 @@ sealed class SerialNotation {
     ) : SerialNotation()
 
     @Serializable
-    class ForcedMovePlayer(
+    data class ForcedMovePlayer(
         val player: String,
         val piece: String,
         val from: String,
@@ -28,7 +28,7 @@ sealed class SerialNotation {
     ) : SerialNotation()
 
     @Serializable
-    class SwapOwnPiece(
+    data class SwapOwnPiece(
         val player: String,
         val piece: String,
         val otherPiece: String,
@@ -38,7 +38,7 @@ sealed class SerialNotation {
     ) : SerialNotation()
 
     @Serializable
-    class SwapHostilePieces(
+    data class SwapHostilePieces(
         val player: String,
         val otherPlayer: String,
         val piece: String,
@@ -49,7 +49,7 @@ sealed class SerialNotation {
     ) : SerialNotation()
 
     @Serializable
-    class CooperativeSwap(
+    data class CooperativeSwap(
         val player: String,
         val otherPlayer: String,
         val piece: String,
@@ -60,29 +60,29 @@ sealed class SerialNotation {
     ) : SerialNotation()
 
     @Serializable
-    class SetGrey(
+    data class SetGrey(
         val from: String?,
         val to: String
     ) : SerialNotation()
 
     @Serializable
-    class SetBlack(
+    data class SetBlack(
         val from: String,
         val to: String
     ) : SerialNotation()
 
     @Serializable
-    class InitGame(
+    data class InitGame(
         val players: List<String>
     ) : SerialNotation()
 
     @Serializable
-    class Win(
-        val player: String
+    data class Win(
+        val players: List<String>
     ) : SerialNotation()
 
     @Serializable
-    class IllegalMove(
+    data class IllegalMove(
         val move: SerialNotation
     ): SerialNotation()
 

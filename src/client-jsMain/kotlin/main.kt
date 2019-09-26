@@ -57,6 +57,8 @@ fun main() {
         bindRendererOn(canvas)
         addEvents()
         render()
+
+        PentaViz.gameState.initialize(playerSymbols.subList(0, playerCount))
     }
 
 

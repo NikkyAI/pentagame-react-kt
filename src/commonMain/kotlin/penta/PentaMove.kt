@@ -4,8 +4,8 @@ import penta.logic.field.AbstractField
 import penta.logic.Piece
 
 sealed class PentaMove {
-    // TODO: force via abstract
     abstract fun toSerializableList(): List<SerialNotation>
+    abstract fun asNotation(): String
 
     interface Move {
         val playerPiece: Piece.Player
@@ -33,6 +33,9 @@ sealed class PentaMove {
         override var setBlack: SetBlack? = null,
         override var setGrey: SetGrey? = null
     ) : PentaMove(), Move, CanSetBlack, CanSetGrey {
+        override fun asNotation(): String = "${playerPiece.playerId}: ${playerPiece.id} (${from.id} -> ${to.id})" +
+            (setBlack?.asNotation() ?: "") +
+            (setGrey?.asNotation() ?: "")
         override fun toSerializableList() =
             listOfNotNull(
                 SerialNotation.MovePlayer(
@@ -43,7 +46,7 @@ sealed class PentaMove {
                     setBlack = setBlack != null,
                     setGrey = setGrey != null
                 ),
-                setGrey?.serialize(),
+                setBlack?.serialize(),
                 setGrey?.serialize()
             )
     }
@@ -55,6 +58,8 @@ sealed class PentaMove {
         override val to: AbstractField,
         override var setGrey: SetGrey? = null
     ) : PentaMove(), Move, CanSetGrey {
+        override fun asNotation(): String = "${playerPiece.playerId}: ${playerPiece.id} (${from.id} -> ${to.id})" +
+            (setGrey?.asNotation() ?: "")
         override fun toSerializableList() =
             listOfNotNull(
                 SerialNotation.ForcedMovePlayer(
@@ -64,7 +69,6 @@ sealed class PentaMove {
                     to = to.id,
                     setGrey = setGrey != null
                 ),
-                setGrey?.serialize(),
                 setGrey?.serialize()
             )
     }
@@ -77,6 +81,8 @@ sealed class PentaMove {
         override val to: AbstractField,
         override var setGrey: SetGrey? = null
     ) : PentaMove(), Swap, CanSetGrey {
+        override fun asNotation(): String = "${playerPiece.playerId}: ${playerPiece.id} ${otherPlayerPiece.id}{${otherPlayerPiece.playerId}} (${from.id} <-> ${to.id})"
+
         override fun toSerializableList() =
             listOfNotNull(
                 SerialNotation.SwapOwnPiece(
@@ -99,6 +105,8 @@ sealed class PentaMove {
         override val to: AbstractField,
         override var setGrey: SetGrey? = null
     ) : PentaMove(), Swap, CanSetGrey {
+        override fun asNotation(): String = "${playerPiece.playerId}: ${playerPiece.id} ${otherPlayerPiece.id}{${otherPlayerPiece.playerId}} (${from.id} <+> ${to.id})"
+
         override fun toSerializableList() =
             listOfNotNull(
                 SerialNotation.SwapHostilePieces(
@@ -122,6 +130,8 @@ sealed class PentaMove {
         override val to: AbstractField,
         override var setGrey: SetGrey? = null
     ) : PentaMove(), Swap, CanSetGrey {
+        override fun asNotation(): String = "${playerPiece.playerId}: ${playerPiece.id} ${otherPlayerPiece.id}{${otherPlayerPiece.playerId}} (${from.id} <=> ${to.id})"
+
         override fun toSerializableList() =
             listOfNotNull(
                 SerialNotation.CooperativeSwap(
@@ -142,9 +152,10 @@ sealed class PentaMove {
         val from: AbstractField,
         val to: AbstractField
     ) : PentaMove() {
-        fun toNotation() = SerialNotation.SetBlack(from.id, to.id)
+        override fun asNotation(): String = "& [${to.id}]"
+        fun serialize() = SerialNotation.SetBlack(from.id, to.id)
         override fun toSerializableList() = listOf(
-            toNotation()
+            serialize()
         )
     }
 
@@ -153,6 +164,7 @@ sealed class PentaMove {
         val from: AbstractField?,
         val to: AbstractField
     ) : PentaMove() {
+        override fun asNotation(): String = "& [${to.id}]"
         fun serialize() = SerialNotation.SetGrey(from?.id, to.id)
         override fun toSerializableList() = listOf(
             serialize()
@@ -160,14 +172,16 @@ sealed class PentaMove {
     }
 
     data class InitGame(val players: List<String>) : PentaMove() {
+        override fun asNotation(): String = ">>> [${players.joinToString(" & ")}]"
         fun serialize() = SerialNotation.InitGame(players)
         override fun toSerializableList() = listOf(
             serialize()
         )
     }
 
-    data class Win(val player: String) : PentaMove() {
-        fun serialize() = SerialNotation.Win(player)
+    data class Win(val players: List<String>) : PentaMove() {
+        override fun asNotation(): String = "winner: ${players.joinToString(" & ")}"
+        fun serialize() = SerialNotation.Win(players)
         override fun toSerializableList() = listOf(
             serialize()
         )

@@ -22,8 +22,12 @@ class CanvasView : View("PentaGame") {
             minHeight(HEIGHT)
             minWidth(WIDTH)
             val viz = PentaViz.viz
+
+            val playerSymbols = listOf("square", "triangle", "cross", "circle")
+            val playerCount = 2
+
             PentaViz.gameState = ClientGameState(
-                listOf("square", "triangle")//, "cross", "circle")
+                playerSymbols.subList(0, playerCount)
             ) { content ->
                 textarea.text = content
             }
@@ -52,6 +56,7 @@ class CanvasView : View("PentaGame") {
                 viz.render()
             }
 
+            PentaViz.gameState.initialize(playerSymbols.subList(0, playerCount))
         }
         this.center = canvas
         this.right = textarea
