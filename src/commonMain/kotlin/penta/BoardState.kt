@@ -247,7 +247,6 @@ open class BoardState(
                             PentaColor.values()[i]
                         ).also {
                             it.position = PentaBoard.c[i]
-                            updatePiecePos(it)
                         }
                     }
                 }
@@ -256,6 +255,7 @@ open class BoardState(
 
                 // TODO: reset viz and readd pieces
                 resetBoard()
+                updateAllPieces()
 
                 mutableHistory.clear()
                 mutableHistory += move

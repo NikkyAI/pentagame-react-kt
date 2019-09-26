@@ -24,7 +24,7 @@ class CanvasView : View("PentaGame") {
             val viz = PentaViz.viz
 
             val playerSymbols = listOf("square", "triangle", "cross", "circle")
-            val playerCount = 2
+            val playerCount = 3
 
             PentaViz.gameState = ClientGameState(
                 playerSymbols.subList(0, playerCount)

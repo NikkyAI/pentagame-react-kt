@@ -18,6 +18,7 @@ import penta.PentaColor
 import penta.logic.field.AbstractField
 import penta.logic.field.ConnectionField
 import penta.logic.Piece
+import penta.logic.field.CornerField
 import kotlin.math.pow
 import kotlin.math.sqrt
 
@@ -70,15 +71,22 @@ object PentaViz {
         PentaBoard.fields.forEach { field ->
             println("adding: $field")
             val c = circle {
-                strokeWidth = 1.0
-                stroke = 0.col
-                fill = field.color
+                if(field is CornerField) {
+                    strokeWidth = 5.0
+                    stroke = field.color
+                    fill = Colors.Web.lightgrey
+                } else {
+                    strokeWidth = 1.0
+                    stroke = 0.col
+                    fill = field.color
+                }
             }
             val t1 = text {
                 fontSize -= 2
                 hAlign = TextHAlign.MIDDLE
                 vAlign = TextVAlign.BASELINE
-                this.textContent = field.id
+                textContent = field.id
+
                 visible = false
             }
 
@@ -271,10 +279,16 @@ object PentaViz {
         elements.forEach { (field, triple) ->
             val (circle, text1, text2) = triple
             with(circle) {
-                fill = if (field == highlightedField && gameState.canClickField(field))
+                val c = if (field == highlightedField && gameState.canClickField(field))
                     field.color.brighten(2.0)
                 else
                     field.color
+
+                if(field is CornerField) {
+                    stroke = c
+                } else {
+                    fill = c
+                }
             }
         }
         if(gameState.initialized) {
