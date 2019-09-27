@@ -25,12 +25,12 @@ object Data2Viz {
 }
 
 object TornadoFX {
-    const val version = "1.7.18"
+    const val version = "1.7.19"
     val dep = "no.tornado:tornadofx:$version"
 }
 
 object Ktor {
-    const val version = "1.2.0-rc"
+    const val version = "1.3.0-beta-1"
 }
 
 object Serialization {

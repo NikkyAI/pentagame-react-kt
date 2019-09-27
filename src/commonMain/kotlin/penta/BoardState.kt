@@ -128,6 +128,8 @@ open class BoardState(
                     when(pieceOnTarget) {
                         is Piece.GrayBlocker -> {
                             println("taking ${pieceOnTarget.id} off the board")
+                            pieceOnTarget.position = null
+                            updatePiecesAtPos(null)
                         }
                         is Piece.BlackBlocker -> {
                             selectedBlackPiece = pieceOnTarget
