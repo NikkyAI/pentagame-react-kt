@@ -30,7 +30,7 @@ object TornadoFX {
 }
 
 object Ktor {
-    const val version = "1.3.0-beta-1"
+    const val version = "1.2.0-rc"
 }
 
 object Serialization {
