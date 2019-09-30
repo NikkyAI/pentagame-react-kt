@@ -13,6 +13,7 @@ import io.data2viz.viz.TextNode
 import io.data2viz.viz.TextVAlign
 import io.data2viz.viz.Viz
 import io.data2viz.viz.viz
+import penta.BoardState
 import penta.ClientGameState
 import penta.PentaColor
 import penta.logic.field.AbstractField

@@ -153,7 +153,7 @@ sealed class PentaMove {
         val to: AbstractField
     ) : PentaMove() {
         override fun asNotation(): String = "& [${to.id}]"
-        fun serialize() = SerialNotation.SetBlack(from.id, to.id)
+        fun serialize() = SerialNotation.SetBlack(piece.id, from.id, to.id)
         override fun toSerializableList() = listOf(
             serialize()
         )
@@ -165,7 +165,7 @@ sealed class PentaMove {
         val to: AbstractField
     ) : PentaMove() {
         override fun asNotation(): String = "& [${to.id}]"
-        fun serialize() = SerialNotation.SetGrey(from?.id, to.id)
+        fun serialize() = SerialNotation.SetGrey(piece.id, from?.id, to.id)
         override fun toSerializableList() = listOf(
             serialize()
         )

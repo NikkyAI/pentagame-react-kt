@@ -3,6 +3,10 @@ package penta
 import PentaBoard
 import PentaMath
 import io.data2viz.geom.Point
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonConfiguration
+import kotlinx.serialization.list
+import kotlinx.serialization.modules.SerializersModule
 import penta.logic.field.AbstractField
 import penta.logic.field.JointField
 import penta.logic.Piece
@@ -11,6 +15,10 @@ import penta.util.exhaustive
 open class BoardState(
     open val updateLogPanel: (String) -> Unit = {}
 ) {
+    val json = Json(JsonConfiguration(unquoted = false, allowStructuredMapKeys = true, prettyPrint = false, classDiscriminator = "type"), context = SerializersModule {
+        SerialNotation.install(this)
+    })
+
     var players: List<String> = listOf("")
         private set
     // player id to team id
@@ -31,8 +39,11 @@ open class BoardState(
     var initialized: Boolean = false
         private set
 
-    var turn: Int = 1
-        private set
+    var turn: Int = 0
+        private set(value) {
+            println("set turn: $value")
+            field = value
+        }
 
     var forceMoveNextPlayer: Boolean = false
         private set
@@ -101,9 +112,12 @@ open class BoardState(
     }
 
     fun processMove(move: PentaMove, render: Boolean = true) {
+        println("turn: $turn")
+        println("currentPlayer: $currentPlayer")
         println("processing $move")
         when (move) {
             is PentaMove.MovePlayer -> {
+                requires(move.playerPiece.playerId == currentPlayer) { TODO("signal illegal move") }
                 if (!canMove(move.from, move.to)) {
                     TODO("signal IllegalMove")
                 }
@@ -154,8 +168,15 @@ open class BoardState(
                 updatePiecesAtPos(move.from)
 
                 mutableHistory += move
+                move.setBlack?.let {
+                    processMove(it)
+                }
+                move.setGrey?.let {
+                    processMove(it)
+                }
             }
             is PentaMove.ForcedPlayerMove -> {
+                requires(move.playerPiece.playerId == currentPlayer) { TODO("signal illegal move") }
                 val sourceField = move.from
                 if(sourceField is JointField && move.playerPiece.pentaColor == sourceField.pentaColor ) {
                     postProcess(move)
@@ -163,6 +184,9 @@ open class BoardState(
                     TODO("signal illegal move")
                 }
                 mutableHistory += move
+                move.setGrey?.let {
+                    processMove(it)
+                }
             }
             is PentaMove.SwapOwnPiece -> {
                 requires(canMove(move.from, move.to)) { TODO("signal illegal move") }
@@ -178,6 +202,9 @@ open class BoardState(
 
                 postProcess(move)
                 mutableHistory += move
+                move.setGrey?.let {
+                    processMove(it)
+                }
             }
             is PentaMove.SwapHostilePieces -> {
                 requires(canMove(move.from, move.to)) { TODO("signal illegal move") }
@@ -193,9 +220,11 @@ open class BoardState(
                 // TODO
                 postProcess(move)
                 mutableHistory += move
+                move.setGrey?.let {
+                    processMove(it)
+                }
             }
             is PentaMove.CooperativeSwap -> {
-
                 TODO("implement cooperative swap")
                 postProcess(move)
             }
@@ -224,7 +253,12 @@ open class BoardState(
                     return
                 }
                 requires(move.piece.position == move.from) { TODO("signal illegal move") }
-                requires(selectedGrayPiece == move.piece){ TODO("signal illegal move") }
+                println("selected: $selectedGrayPiece")
+                if(selectingGrayPiece) {
+                    requires(selectingGrayPiece && move.from != null){ TODO("signal illegal move") }
+                } else {
+                    requires(selectedGrayPiece == move.piece){ TODO("signal illegal move") }
+                }
 
                 move.piece.position = move.to
                 val lastMove = mutableHistory.last()
@@ -264,12 +298,18 @@ open class BoardState(
             }
             is PentaMove.Win -> {
                 // TODO
+                mutableHistory += move
+                updateBoard()
             }
         }.exhaustive
 
         checkWin()
 
-        if (selectedBlackPiece == null && selectedGrayPiece == null && !selectingGrayPiece) {
+        if (selectedBlackPiece == null && selectedGrayPiece == null && !selectingGrayPiece
+            && move !is PentaMove.InitGame
+            && move !is PentaMove.SetBlack
+            && move !is PentaMove.SetGrey
+        ) {
             turn += 1
         }
 //        if(forceMoveNextPlayer) {
@@ -286,6 +326,8 @@ open class BoardState(
         selectedPlayerPiece = null
 
         val targetField = move.to
+        println("playerColor = ${move.playerPiece.pentaColor}")
+        if (targetField is JointField) println("pentaColor = ${targetField.pentaColor}")
         if (targetField is JointField && targetField.pentaColor == move.playerPiece.pentaColor) {
             // take piece off the board
             move.playerPiece.position = null
@@ -298,6 +340,7 @@ open class BoardState(
                 .firstOrNull()
             if (selectedGrayPiece == null) {
                 selectingGrayPiece = true
+                println("selected gray piece: ${selectedGrayPiece?.id}")
             }
         }
     }
@@ -323,7 +366,7 @@ open class BoardState(
     }
 
     private fun checkWin() {
-        if (winner != null || turn % players.size != 0) return
+        if (winner != null || turn % players.size != 0+1) return
         if(selectingGrayPiece || selectedGrayPiece != null || selectedBlackPiece != null) return
         val winners = players.filter { player ->
             val playerPieces = figures.filterIsInstance<Piece.Player>().filter { it.playerId == player }
@@ -380,5 +423,16 @@ open class BoardState(
     }
     protected open fun updatePiecePos(piece: Piece) {}
     protected open fun updatePiecesAtPos(field: AbstractField?) {}
-    protected open fun updateBoard() {}
+    protected open fun updateBoard() {
+        updateLogPanel(
+            json.stringify(SerialNotation.serializer().list,
+                history.flatMap {
+                    it.toSerializableList()
+                }
+            ) + "\n" +
+                    history.joinToString("\n") {
+                        it.asNotation()
+                    }
+        )
+    }
 }

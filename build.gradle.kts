@@ -134,9 +134,12 @@ kotlin {
             // JVM-specific tests and their dependencies:
             compilations["test"].defaultSourceSet {
                 dependencies {
-                    implementation(kotlin("test-junit"))
+                    implementation(kotlin("test-junit5"))
                 }
             }
+//                test {
+//                    useJUnitPlatform()
+//                }
         }
 
         clientJS.apply {

@@ -4,8 +4,15 @@ import io.data2viz.viz.JFxVizRenderer
 import javafx.scene.layout.Priority
 import PentaViz
 import PentaViz.addEvents
+import kotlinx.coroutines.delay
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonConfiguration
+import kotlinx.serialization.list
+import kotlinx.serialization.modules.SerializersModule
 import penta.ClientGameState
+import penta.SerialNotation
 import tornadofx.*
+import java.io.File
 
 class CanvasView : View("PentaGame") {
     val extraWidth = 1.0
@@ -24,7 +31,7 @@ class CanvasView : View("PentaGame") {
             val viz = PentaViz.viz
 
             val playerSymbols = listOf("square", "triangle", "cross", "circle")
-            val playerCount = 3
+            val playerCount = 2
 
             PentaViz.gameState = ClientGameState(
                 playerSymbols.subList(0, playerCount)
@@ -57,6 +64,24 @@ class CanvasView : View("PentaGame") {
             }
 
             PentaViz.gameState.initialize(playerSymbols.subList(0, playerCount))
+
+
+//            val json = Json(JsonConfiguration(unquoted = false, allowStructuredMapKeys = true, prettyPrint = true, classDiscriminator = "type"), context = SerializersModule {
+//                SerialNotation.install(this)
+//            })
+//
+//            val testFile = File(System.getProperty("user.home")).resolve("dev/pentagame/src/client-fxTest/resources/test2.json")
+//            val testJson = testFile.readText()
+//            val notationList = json.parse(SerialNotation.serializer().list, testJson)
+//
+//            notationList.forEach {
+//                println(it)
+//            }
+//            val moves = SerialNotation.toMoves(notationList, PentaViz.gameState) {
+//                PentaViz.gameState.processMove(it)
+//                PentaViz.updateBoard()
+//                Thread.sleep(1000)
+//            }
         }
         this.center = canvas
         this.right = textarea

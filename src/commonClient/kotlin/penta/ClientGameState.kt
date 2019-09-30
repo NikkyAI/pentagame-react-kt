@@ -55,9 +55,6 @@ class ClientGameState(
 //    private val positions: MutableMap<String, AbstractField?> = mutableMapOf()
 //    val figurePositions: Map<String, AbstractField?> get() = positions
 
-    val json = Json(JsonConfiguration(unquoted = true), context = SerializersModule {
-        SerialNotation.install(this)
-    })
 
     // TODO: move to client
     // TODO: not common code
@@ -266,17 +263,8 @@ class ClientGameState(
     }
 
     override fun updateBoard() {
+        super.updateBoard()
         PentaViz.updateBoard()
-        updateLogPanel(
-            json.stringify(SerialNotation.serializer().list,
-                history.flatMap {
-                   it.toSerializableList()
-                }
-            ) + "\n" +
-                history.joinToString("\n") {
-                    it.asNotation()
-                }
-        )
     }
 
     // TODO: clientside
