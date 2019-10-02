@@ -2,7 +2,6 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonConfiguration
 import kotlinx.serialization.list
 import kotlinx.serialization.modules.SerializersModule
-import penta.ClientGameState
 import penta.SerialNotation
 import java.io.File
 import kotlin.test.*

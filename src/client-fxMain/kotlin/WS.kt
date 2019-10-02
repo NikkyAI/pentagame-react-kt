@@ -7,18 +7,22 @@ import io.ktor.http.cio.websocket.Frame
 import io.ktor.http.cio.websocket.readText
 import kotlinx.coroutines.channels.filterNotNull
 import kotlinx.coroutines.channels.map
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
 actual val client: HttpClient = HttpClient(CIO).config {
             install(WebSockets)
 }
 
-fun main() = runBlocking {
-    client.ws(method = HttpMethod.Get, host = "127.0.0.1", port = 55555, path = "/echo") { // this: DefaultClientWebSocketSession
-        send(Frame.Text("Hello World"))
+fun main(): Unit = runBlocking {
+    launch {
+        client.ws(method = HttpMethod.Get, host = "127.0.0.1", port = 55555, path = "/echo") { // this: DefaultClientWebSocketSession
+            send(Frame.Text("Hello World"))
 
-        for (message in incoming.map { it as? Frame.Text }.filterNotNull()) {
-            println(message.readText())
+            for (message in incoming.map { it as? Frame.Text }.filterNotNull()) {
+                println(message.readText())
+            }
         }
     }
+
 }

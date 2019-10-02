@@ -3,10 +3,7 @@ package penta
 import PentaBoard
 import PentaMath
 import io.data2viz.geom.Point
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonConfiguration
 import kotlinx.serialization.list
-import kotlinx.serialization.modules.SerializersModule
 import penta.logic.field.AbstractField
 import penta.logic.field.JointField
 import penta.logic.Piece
@@ -15,10 +12,6 @@ import penta.util.exhaustive
 open class BoardState(
     open val updateLogPanel: (String) -> Unit = {}
 ) {
-    val json = Json(JsonConfiguration(unquoted = false, allowStructuredMapKeys = true, prettyPrint = false, classDiscriminator = "type"), context = SerializersModule {
-        SerialNotation.install(this)
-    })
-
     var players: List<String> = listOf("")
         private set
     // player id to team id
@@ -117,7 +110,7 @@ open class BoardState(
         println("processing $move")
         when (move) {
             is PentaMove.MovePlayer -> {
-                requires(move.playerPiece.playerId == currentPlayer) { TODO("signal illegal move") }
+                require(move.playerPiece.playerId == currentPlayer) { "signal illegal move" }
                 if (!canMove(move.from, move.to)) {
                     TODO("signal IllegalMove")
                 }
@@ -307,8 +300,8 @@ open class BoardState(
 
         if (selectedBlackPiece == null && selectedGrayPiece == null && !selectingGrayPiece
             && move !is PentaMove.InitGame
-            && move !is PentaMove.SetBlack
-            && move !is PentaMove.SetGrey
+//            && move !is PentaMove.SetGrey
+//            && move !is PentaMove.SetBlack
         ) {
             turn += 1
         }

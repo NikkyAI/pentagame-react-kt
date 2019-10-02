@@ -1,5 +1,6 @@
 package penta
 
+import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Polymorphic
 import kotlinx.serialization.PolymorphicSerializer
 import kotlinx.serialization.Serializable
@@ -104,7 +105,7 @@ sealed class SerialNotation {
             }
         }
 
-        fun toMoves(list: List<SerialNotation>, boardState: BoardState, action: (PentaMove) -> Unit): List<PentaMove> {
+        fun toMoves(list: List<SerialNotation>, boardState: BoardState, combine: Boolean = true, action: (PentaMove) -> Unit): List<PentaMove> {
             val moves = mutableListOf<PentaMove>()
             val iter = list.iterator()
 
@@ -130,14 +131,14 @@ sealed class SerialNotation {
                         playerPiece = boardState.figures.filterIsInstance<Piece.Player>().first { it.playerId == notation.player && it.id == notation.piece },
                         from = PentaBoard.get(notation.from)!!,
                         to =  PentaBoard.get(notation.to)!!,
-                        setBlack = if(notation.setBlack) getSetBlack(iter.next() as SetBlack) else null,
-                        setGrey = if(notation.setGrey) getSetGrey(iter.next() as SetGrey) else null
+                        setBlack = if(notation.setBlack && combine) getSetBlack(iter.next() as SetBlack) else null,
+                        setGrey = if(notation.setGrey && combine) getSetGrey(iter.next() as SetGrey) else null
                     )
                     is ForcedMovePlayer -> PentaMove.ForcedPlayerMove(
                         playerPiece = boardState.figures.filterIsInstance<Piece.Player>().first { it.playerId == notation.player && it.id == notation.piece },
                         from = PentaBoard.get(notation.from)!!,
                         to =  PentaBoard.get(notation.to)!!,
-                        setGrey = if(notation.setGrey) getSetGrey(iter.next() as SetGrey) else null
+                        setGrey = if(notation.setGrey && combine) getSetGrey(iter.next() as SetGrey) else null
                     )
                     is SwapOwnPiece -> {
                         val plyerpieces = boardState.figures.filterIsInstance<Piece.Player>()
@@ -147,7 +148,7 @@ sealed class SerialNotation {
                             otherPlayerPiece = boardState.figures.filterIsInstance<Piece.Player>().first { it.playerId == notation.player && it.id == notation.otherPiece },
                             from = PentaBoard.get(notation.from)!!,
                             to =  PentaBoard.get(notation.to)!!,
-                            setGrey = if(notation.setGrey) getSetGrey(iter.next() as SetGrey) else null
+                            setGrey = if(notation.setGrey && combine) getSetGrey(iter.next() as SetGrey) else null
                         )
                     }
                     is SwapHostilePieces ->  PentaMove.SwapHostilePieces(
@@ -155,11 +156,11 @@ sealed class SerialNotation {
                         otherPlayerPiece = boardState.figures.filterIsInstance<Piece.Player>().first { it.playerId == notation.otherPlayer && it.id == notation.otherPiece },
                         from = PentaBoard.get(notation.from)!!,
                         to =  PentaBoard.get(notation.to)!!,
-                        setGrey = if(notation.setGrey) getSetGrey(iter.next() as SetGrey) else null
+                        setGrey = if(notation.setGrey && combine) getSetGrey(iter.next() as SetGrey) else null
                     )
                     is CooperativeSwap -> TODO()
-                    is SetGrey -> TODO()
-                    is SetBlack -> TODO()
+                    is SetGrey -> getSetGrey(notation)
+                    is SetBlack -> getSetBlack(notation)
                     is InitGame -> PentaMove.InitGame(
                         players = notation.players
                     )

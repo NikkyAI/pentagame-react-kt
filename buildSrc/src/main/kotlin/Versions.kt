@@ -36,3 +36,7 @@ object Ktor {
 object Serialization {
     const val version = "0.12.0"
 }
+
+object Coroutines {
+    const val version = "1.3.2"
+}
