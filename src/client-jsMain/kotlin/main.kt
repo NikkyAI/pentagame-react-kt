@@ -16,7 +16,6 @@ import penta.ClientGameState
 import kotlin.browser.document
 import kotlin.browser.window
 import kotlin.math.min
-import kotlinx.coroutines.launch
 import penta.SerialNotation
 import penta.json
 

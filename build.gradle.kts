@@ -65,6 +65,7 @@ kotlin {
                     exclude(mapOf("group" to Data2Viz.group, "module" to "geojson-common"))
                     exclude(mapOf("group" to Data2Viz.group, "module" to "d2v-geo-common"))
                 }
+                api("org.jetbrains.kotlinx:kotlinx-coroutines-core-common:${Coroutines.version}")
                 // serialization
                 api("org.jetbrains.kotlinx:kotlinx-serialization-runtime-common:${Serialization.version}")
             }
@@ -127,6 +128,8 @@ kotlin {
                     implementation(TornadoFX.dep)
                     implementation(ktor("client-cio"))
 //                    implementation(ktor("client-websockets"))
+                    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Coroutines.version}")
+                    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-javafx:${Coroutines.version}")
 
                     implementation("org.jetbrains.kotlinx:kotlinx-serialization-runtime:${Serialization.version}")
                 }
@@ -154,6 +157,7 @@ kotlin {
                     implementation(ktor("client-core-js"))
 //                    implementation(ktor("client-cio"))
 //                    implementation(ktor("client-websocket"))
+                    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-js:${Coroutines.version}")
                     implementation("org.jetbrains.kotlinx:kotlinx-serialization-runtime-js:${Serialization.version}")
                 }
                 compilations["test"].defaultSourceSet {

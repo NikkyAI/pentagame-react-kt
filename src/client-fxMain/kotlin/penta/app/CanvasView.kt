@@ -4,15 +4,21 @@ import io.data2viz.viz.JFxVizRenderer
 import javafx.scene.layout.Priority
 import PentaViz
 import PentaViz.addEvents
-import kotlinx.coroutines.delay
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonConfiguration
-import kotlinx.serialization.list
-import kotlinx.serialization.modules.SerializersModule
+import client
+import io.ktor.client.features.websocket.ws
+import io.ktor.http.HttpMethod
+import io.ktor.http.cio.websocket.Frame
+import io.ktor.http.cio.websocket.readText
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.channels.consumeEach
+import kotlinx.coroutines.javafx.JavaFx
+import kotlinx.coroutines.launch
 import penta.ClientGameState
 import penta.SerialNotation
+import penta.json
+import replayGame
 import tornadofx.*
-import java.io.File
 
 class CanvasView : View("PentaGame") {
     val extraWidth = 1.0
@@ -63,25 +69,37 @@ class CanvasView : View("PentaGame") {
                 viz.render()
             }
 
-            PentaViz.gameState.initialize(playerSymbols.subList(0, playerCount))
+//            PentaViz.gameState.initialize(playerSymbols.subList(0, playerCount))
+
+            GlobalScope.launch {
+                client.ws(method = HttpMethod.Get, host = "127.0.0.1", port = 55555, path = "/replay") { // this: DefaultClientWebSocketSession
+                    println("starting websocket connection")
+                    outgoing.send(Frame.Text(replayGame))
+
+                    incoming.consumeEach {
+                        val textFrame = it as? Frame.Text ?: return@consumeEach
+                        val text = textFrame.readText()
+
+                        println(text)
+
+                        val notation = json.parse(SerialNotation.serializer(), text)
+
+                        launch(Dispatchers.JavaFx) {
+                            SerialNotation.toMoves(listOf(notation), PentaViz.gameState, false) { move ->
+                                PentaViz.gameState.processMove(move)
+                            }
+                        }
+                    }
+                    println("replay over")
 
 
-//            val json = Json(JsonConfiguration(unquoted = false, allowStructuredMapKeys = true, prettyPrint = true, classDiscriminator = "type"), context = SerializersModule {
-//                SerialNotation.install(this)
-//            })
-//
-//            val testFile = File(System.getProperty("user.home")).resolve("dev/pentagame/src/client-fxTest/resources/test2.json")
-//            val testJson = testFile.readText()
-//            val notationList = json.parse(SerialNotation.serializer().list, testJson)
-//
-//            notationList.forEach {
-//                println(it)
+//            for (message in incoming.map { it as? Frame.Text }.filterNotNull()) {
+//                println(message.readText())
 //            }
-//            val moves = SerialNotation.toMoves(notationList, PentaViz.gameState) {
-//                PentaViz.gameState.processMove(it)
-//                PentaViz.updateBoard()
-//                Thread.sleep(1000)
-//            }
+                }
+
+            }
+
         }
         this.center = canvas
         this.right = textarea

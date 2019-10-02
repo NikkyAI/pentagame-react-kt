@@ -14,15 +14,14 @@ actual val client: HttpClient = HttpClient(CIO).config {
             install(WebSockets)
 }
 
-fun main(): Unit = runBlocking {
-    launch {
-        client.ws(method = HttpMethod.Get, host = "127.0.0.1", port = 55555, path = "/echo") { // this: DefaultClientWebSocketSession
-            send(Frame.Text("Hello World"))
-
-            for (message in incoming.map { it as? Frame.Text }.filterNotNull()) {
-                println(message.readText())
-            }
-        }
-    }
-
-}
+//fun main() = runBlocking {
+//    launch {
+//        client.ws(method = HttpMethod.Get, host = "127.0.0.1", port = 55555, path = "/echo") { // this: DefaultClientWebSocketSession
+//            send(Frame.Text("Hello World"))
+//
+//            for (message in incoming.map { it as? Frame.Text }.filterNotNull()) {
+//                println(message.readText())
+//            }
+//        }
+//    }
+//}
