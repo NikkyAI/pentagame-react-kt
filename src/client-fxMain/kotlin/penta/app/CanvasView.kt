@@ -18,6 +18,7 @@ import penta.ClientGameState
 import penta.SerialNotation
 import penta.json
 import replayGame
+import replaySetGrey
 import tornadofx.*
 
 class CanvasView : View("PentaGame") {
@@ -36,13 +37,13 @@ class CanvasView : View("PentaGame") {
             minWidth(WIDTH)
             val viz = PentaViz.viz
 
-            val playerSymbols = listOf("square", "triangle", "cross", "circle")
-            val playerCount = 2
+            val playerSymbols = listOf("triangle", "square", "cross", "circle")
+            val playerCount = 3
 
-            PentaViz.gameState = ClientGameState(
-                playerSymbols.subList(0, playerCount)
-            ) { content ->
-                textarea.text = content
+            PentaViz.gameState.apply {
+                updateLogPanel = { content ->
+                    textarea.text = content
+                }
             }
             with(viz) {
                 width = this@canvas.width
@@ -69,37 +70,37 @@ class CanvasView : View("PentaGame") {
                 viz.render()
             }
 
-//            PentaViz.gameState.initialize(playerSymbols.subList(0, playerCount))
+            if(false) {
+                PentaViz.gameState.initialize(playerSymbols.subList(0, playerCount))
+            } else {
+                GlobalScope.launch {
+                    client.ws(method = HttpMethod.Get, host = "127.0.0.1", port = 55555, path = "/replay") { // this: DefaultClientWebSocketSession
+                        println("starting websocket connection")
+                        outgoing.send(Frame.Text(replaySetGrey))
 
-            GlobalScope.launch {
-                client.ws(method = HttpMethod.Get, host = "127.0.0.1", port = 55555, path = "/replay") { // this: DefaultClientWebSocketSession
-                    println("starting websocket connection")
-                    outgoing.send(Frame.Text(replayGame))
+                        incoming.consumeEach {
+                            val textFrame = it as? Frame.Text ?: return@consumeEach
+                            val text = textFrame.readText()
 
-                    incoming.consumeEach {
-                        val textFrame = it as? Frame.Text ?: return@consumeEach
-                        val text = textFrame.readText()
+                            println(text)
 
-                        println(text)
+                            val notation = json.parse(SerialNotation.serializer(), text)
 
-                        val notation = json.parse(SerialNotation.serializer(), text)
-
-                        launch(Dispatchers.JavaFx) {
-                            SerialNotation.toMoves(listOf(notation), PentaViz.gameState, false) { move ->
-                                PentaViz.gameState.processMove(move)
+                            launch(Dispatchers.JavaFx) {
+                                SerialNotation.toMoves(listOf(notation), PentaViz.gameState, false) { move ->
+                                    PentaViz.gameState.processMove(move)
+                                }
                             }
                         }
+                        println("replay over")
+
+
+    //            for (message in incoming.map { it as? Frame.Text }.filterNotNull()) {
+    //                println(message.readText())
+    //            }
                     }
-                    println("replay over")
-
-
-//            for (message in incoming.map { it as? Frame.Text }.filterNotNull()) {
-//                println(message.readText())
-//            }
                 }
-
             }
-
         }
         this.center = canvas
         this.right = textarea

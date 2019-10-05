@@ -47,3 +47,39 @@ TODO
 
 To record a game some initial setup is necessary, 
 knowing the amount of players and which team they are in
+
+
+# TODO
+
+player has 4 ranked chosen symbols
+ranking depends on which symbol is taken 
+when conflicts arises in multiplayer
+
+# UI
+
+vertical or curved on corner:
+- player names/faces
+    highlight this turn
+    digital clock
+
+tabs:
+  - help & rules
+  - multiplayer/login:
+    - server / connection info
+    - all players info
+    - session chat
+    - rooms / games
+    - global chat ?
+    - account info
+  - notation
+  - debug export
+
+
+# ELO
+
+new players have `null` ranking
+when a new player beats a ranked player
+  they get awarded the same rank points
+  then points get redistributed
+total rank points increase with total ranked player count
+separated rankings for 2, 3, 4, 2v2 players

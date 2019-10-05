@@ -24,7 +24,7 @@ object PentaBoard {
                 cos(angle * DEG_TO_RAD),
                 sin(angle * DEG_TO_RAD)
             ) * PentaMath.r
-            val id = color.ordinal * 2
+//            val id = color.ordinal * 2
             CornerField(
 //                id.toString()
                 id = "${'A' +color.ordinal}",
@@ -35,7 +35,7 @@ object PentaBoard {
         c = corners.toTypedArray()
         val joints = PentaColor.values().map { color ->
 //            val pos = PentaMath.fiveRoots(pentaColor.root) * -PentaMath.inner_r
-            val id = ((color.ordinal + 2) % 5 * 2) + 1
+//            val id = ((color.ordinal + 2) % 5 * 2) + 1
             val angle = color.ordinal * -72.0
             val pos = Point(
                 cos(angle * DEG_TO_RAD),
@@ -53,7 +53,7 @@ object PentaBoard {
         var angle = 0.0
         val outerRing = (corners + corners.first()).zipWithNext { current, next ->
             current.connectIntersection(next)
-            val interpolatedColors = current.color.interpolate(next.color, outerSteps)
+//            val interpolatedColors = current.color.interpolate(next.color, outerSteps)
             val connectingNodes = (0 until outerSteps).map { i ->
                 angle -= 72.0 / 4
                 val pos = Point(
@@ -100,7 +100,7 @@ object PentaBoard {
             next.pos, steps,
             skip = current.radius + (PentaMath.s / 2)
         )
-        val interpolatedColors = current.color.interpolate(next.color, steps)
+//        val interpolatedColors = current.color.interpolate(next.color, steps)
 //        println("connecting colors: ${interpolatedColors.size}")
         val connectingNodes = (0 until steps).map { i ->
             val pos = interpolatedPos[i]

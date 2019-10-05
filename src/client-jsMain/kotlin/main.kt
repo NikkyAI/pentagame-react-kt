@@ -13,17 +13,17 @@ import org.w3c.dom.HTMLCanvasElement
 import org.w3c.dom.events.EventListener
 import org.w3c.dom.url.URL
 import penta.ClientGameState
+import penta.SerialNotation
+import penta.json
 import kotlin.browser.document
 import kotlin.browser.window
 import kotlin.math.min
-import penta.SerialNotation
-import penta.json
 
 actual val client: HttpClient = HttpClient(Js).config {
     install(WebSockets)
 }
 
-suspend fun main(): Unit = coroutineScope{
+suspend fun main(): Unit = coroutineScope {
     val canvasId = "viz"
     val canvas = requireNotNull(document.getElementById(canvasId) as HTMLCanvasElement?)
     { "No canvas in the document corresponding to $canvasId" }
@@ -52,15 +52,15 @@ suspend fun main(): Unit = coroutineScope{
     canvas.height = size
     canvas.width = size
 
+    val playerSymbols = listOf("triangle", "square", "cross", "circle")
+
     with(PentaViz.viz) {
         height = canvas.height.toDouble()
         width = canvas.width.toDouble()
 
-        val playerSymbols = listOf("square", "triangle", "cross", "circle")
-
-        PentaViz.gameState = ClientGameState(
-            playerSymbols.subList(0, playerCount)
-        )
+//        PentaViz.gameState = ClientGameState(
+//            playerSymbols.subList(0, playerCount)
+//        )
 
         resize(width, height)
         bindRendererOn(canvas)
@@ -71,7 +71,11 @@ suspend fun main(): Unit = coroutineScope{
     }
 
 //    val wsConnection = launch {
-        client.ws(method = HttpMethod.Get, host = "127.0.0.1", port = 55555, path = "/replay") { // this: DefaultClientWebSocketSession
+    if (true) {
+        PentaViz.gameState.initialize(playerSymbols.subList(0, playerCount))
+    } else {
+        client.ws(method = HttpMethod.Get, host = "127.0.0.1", port = 55555, path = "/replay") {
+            // this: DefaultClientWebSocketSession
             println("starting websocket connection")
             outgoing.send(Frame.Text(replayGame))
 
@@ -88,13 +92,8 @@ suspend fun main(): Unit = coroutineScope{
                 }
             }
             println("replay over")
-
-
-//            for (message in incoming.map { it as? Frame.Text }.filterNotNull()) {
-//                println(message.readText())
-//            }
         }
-//    }
-
+//        }
+    }
 
 }

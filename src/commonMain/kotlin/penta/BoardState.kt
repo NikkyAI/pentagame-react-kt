@@ -10,9 +10,9 @@ import penta.logic.Piece
 import penta.util.exhaustive
 
 open class BoardState(
-    open val updateLogPanel: (String) -> Unit = {}
 ) {
-    var players: List<String> = listOf("")
+    open var updateLogPanel: (String) -> Unit = {}
+    var players: List<PlayerState> = listOf(PlayerState("", ""))
         private set
     // player id to team id
     lateinit var teams: Map<String, Int>
@@ -36,22 +36,23 @@ open class BoardState(
         private set(value) {
             println("set turn: $value")
             field = value
+            updateBoard()
         }
 
     var forceMoveNextPlayer: Boolean = false
         private set
 
-    val currentPlayer: String
-        get() = if (players.isNotEmpty()) players[turn % players.count()] else "nobody"
+    val currentPlayer: PlayerState
+        get() = if (players.isNotEmpty()) players[turn % players.size] else throw IllegalStateException("no turn")
 
     var winner: String? = null
         private set
 
     var selectedPlayerPiece: Piece.Player? = null
         protected set
-    var selectedBlackPiece: Piece.BlackBlocker? = null
+    open var selectedBlackPiece: Piece.BlackBlocker? = null
         protected set
-    var selectedGrayPiece: Piece.GrayBlocker? = null
+    open var selectedGrayPiece: Piece.GrayBlocker? = null
         protected set
 
     /**
@@ -81,23 +82,7 @@ open class BoardState(
                 it.position = null
             }
         }
-//        // TODO: set player count and names from `GameInit`
-//        val playerPieces = (0 until players.size).flatMap { p ->
-//            (0 until 5).map { i ->
-//                Piece.Player(
-//                    "p$p$i",
-//                    players[p],
-//                    Point(0.0, 0.0),
-//                    PentaMath.s / 2.3,
-//                    PentaColor.values()[i]
-//                ).also {
-//                    it.position = PentaBoard.c[i]
-//                }
-//            }
-//        }
         figures = arrayOf(*blacks.toTypedArray(), *greys.toTypedArray()) // , *playerPieces.toTypedArray())
-
-//        mutableHistory += PentaMove.InitGame(players)
     }
 
     inline fun requires(b: Boolean, error: () -> Unit) {
@@ -110,7 +95,7 @@ open class BoardState(
         println("processing $move")
         when (move) {
             is PentaMove.MovePlayer -> {
-                require(move.playerPiece.playerId == currentPlayer) { "signal illegal move" }
+                require(move.playerPiece.playerId == currentPlayer.id) { "signal illegal move" }
                 if (!canMove(move.from, move.to)) {
                     TODO("signal IllegalMove")
                 }
@@ -140,6 +125,8 @@ open class BoardState(
                         }
                         is Piece.BlackBlocker -> {
                             selectedBlackPiece = pieceOnTarget
+                            pieceOnTarget.position = null // TODO: set corner field
+                            updatePiecesAtPos(null)
                             println("holding ${pieceOnTarget.id} for repositioning")
                         }
                         else -> {
@@ -169,7 +156,7 @@ open class BoardState(
                 }
             }
             is PentaMove.ForcedPlayerMove -> {
-                requires(move.playerPiece.playerId == currentPlayer) { TODO("signal illegal move") }
+                requires(move.playerPiece.playerId == currentPlayer.id) { TODO("signal illegal move") }
                 val sourceField = move.from
                 if(sourceField is JointField && move.playerPiece.pentaColor == sourceField.pentaColor ) {
                     postProcess(move)
@@ -183,9 +170,9 @@ open class BoardState(
             }
             is PentaMove.SwapOwnPiece -> {
                 requires(canMove(move.from, move.to)) { TODO("signal illegal move") }
-                requires(move.playerPiece.playerId == currentPlayer) { TODO("signal illegal move") }
+                requires(move.playerPiece.playerId == currentPlayer.id) { TODO("signal illegal move") }
                 requires(move.playerPiece.position == move.from) { TODO("signal illegal move") }
-                requires(move.otherPlayerPiece.playerId == currentPlayer) { TODO("signal illegal move") }
+                requires(move.otherPlayerPiece.playerId == currentPlayer.id) { TODO("signal illegal move") }
                 requires(move.otherPlayerPiece.position == move.to) { TODO("signal illegal move") }
 
                 move.playerPiece.position = move.to
@@ -201,9 +188,9 @@ open class BoardState(
             }
             is PentaMove.SwapHostilePieces -> {
                 requires(canMove(move.from, move.to)) { TODO("signal illegal move") }
-                requires(move.playerPiece.playerId == currentPlayer) { TODO("signal illegal move") }
+                requires(move.playerPiece.playerId == currentPlayer.id) { TODO("signal illegal move") }
                 requires(move.playerPiece.position == move.from) { TODO("signal illegal move") }
-                requires(move.otherPlayerPiece.playerId != currentPlayer) { TODO("signal illegal move") }
+                requires(move.otherPlayerPiece.playerId != currentPlayer.id) { TODO("signal illegal move") }
                 requires(move.otherPlayerPiece.position == move.to) { TODO("signal illegal move") }
 
                 move.playerPiece.position = move.to
@@ -228,7 +215,7 @@ open class BoardState(
                     TODO("signal illegal move")
                     return
                 }
-                requires(move.piece.position == move.from) { TODO("signal illegal move") }
+                requires(move.piece.position == null || move.piece.position == move.from) { TODO("signal illegal move") }
 
                 move.piece.position = move.to
                 val lastMove = mutableHistory.last()
@@ -263,14 +250,16 @@ open class BoardState(
             }
             is PentaMove.InitGame -> {
                 initialized = true
-                players = move.players
+                //TODO: create ClientPlayerState or ServerPlayerState
+                players = move.players.map { PlayerState(it, it) } // TODO: add players one by one
                 turn = 0
                 // TODO: set player count and names from `GameInit`
                 val playerPieces = (0 until move.players.size).flatMap { p ->
                     (0 until 5).map { i ->
                         Piece.Player(
                             "p$p$i",
-                            players[p],
+                            players[p].id,
+                            players[p].figureId,
                             Point(0.0, 0.0),
                             PentaMath.s / 2.3,
                             PentaColor.values()[i]
@@ -300,8 +289,8 @@ open class BoardState(
 
         if (selectedBlackPiece == null && selectedGrayPiece == null && !selectingGrayPiece
             && move !is PentaMove.InitGame
-//            && move !is PentaMove.SetGrey
-//            && move !is PentaMove.SetBlack
+            && move !is PentaMove.Win
+            && winner == null
         ) {
             turn += 1
         }
@@ -324,7 +313,6 @@ open class BoardState(
         if (targetField is JointField && targetField.pentaColor == move.playerPiece.pentaColor) {
             // take piece off the board
             move.playerPiece.position = null
-            updatePiecesAtPos(null)
 
             // set gamestate to `MOVE_GREY`
             selectedGrayPiece = positions.filterValues { it == null }
@@ -335,12 +323,13 @@ open class BoardState(
                 selectingGrayPiece = true
                 println("selected gray piece: ${selectedGrayPiece?.id}")
             }
+            updatePiecesAtPos(null)
         }
     }
 
-    private fun forceMovePlayerPiece(player: String) {
+    private fun forceMovePlayerPiece(player: PlayerState) {
         if(selectingGrayPiece || selectingGrayPiece) return
-        val playerPieces = figures.filterIsInstance<Piece.Player>().filter { it.playerId == player }
+        val playerPieces = figures.filterIsInstance<Piece.Player>().filter { it.playerId == player.id }
         for (playerPiece in playerPieces) {
             val field = playerPiece.position as? JointField ?: continue
             if (field.pentaColor != playerPiece.pentaColor) continue
@@ -359,17 +348,18 @@ open class BoardState(
     }
 
     private fun checkWin() {
-        if (winner != null || turn % players.size != 0+1) return
+        // check win after last players turn
+        if (winner != null || turn % players.size != players.size-1) return
         if(selectingGrayPiece || selectedGrayPiece != null || selectedBlackPiece != null) return
         val winners = players.filter { player ->
-            val playerPieces = figures.filterIsInstance<Piece.Player>().filter { it.playerId == player }
+            val playerPieces = figures.filterIsInstance<Piece.Player>().filter { it.playerId == player.id }
             val offBoardPieces = playerPieces.filter { it.position == null }
 
             offBoardPieces.size >= 3
         }
         if(winners.isNotEmpty()) {
-            winner = winners.joinToString(", ")
-            processMove(PentaMove.Win(winners))
+            winner = winners.joinToString(", ") { it.id }
+            processMove(PentaMove.Win(winners.map { it.id }))
         }
     }
 

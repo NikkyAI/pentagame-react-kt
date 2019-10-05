@@ -37,6 +37,7 @@ sealed class Piece {
     data class Player(
         override val id: String,
         val playerId: String,
+        val figureId: String,
         override var pos: Point,
         override val radius: Double,
         override val pentaColor: PentaColor

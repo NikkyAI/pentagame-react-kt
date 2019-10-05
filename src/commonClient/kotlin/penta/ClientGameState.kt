@@ -3,24 +3,25 @@ package penta
 import PentaMath
 import PentaViz
 import io.data2viz.geom.Point
+import io.data2viz.math.Angle
 import io.data2viz.math.deg
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonConfiguration
-import kotlinx.serialization.list
-import kotlinx.serialization.modules.SerializersModule
 import penta.logic.Piece
 import penta.logic.field.AbstractField
 import penta.logic.field.CornerField
 import penta.util.length
 
-class ClientGameState(
-//    // player ids
-    players: List<String>,
-//    // player id to team id
-//    val teams: Map<String, Int>,
-    override val updateLogPanel: (String) -> Unit = {}
-) : BoardState() {
+class ClientGameState: BoardState() {
+    override var updateLogPanel: (String) -> Unit = {}
     var updatePiece: (Piece) -> Unit = { piece -> }
+
+    fun cornerPoint(index: Int, angleDelta: Angle = 0.deg, radius: Double = PentaMath.R_): Point {
+        val angle = (-45 + (index)*90).deg + angleDelta
+
+        return Point(
+            radius * angle.cos,
+            radius * angle.sin
+        ) / 2 + (Point(0.5, 0.5) * PentaMath.R_)
+    }
 
     init {
         figures.forEach(::updatePiecePos)
@@ -31,39 +32,36 @@ class ClientGameState(
         processMove(PentaMove.InitGame(players))
     }
 
-//    var turn: Int = 0
-//        private set
-//
-//    var winner: String? = null
-//
-//    var forceMoveNextPlayer: Boolean = false
-//
-//    val currentPlayer: String
-//        get() = if (players.isNotEmpty()) players[turn % players.count()] else throw IllegalStateException("player list is empty")
-//
-//    var selectedPlayerPiece: Piece.Player? = null
-//    var selectedBlackPiece: Piece.BlackBlocker? = null
-//    var selectedGrayPiece: Piece.GrayBlocker? = null
-//
-//    /**
-//     * true when no gray pieces are in the middle and one from the board can be selected
-//     */
-//    var selectingGrayPiece: Boolean = false
-//
-//    // TODO: add figure registry
-//    val figures: Array<Piece>
-//    private val positions: MutableMap<String, AbstractField?> = mutableMapOf()
-//    val figurePositions: Map<String, AbstractField?> get() = positions
-
 
     // TODO: move to client
     // TODO: not common code
-    override fun updatePiecePos(piece: Piece) {
+    override fun updatePiecePos(piece: Piece/*, override: Boolean, fieldOverride: AbstractField?*/) {
         val field: AbstractField? = figurePositions[piece.id]
+        updatePiecePos(piece, field)
+    }
+
+    fun updatePiecePos(piece: Piece, field: AbstractField?) {
         var pos: Point = field?.pos ?: run {
             val radius = when (piece) {
-                is Piece.GrayBlocker -> PentaMath.inner_r * -0.2
-                is Piece.BlackBlocker -> throw IllegalStateException("black piece: $piece cannot be off the board")
+                is Piece.GrayBlocker -> {
+                    println("piece: ${piece.id}")
+                    println("selected: ${selectedGrayPiece?.id}")
+                    if(selectedGrayPiece == piece) {
+                        val index = players.indexOf(currentPlayer)
+                        val pos = cornerPoint(index, 10.deg, radius = (PentaMath.R_ + (3*PentaMath.s)))
+                        return@run pos
+                    }
+                    PentaMath.inner_r * -0.2
+                }
+                is Piece.BlackBlocker -> {
+                    if(selectedBlackPiece == piece) {
+                        val index = players.indexOf(currentPlayer)
+                        val pos = cornerPoint(index, (-10).deg, radius = (PentaMath.R_ + (3*PentaMath.s)))
+                        println("cornerPos: $pos")
+                        return@run pos
+                    }
+                    throw IllegalStateException("black piece: $piece cannot be off the board")
+                }
                 is Piece.Player -> PentaMath.inner_r * -0.5
                 else -> throw NotImplementedError("unhandled piece type: ${piece::class}")
             }
@@ -71,13 +69,10 @@ class ClientGameState(
 
             println("pentaColor: ${piece.pentaColor.ordinal}")
 
-//            val radius = (PentaMath.inner_r / PentaMath.R_) * scale
             Point(
                 radius * angle.cos,
                 radius * angle.sin
-            ).also {
-                println(it)
-            } / 2 + (Point(0.5, 0.5) * PentaMath.R_)
+            ) / 2 + (Point(0.5, 0.5) * PentaMath.R_)
         }
         if (piece is Piece.Player && field is CornerField) {
             // find all pieces on field and order them
@@ -127,7 +122,7 @@ class ClientGameState(
         if (
         // make sure you are not selecting black or gray
             selectedGrayPiece == null && selectedBlackPiece == null && !selectingGrayPiece
-            && clickedPiece is Piece.Player && currentPlayer == clickedPiece.playerId
+            && clickedPiece is Piece.Player && currentPlayer.id == clickedPiece.playerId
         ) {
             if (selectedPlayerPiece == null) {
                 return true
@@ -144,7 +139,7 @@ class ClientGameState(
             return true
         }
 
-        if (selectedPlayerPiece != null && currentPlayer == selectedPlayerPiece!!.playerId) {
+        if (selectedPlayerPiece != null && currentPlayer.id == selectedPlayerPiece!!.playerId) {
             val playerPiece = selectedPlayerPiece!!
             val sourcePos = figurePositions[playerPiece.id] ?: run {
                 return false
@@ -179,7 +174,7 @@ class ClientGameState(
         if (
         // make sure you are not selecting black or gray
             selectedGrayPiece == null && selectedBlackPiece == null && !selectingGrayPiece
-            && clickedPiece is Piece.Player && currentPlayer == clickedPiece.playerId
+            && clickedPiece is Piece.Player && currentPlayer.id == clickedPiece.playerId
         ) {
             if (selectedPlayerPiece == null) {
                 println("selecting: $clickedPiece")
@@ -202,10 +197,12 @@ class ClientGameState(
             println("selecting: $clickedPiece")
             selectedGrayPiece = clickedPiece
             selectingGrayPiece = false
+//            clickedPiece.position = null
+            updatePiecePos(clickedPiece, null)
             PentaViz.updateBoard()
             return
         }
-        if (selectedPlayerPiece != null && currentPlayer == selectedPlayerPiece!!.playerId) {
+        if (selectedPlayerPiece != null && currentPlayer.id == selectedPlayerPiece!!.playerId) {
             val playerPiece = selectedPlayerPiece!!
             val sourceField = figurePositions[playerPiece.id] ?: run {
                 println("piece if off the board already")
@@ -279,7 +276,7 @@ class ClientGameState(
             return false
         }
         when {
-            selectedPlayerPiece != null && currentPlayer == selectedPlayerPiece!!.playerId -> {
+            selectedPlayerPiece != null && currentPlayer.id == selectedPlayerPiece!!.playerId -> {
                 val playerPiece = selectedPlayerPiece!!
 
                 val sourcePos = figurePositions[playerPiece.id]!!
@@ -325,7 +322,7 @@ class ClientGameState(
         println("selected gray piece: $selectedGrayPiece")
         if (!canClickField(targetField)) return
         val move = when {
-            selectedPlayerPiece != null && currentPlayer == selectedPlayerPiece!!.playerId -> {
+            selectedPlayerPiece != null && currentPlayer.id == selectedPlayerPiece!!.playerId -> {
                 val playerPiece = selectedPlayerPiece!!
 
                 val sourceField = figurePositions[playerPiece.id]!!
@@ -398,7 +395,7 @@ class ClientGameState(
     }
 
     override fun resetBoard() {
-        PentaViz.gameState = this
+//        PentaViz.gameState = this
         PentaViz.resetBoard()
     }
 
