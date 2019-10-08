@@ -8,12 +8,15 @@ import penta.logic.field.AbstractField
 import penta.logic.field.JointField
 import penta.logic.Piece
 import penta.util.exhaustive
+import com.lightningkite.reacktive.list.WrapperObservableList
+import com.lightningkite.reacktive.list.mutableObservableListOf
+import com.lightningkite.reacktive.property.StandardObservableProperty
 
-open class BoardState(
-) {
-    open var updateLogPanel: (String) -> Unit = {}
-    var players: List<PlayerState> = listOf(PlayerState("", ""))
-        private set
+open class BoardState() {
+    var updateLogPanel: (String) -> Unit = {}
+
+   val players: WrapperObservableList<PlayerState> = mutableObservableListOf(PlayerState("", ""))
+
     // player id to team id
     lateinit var teams: Map<String, Int>
         private set
@@ -32,18 +35,24 @@ open class BoardState(
     var initialized: Boolean = false
         private set
 
-    var turn: Int = 0
-        private set(value) {
-            println("set turn: $value")
-            field = value
+    val currentPlayerProperty = StandardObservableProperty(players.first())
+    val currentPlayer: PlayerState inline get() = currentPlayerProperty.value
+
+    val turnProperty: StandardObservableProperty<Int> = StandardObservableProperty(0).apply {
+        add {
+            println("set turn: $$it")
+            currentPlayerProperty.value = if (players.isNotEmpty()) players[it % players.size] else throw IllegalStateException("no turn")
             updateBoard()
+        }
+    }
+    var turn: Int
+        inline get() = turnProperty.value
+        inline set(value) {
+            turnProperty.value = value
         }
 
     var forceMoveNextPlayer: Boolean = false
         private set
-
-    val currentPlayer: PlayerState
-        get() = if (players.isNotEmpty()) players[turn % players.size] else throw IllegalStateException("no turn")
 
     var winner: String? = null
         private set
@@ -250,8 +259,9 @@ open class BoardState(
             }
             is PentaMove.InitGame -> {
                 initialized = true
-                //TODO: create ClientPlayerState or ServerPlayerState
-                players = move.players.map { PlayerState(it, it) } // TODO: add players one by one
+                //TODO: create ClientPlayerState or ServerPlayerState ?
+                players.clear()
+                players += move.players.map { PlayerState(it, it) } // TODO: add players one by one
                 turn = 0
                 // TODO: set player count and names from `GameInit`
                 val playerPieces = (0 until move.players.size).flatMap { p ->

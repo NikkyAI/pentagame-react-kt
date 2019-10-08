@@ -1,9 +1,10 @@
 import penta.BoardState
 
-class TestState() : BoardState(
-    { t ->
-        println(t)
+class TestState() : BoardState() {
+    init {
+        updateLogPanel = { t ->
+            println(t)
+        }
     }
-) {
 
 }

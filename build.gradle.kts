@@ -45,6 +45,10 @@ repositories {
     maven(url = "https://dl.bintray.com/data2viz/data2viz/") {
         name = "d2v"
     }
+//    maven(url = "https://dl.bintray.com/lightningkite/com.lightningkite.krosslin") {
+//        name = "lightningkite.krosslin"
+//    }
+
 //    maven(url = "https://www.jitpack.io") {
 //        name = "jitpack"
 //    }
@@ -68,6 +72,10 @@ kotlin {
                 api("org.jetbrains.kotlinx:kotlinx-coroutines-core-common:${Coroutines.version}")
                 // serialization
                 api("org.jetbrains.kotlinx:kotlinx-serialization-runtime-common:${Serialization.version}")
+
+
+                api("com.lightningkite:kommon-metadata:${Kommon.version}")
+                api("com.lightningkite:reacktive-metadata:${Reacktive.version}")
             }
         }
 //        val commonLogic by creating {
@@ -86,6 +94,12 @@ kotlin {
                     exclude(mapOf("group" to Data2Viz.group, "module" to "d2v-geo-common"))
                 }
                 api(ktor("client-core"))
+                api("com.lightningkite:kommon-metadata:${Kommon.version}")
+                api("com.lightningkite:reacktive-metadata:${Reacktive.version}")
+                api("com.lightningkite:recktangle-metadata:${Recktangle.version}")
+                api("com.lightningkite:lokalize-metadata:${Lokalize.version}")
+                api("com.lightningkite:koolui-metadata:${KoolUI.version}")
+
 //                api(ktor("client-websocket"))
             }
         }
@@ -126,8 +140,16 @@ kotlin {
                         exclude(mapOf("group" to Data2Viz.group, "module" to "d2v-geo-jvm"))
                     }
                     implementation(TornadoFX.dep)
+
                     implementation(ktor("client-cio"))
 //                    implementation(ktor("client-websockets"))
+
+                    implementation("com.lightningkite:kommon-jvm:${Kommon.version}")
+                    implementation("com.lightningkite:reacktive-jvm:${Reacktive.version}")
+                    implementation("com.lightningkite:recktangle-jvm:${Recktangle.version}")
+                    implementation("com.lightningkite:lokalize-jvm:${Lokalize.version}")
+                    implementation("com.lightningkite:koolui-javafx:${KoolUI.version}")
+
                     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Coroutines.version}")
                     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-javafx:${Coroutines.version}")
 
@@ -155,6 +177,13 @@ kotlin {
                         exclude(mapOf("group" to Data2Viz.group, "module" to "d2v-geo-js"))
                     }
                     implementation(ktor("client-core-js"))
+
+                    implementation("com.lightningkite:kommon-js:${Kommon.version}")
+                    implementation("com.lightningkite:reacktive-js:${Reacktive.version}")
+                    implementation("com.lightningkite:recktangle-js:${Recktangle.version}")
+                    implementation("com.lightningkite:lokalize-js:${Lokalize.version}")
+                    implementation("com.lightningkite:koolui-js:${KoolUI.version}")
+
 //                    implementation(ktor("client-cio"))
 //                    implementation(ktor("client-websocket"))
                     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-js:${Coroutines.version}")
@@ -211,7 +240,8 @@ kotlin.targets.forEach { target: KotlinTarget ->
 //}
 
 application {
-    mainClassName = "penta.app.PentaAppKt"
+//    mainClassName = "penta.app.PentaAppKt"
+    mainClassName = "penta.app.MainKt"
 }
 
 val shadowJar = tasks.getByName<ShadowJar>("shadowJar") {

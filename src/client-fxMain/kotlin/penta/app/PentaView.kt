@@ -14,14 +14,13 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.javafx.JavaFx
 import kotlinx.coroutines.launch
-import penta.ClientGameState
 import penta.SerialNotation
 import penta.json
-import replayGame
 import replaySetGrey
 import tornadofx.*
 
-class CanvasView : View("PentaGame") {
+@Deprecated("use App")
+class PentaView : View("PentaGame") {
     val extraWidth = 1.0
     override val root = borderpane {
         hgrow = Priority.ALWAYS
@@ -93,11 +92,6 @@ class CanvasView : View("PentaGame") {
                             }
                         }
                         println("replay over")
-
-
-    //            for (message in incoming.map { it as? Frame.Text }.filterNotNull()) {
-    //                println(message.readText())
-    //            }
                     }
                 }
             }

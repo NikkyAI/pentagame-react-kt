@@ -66,8 +66,6 @@ suspend fun main(): Unit = coroutineScope {
         bindRendererOn(canvas)
         addEvents()
         render()
-
-//        PentaViz.gameState.initialize(playerSymbols.subList(0, playerCount))
     }
 
 //    val wsConnection = launch {

@@ -40,3 +40,23 @@ object Serialization {
 object Coroutines {
     const val version = "1.3.2"
 }
+
+object Kommon {
+    const val version = "0.1.8"
+}
+
+object KoolUI {
+    const val version = "0.1.6"
+}
+
+object Reacktive {
+    const val version = "0.1.6"
+}
+
+object Recktangle {
+    const val version = "0.1.6"
+}
+
+object Lokalize {
+    const val version = "0.1.6"
+}

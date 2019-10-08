@@ -11,7 +11,7 @@ import penta.logic.field.CornerField
 import penta.util.length
 
 class ClientGameState: BoardState() {
-    override var updateLogPanel: (String) -> Unit = {}
+//    override var updateLogPanel: (String) -> Unit = {}
     var updatePiece: (Piece) -> Unit = { piece -> }
 
     fun cornerPoint(index: Int, angleDelta: Angle = 0.deg, radius: Double = PentaMath.R_): Point {
