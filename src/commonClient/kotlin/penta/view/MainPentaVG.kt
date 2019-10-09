@@ -2,6 +2,7 @@ package penta.view
 
 import PentaViz
 import com.lightningkite.kommon.collection.push
+import com.lightningkite.kommon.collection.reset
 import com.lightningkite.koolui.views.layout.*
 import com.lightningkite.koolui.color.Color
 import com.lightningkite.koolui.concepts.Importance
@@ -26,28 +27,12 @@ import io.data2viz.viz.PathNode
 import penta.view.test.CanvasTestVG
 
 class MainPentaVG<VIEW>() : MyViewGenerator<VIEW> {
-//    override val title: String = "KotlinX UI Test"
-
     val stack = WrapperObservableList<MyViewGenerator<VIEW>>()
     val mainView = RulesVG<VIEW>()
-//    val mainView = IconsTestVG<VIEW>() // SelectorVG(stack)
 
-    val views = mutableObservableListOf<Triple<String, MaterialIcon, () -> MyViewGenerator<VIEW>>>(
+    val views = mutableObservableListOf(
         Triple("Rules", MaterialIcon.help, { RulesVG<VIEW>() }),
         Triple("Canvas Test", MaterialIcon.lineStyle, { CanvasTestVG<VIEW>() })
-//        Triple("Space Test", MaterialIcon.add, { SpaceTestVG<VIEW>() }),
-//        Triple("Original Test", MaterialIcon.add, { OriginalTestVG<VIEW>() }),
-//        Triple("Alpha", MaterialIcon.add, { AlphaTestVG<VIEW>() }),
-//        Triple("Horizontal", MaterialIcon.add, { HorizontalVG<VIEW>() }),
-//        Triple("Vertical", MaterialIcon.add, { VerticalTestVG<VIEW>() }),
-//        Triple("Pages", MaterialIcon.add, { PagesVG<VIEW>() }),
-//        Triple("Frame", MaterialIcon.add, { FrameVG<VIEW>() }),
-////            "Http Call Test" to { HttpCallTestVG<VIEW>() }),
-//        Triple("Controls", MaterialIcon.add, { ControlsVG<VIEW>() }),
-//        Triple("Notifications", MaterialIcon.add, { NotificationTestVG<VIEW>() }),
-//        Triple("Icons", MaterialIcon.add, { IconsTestVG<VIEW>() }),
-////            "URL Image Test" to { UrlImageTestVG<VIEW>() },
-//        Triple("Dialog", MaterialIcon.add, { DialogTestVG<VIEW>() })
     )
     val tabOptions = views.map {(label, icon, createViewGenerator) ->
         TabItem(
@@ -58,12 +43,6 @@ class MainPentaVG<VIEW>() : MyViewGenerator<VIEW> {
             description = "description"
         )
     }.asObservableList()
-
-    val tabSelection = StandardObservableProperty(tabOptions.first()).apply {
-        add {
-            println("tab selected: $it")
-        }
-    }
 
     init {
         //Startup
@@ -109,8 +88,8 @@ class MainPentaVG<VIEW>() : MyViewGenerator<VIEW> {
                         }
                     )
                 }
-                +horizontal(
-                    LinearPlacement.wrapStart to list(
+                +horizontal {
+                    -list(
                         data = views,
                         makeView = { itemObs, index ->
                             val (label, icon, createViewGenerator) = itemObs.value
@@ -127,22 +106,18 @@ class MainPentaVG<VIEW>() : MyViewGenerator<VIEW> {
                                     },
                                     importance = Importance.Normal,
                                     onClick = {
-                                        stack.push(createViewGenerator.invoke())
+                                        stack.reset(createViewGenerator.invoke())
                                     }
                                 )
                             )
                         }
-                    ),
-//                LinearPlacement.wrapStart to tabs(
-//                    tabOptions,
-//                    tabSelection
-//                ),
-                    LinearPlacement.fillCenter to window(
+                    )
+                    +window(
                         dependency = dependency,
                         stack = stack,
                         tabs = listOf()
                     )
-                )
+                }
             }
             val playerSymbols = listOf("triangle", "square", "cross", "circle")
             val playerCount = 3

@@ -241,7 +241,7 @@ kotlin.targets.forEach { target: KotlinTarget ->
 
 application {
 //    mainClassName = "penta.app.PentaAppKt"
-    mainClassName = "penta.app.MainKt"
+    mainClassName = "penta.app.App"
 }
 
 val shadowJar = tasks.getByName<ShadowJar>("shadowJar") {
