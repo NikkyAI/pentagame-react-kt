@@ -3,37 +3,29 @@ package penta.app
 import PentaViz
 import PentaViz.addEvents
 import client
+import com.lightningkite.koolui.color.ColorSet
+import com.lightningkite.koolui.color.Theme
 import com.lightningkite.koolui.layout.Layout
+import com.lightningkite.koolui.layout.views.LayoutVFRootAndDialogs
 import com.lightningkite.koolui.layout.views.LayoutViewWrapper
+import com.lightningkite.koolui.views.HasScale
+import com.lightningkite.koolui.views.JavaFxLayoutWrapper
 import com.lightningkite.koolui.views.LayoutJavaFxViewFactory
+import com.lightningkite.koolui.views.Themed
 import com.lightningkite.koolui.views.ViewFactory
+import com.lightningkite.koolui.views.basic.LayoutJavaFxBasic
+import com.lightningkite.koolui.views.graphics.LayoutJavaFxGraphics
+import com.lightningkite.koolui.views.interactive.LayoutJavaFxInteractive
+import com.lightningkite.koolui.views.layout.LayoutJavaFxLayout
+import com.lightningkite.koolui.views.navigation.ViewFactoryNavigationDefault
 import com.lightningkite.koolui.views.root.contentRoot
-import io.data2viz.viz.JFxVizRenderer
-import io.ktor.client.features.websocket.ws
-import io.ktor.http.HttpMethod
-import io.ktor.http.cio.websocket.Frame
-import io.ktor.http.cio.websocket.readText
 import javafx.application.Application
 import javafx.scene.Node
 import javafx.scene.Scene
-import javafx.scene.canvas.Canvas
-import javafx.scene.layout.BorderPane
-import javafx.scene.layout.HBox
-import javafx.scene.layout.Pane
-import javafx.scene.layout.Priority
-import javafx.scene.layout.VBox
 import javafx.stage.Stage
 import koolui.LayoutJavaFxData2Viz
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.channels.consumeEach
-import kotlinx.coroutines.javafx.JavaFx
-import kotlinx.coroutines.launch
-import penta.SerialNotation
-import penta.json
 import penta.view.MainPentaVG
 import penta.view.MyViewFactory
-import replaySetGrey
 
 class App : Application() {
     companion object {
@@ -48,20 +40,29 @@ class App : Application() {
 //    class Factory(val basedOn: LayoutJavaFxViewFactory = LayoutJavaFxViewFactory(penta.view.theme)) :
 //        MyViewFactory<Layout<*, Node>>, ViewFactory<Layout<*, Node>> by basedOn
 
-    class Factory(val basedOn: LayoutJavaFxViewFactory = LayoutJavaFxViewFactory(penta.view.theme)): MyViewFactory<Layout<*, Node>>, ViewFactory<Layout<*, Node>> by basedOn, LayoutViewWrapper<Node> by basedOn, LayoutJavaFxData2Viz
+    class Factory(
+        theme: Theme = penta.view.theme,
+        colorSet: ColorSet = theme.main,
+        override val scale: Double = 1.0
+    ) : MyViewFactory<Layout<*, Node>>,
+            HasScale,
+            Themed by Themed.impl(theme, colorSet),
+            LayoutJavaFxBasic /*ViewFactoryBasic*/,
+            LayoutJavaFxInteractive /*ViewFactoryInteractive*/,
+            LayoutJavaFxGraphics /*ViewFactoryGraphics*/,
+            LayoutJavaFxLayout /*ViewFactoryLayout*/,
+            ViewFactoryNavigationDefault<Layout<*, Node>> /*ViewFactoryNavigation*/,
+            LayoutVFRootAndDialogs<Node> /*ViewFactoryDialogs*/,
+            JavaFxLayoutWrapper /*ViewLayoutWrapper*/,
+            LayoutJavaFxData2Viz {
+        override var root: Layout<*, Node>? = null
+    }
 
     override fun start(stage: Stage) {
         val viz = PentaViz.viz
 
         val playerSymbols = listOf("triangle", "square", "cross", "circle")
         val playerCount = 3
-
-        // TODO: register callbacks
-        PentaViz.gameState.apply {
-            updateLogPanel = { content ->
-                // TODO: textarea.text = content
-            }
-        }
 
 //        val canvas = object : Canvas(WIDTH, HEIGHT) {
 //            override fun isResizable(): Boolean = true
@@ -88,18 +89,17 @@ class App : Application() {
 //                viz.render()
 //            }
 //        }
-        val uiWrapper = Pane().apply {
-            HBox.setHgrow(this, Priority.ALWAYS)
-            VBox.setVgrow(this, Priority.ALWAYS)
-
-            val koolui = with(Factory()) { basedOn.nativeViewAdapter(contentRoot(mainVg)) }
-
-            children.add(koolui)
-//            add(koolui)
-        }
-        val root = BorderPane().apply {
-            HBox.setHgrow(this, Priority.ALWAYS)
-            VBox.setVgrow(this, Priority.ALWAYS)
+//        val uiWrapper = Pane().apply {
+//            HBox.setHgrow(this, Priority.ALWAYS)
+//            VBox.setVgrow(this, Priority.ALWAYS)
+//
+//            val koolui = with(Factory()) { nativeViewAdapter(contentRoot(mainVg)) }
+//
+//            children.add(koolui)
+//        }
+//        val root = BorderPane().apply {
+//            HBox.setHgrow(this, Priority.ALWAYS)
+//            VBox.setVgrow(this, Priority.ALWAYS)
 
 //            fun updateDimensions(width: Double, height: Double) {
 //                val scale = if (height > width) width else height
@@ -123,12 +123,13 @@ class App : Application() {
 //            uiWrapper.heightProperty().addListener { _ ->
 //                updateDimensions(width - uiWrapper.width, height)
 //            }
-        }
+//        }
 //        root.center = canvas
-        root.center = uiWrapper
+//        root.center = uiWrapper
 
+        val root = with(Factory()) { nativeViewAdapter(contentRoot(mainVg)) }
         stage.let {
-            it.scene = Scene(root, WIDTH + 500, HEIGHT)
+            it.scene = Scene(root)
             it.show()
         }
 //        JFxVizRenderer(canvas, viz)

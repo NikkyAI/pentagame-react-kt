@@ -110,21 +110,28 @@ kotlin {
             }
         }
 
-        server.compilations["main"].defaultSourceSet {
-            dependsOn(commonMain)
-            dependencies {
-                api(kotlin("stdlib-jdk8"))
-                // KTOR
-                implementation(ktor("server-core", Ktor.version))
-                implementation(ktor("server-cio", Ktor.version))
-                implementation(ktor("websockets", Ktor.version))
+        server.apply {
+            compilations["main"].defaultSourceSet {
+                dependsOn(commonMain)
+                dependencies {
+                    api(kotlin("stdlib-jdk8"))
+                    // KTOR
+                    implementation(ktor("server-core", Ktor.version))
+                    implementation(ktor("server-cio", Ktor.version))
+                    implementation(ktor("websockets", Ktor.version))
 
-                // TODO: move data2viz only into commonClient
-                implementation(Data2Viz.jfx_dep) {
-                    exclude(mapOf("group" to Data2Viz.group, "module" to "geojson-jvm"))
-                    exclude(mapOf("group" to Data2Viz.group, "module" to "d2v-geo-jvm"))
+                    // TODO: move data2viz only into commonClient
+                    implementation(Data2Viz.jfx_dep) {
+                        exclude(mapOf("group" to Data2Viz.group, "module" to "geojson-jvm"))
+                        exclude(mapOf("group" to Data2Viz.group, "module" to "d2v-geo-jvm"))
+                    }
+                    implementation("org.jetbrains.kotlinx:kotlinx-serialization-runtime:${Serialization.version}")
                 }
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-runtime:${Serialization.version}")
+            }
+            compilations.all {
+                kotlinOptions {
+                    jvmTarget = "1.8"
+                }
             }
         }
 
@@ -160,6 +167,11 @@ kotlin {
             compilations["test"].defaultSourceSet {
                 dependencies {
                     implementation(kotlin("test-junit5"))
+                }
+            }
+            compilations.all {
+                kotlinOptions {
+                    jvmTarget = "1.8"
                 }
             }
 //                test {

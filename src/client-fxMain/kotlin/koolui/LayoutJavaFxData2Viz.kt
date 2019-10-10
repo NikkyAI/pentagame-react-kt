@@ -16,7 +16,7 @@ import javafx.scene.layout.VBox
 
 interface LayoutJavaFxData2Viz : ViewFactoryData2Viz<Layout<*, Node>>, /*HasScale,*/ LayoutViewWrapper<Node> {
 
-    class SquareCanvas: Canvas(300.0 ,300.0) {
+    class SquareCanvas: Canvas(600.0 ,600.0) {
         var onResize: ()->Unit = {}
         override fun isResizable(): Boolean = true
         override fun resize(width: Double, height: Double) {
@@ -42,6 +42,8 @@ interface LayoutJavaFxData2Viz : ViewFactoryData2Viz<Layout<*, Node>>, /*HasScal
                 postSetup(viz)
                 viz.render()
             }
+        }.apply {
+            println("parent.view: ${parent?.view}")
         }
     }
 }
