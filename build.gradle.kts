@@ -57,9 +57,9 @@ repositories {
 group = "moe.nikky.penta"
 
 kotlin {
-    val server = jvm("server") // Creates a JVM target with the default name "jvm"
-    val clientFX = jvm("client-fx") // Creates a JVM target with the default name "jvm"
-    val clientJS = js("client-js")  // JS target named "js"
+    val server = jvm("server") // Creates a JVM target for the server
+    val clientFX = jvm("client-fx") // Creates a JVM target for the client
+    val clientJS = js("client-js")  // JS target named "client-js"
 
     sourceSets {
         val commonMain by getting {
@@ -207,11 +207,88 @@ kotlin {
                 compilations.all {
                     kotlinOptions {
                         sourceMap = true
-                        moduleKind = "umd"
                         metaInfo = true
+                        moduleKind = "umd"
+                        sourceMapEmbedSources = "always"
+//                        moduleKind = "commonjs"
+//                        outputFile = "${project.buildDir.path}/html/js/${project.name}.js"
                     }
                 }
             }
+
+//            val target = clientJS
+//
+//            fun getDependencies(): FileCollection {
+//                val dependencies = ArrayList<File>()
+//                try {
+//                    for (configName in target.compilations.findByName("main")!!.relatedConfigurationNames) {
+//                        try {
+//                            val config = project.configurations.getByName(configName)
+//                            for (file in config) {
+//                                dependencies.add(file)
+//                            }
+//                            println("Successfully read config ${configName}")
+//                        } catch (e: Throwable) {
+//                            /*squish*/
+//                            println("Failed read config ${configName}")
+//                        }
+//                    }
+//                } catch (e: Throwable) {
+//                    logger.error(e.message, e)
+////                    e.printStackTrace()
+//                }
+//                return files(dependencies)
+////        return project.configurations.getByName("${target.name}Default")
+//            }
+//
+//            fun File.jarFileToJsFiles(): FileCollection {
+//                return if (exists()) {
+//                    zipTree(this).filter { it.extension == "js" || it.extension == "map" }
+//                } else {
+//                    files()
+//                }
+//            }
+//
+//            val jarTask = tasks.getByName("client-jsJar")
+//            val copyJsTask = tasks.create("${target.name}CopyJs") {
+//                val task = this
+//                //, Copy::class.java) { task ->
+//                task.group = "build"
+//                task.dependsOn(jarTask)
+//                task.doLast {
+//                    copy {
+//                        val c = this@copy
+//                        c.into("build/${target.name}/js")
+//                        jarTask.outputs.files
+//                            .filter { it.extension == "jar" }
+//                            .flatMap { it.jarFileToJsFiles() }
+//                            .forEach {
+//                                c.from(it)
+//                            }
+//                        c.from(getDependencies().flatMap { it.jarFileToJsFiles() })
+//                        Unit
+//                    }
+//                    copy {
+//                        from("src/${target.name}Main/web")
+//                        into("build/${target.name}/")
+//                    }
+//                }
+//            }
+//            val indexJsTask = tasks.create("${target.name}IndexJs") {
+//                val task = this
+//                task.dependsOn(copyJsTask)
+//                val outputFile = file("build/${target.name}/js/index.js")
+//                task.doLast {
+//                    val directJsDependencies = file("build/${target.name}/js").listFiles()
+//                        .asSequence()
+//                        .map { it.name.substringBefore('.') }
+//                        .filter { it != "index" }
+//                        .distinct()
+//                    outputFile.writeText(directJsDependencies.joinToString("\n") { "import ${it.replace('-', '_')} from '$it'" })
+//
+//
+//                }
+//            }
         }
     }
 }
@@ -252,7 +329,7 @@ kotlin.targets.forEach { target: KotlinTarget ->
 //}
 
 application {
-//    mainClassName = "penta.app.PentaAppKt"
+    //    mainClassName = "penta.app.PentaAppKt"
     mainClassName = "penta.app.MainKt"
 }
 
@@ -403,12 +480,12 @@ val packageJs = tasks.create("packageJs") {
             .resolve("client-js")
             .resolve("main")
 
-        val htmlOutput = buildDir
+        val htmlDir = buildDir
             .resolve("html")
 
-        htmlOutput.deleteRecursively()
-        htmlOutput.mkdir()
-        val jsOutput = htmlOutput.resolve("js").apply {
+        htmlDir.deleteRecursively()
+        htmlDir.mkdir()
+        val jsOutput = htmlDir.resolve("js").apply {
             mkdir()
         }
 
@@ -418,41 +495,45 @@ val packageJs = tasks.create("packageJs") {
             file.copyTo(jsOutput.resolve(file.name))
         }
 
-        val htmlText = buildString {
-            appendln("<!DOCTYPE html>")
-            appendHTML().html {
-                head {
-                    script(src = "https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.5/require.min.js") {
-                        this.attributes["data-main"] = "js/penta.js"
-                    }
-                    style {
-                        unsafe {
-                            this.raw(
-                                """
-                                |
-                                |    html, body {
-                                |      width: 100%;
-                                |      height: 100%;
-                                |      margin: 0px;
-                                |      border: 0;
-                                |      overflow: hidden; /*  Disable scrollbars */
-                                |      display: block;  /* No floating content on sides */
-                                |    }
-                                |
-                            """.trimMargin()
-                            )
-                        }
-                    }
-                }
-                body {
-                    canvas {
-                        id = "viz"
-                    }
-                }
-            }
-            appendln()
+//        val htmlText = buildString {
+//            appendln("<!DOCTYPE html>")
+//            appendHTML().html {
+//                head {
+//                    script(src = "https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.5/require.min.js") {
+//                        this.attributes["data-main"] = "js/penta.js"
+//                    }
+//                    style {
+//                        unsafe {
+//                            this.raw(
+//                                """
+//                                |
+//                                |    html, body {
+//                                |      width: 100%;
+//                                |      height: 100%;
+//                                |      margin: 0px;
+//                                |      border: 0;
+//                                |      overflow: hidden; /*  Disable scrollbars */
+//                                |      display: block;  /* No floating content on sides */
+//                                |    }
+//                                |
+//                            """.trimMargin()
+//                            )
+//                        }
+//                    }
+//                }
+//                body {
+//                    canvas {
+//                        id = "viz"
+//                    }
+//                }
+//            }
+//            appendln()
+//        }
+//        htmlDir.resolve("index.html").writeText(htmlText)
+        copy {
+            from("src/client-jsMain/web")
+            into(htmlDir)
         }
-        htmlOutput.resolve("index.html").writeText(htmlText)
     }
 }
 

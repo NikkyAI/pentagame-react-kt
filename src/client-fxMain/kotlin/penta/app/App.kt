@@ -37,7 +37,7 @@ class App : Application() {
         val mainVg = MainPentaVG<Layout<*, Node>>()
     }
 
-//    class Factory(val basedOn: LayoutJavaFxViewFactory = LayoutJavaFxViewFactory(penta.view.theme)) :
+//    class MyFactory(val basedOn: LayoutJavaFxViewFactory = LayoutJavaFxViewFactory(penta.view.theme)) :
 //        MyViewFactory<Layout<*, Node>>, ViewFactory<Layout<*, Node>> by basedOn
 
     class Factory(
