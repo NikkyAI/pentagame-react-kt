@@ -2,6 +2,7 @@ package penta
 
 import PentaMath
 import PentaViz
+import com.lightningkite.reacktive.property.StandardObservableProperty
 import io.data2viz.geom.Point
 import io.data2viz.math.Angle
 import io.data2viz.math.deg
@@ -13,6 +14,7 @@ import penta.util.length
 class ClientGameState: BoardState() {
 //    override var updateLogPanel: (String) -> Unit = {}
     var updatePiece: (Piece) -> Unit = { piece -> }
+    val multiplayerState = StandardObservableProperty<ConnectionState>(ConnectionState.Disconnected)
 
     fun cornerPoint(index: Int, angleDelta: Angle = 0.deg, radius: Double = PentaMath.R_): Point {
         val angle = (-45 + (index)*90).deg + angleDelta

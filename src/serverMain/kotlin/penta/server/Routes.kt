@@ -1,10 +1,15 @@
 package penta.server
 
 import io.ktor.application.Application
+import io.ktor.application.call
+import io.ktor.http.ContentType
 import io.ktor.http.cio.websocket.CloseReason
 import io.ktor.http.cio.websocket.Frame
 import io.ktor.http.cio.websocket.close
 import io.ktor.http.cio.websocket.readText
+import io.ktor.response.respond
+import io.ktor.response.respondText
+import io.ktor.routing.get
 import io.ktor.routing.routing
 import io.ktor.websocket.webSocket
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
@@ -12,6 +17,7 @@ import kotlinx.coroutines.delay
 import kotlinx.serialization.list
 import penta.SerialNotation
 import penta.json
+import penta.network.ServerStatus
 
 fun Application.routes() = routing {
     val received = mutableListOf<String>()
@@ -76,5 +82,17 @@ fun Application.routes() = routing {
 //            println("onError ${closeReason.await()}")
 //            e.printStackTrace()
 //        }
+    }
+    get("/api/status") {
+        println("received status request")
+        call.respondText(
+            text = json.stringify(
+                ServerStatus.serializer(),
+                ServerStatus(
+                    totalPlayers = 0
+                )
+            ),
+            contentType = ContentType.Application.Json
+        )
     }
 }

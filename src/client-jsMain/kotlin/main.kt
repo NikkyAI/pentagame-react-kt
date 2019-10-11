@@ -1,26 +1,14 @@
-import PentaViz.addEvents
-import io.data2viz.viz.bindRendererOn
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.js.Js
+import io.ktor.client.features.json.JsonFeature
+import io.ktor.client.features.json.serializer.KotlinxSerializer
 import io.ktor.client.features.websocket.WebSockets
-import io.ktor.client.features.websocket.ws
-import io.ktor.http.HttpMethod
-import io.ktor.http.cio.websocket.Frame
-import io.ktor.http.cio.websocket.readText
-import kotlinx.coroutines.channels.consumeEach
-import kotlinx.coroutines.coroutineScope
-import org.w3c.dom.HTMLCanvasElement
-import org.w3c.dom.events.EventListener
-import org.w3c.dom.url.URL
-import penta.ClientGameState
-import penta.SerialNotation
-import penta.json
-import kotlin.browser.document
-import kotlin.browser.window
-import kotlin.math.min
 
 actual val client: HttpClient = HttpClient(Js).config {
     install(WebSockets)
+    install(JsonFeature) {
+        serializer = KotlinxSerializer()
+    }
 }
 
 //suspend fun main(): Unit = coroutineScope {

@@ -19,6 +19,7 @@ import com.lightningkite.reacktive.property.StandardObservableProperty
 import com.lightningkite.reacktive.property.transform
 import com.lightningkite.recktangle.Point
 import io.data2viz.geom.svgPath
+import io.data2viz.hierarchy.separation
 import io.data2viz.viz.PathNode
 import penta.view.test.CanvasTestVG
 
@@ -30,6 +31,7 @@ class MainPentaVG<VIEW>() : MyViewGenerator<VIEW> {
     val views = mutableObservableListOf<Triple<String, MaterialIcon, () -> MyViewGenerator<VIEW>>>(
         Triple("Rules", MaterialIcon.help, { RulesVG<VIEW>() }),
         Triple("Notation", MaterialIcon.history, { HistoryVG<VIEW>() }),
+        Triple("Multiplayer", MaterialIcon._public, { MultiplayerVG<VIEW>() }),
         Triple("Canvas Test", MaterialIcon.lineStyle, { CanvasTestVG<VIEW>() })
 //        Triple("Space Test", MaterialIcon.add, { SpaceTestVG<VIEW>() }),
 //        Triple("Original Test", MaterialIcon.add, { OriginalTestVG<VIEW>() }),
@@ -87,20 +89,21 @@ class MainPentaVG<VIEW>() : MyViewGenerator<VIEW> {
                                         Point(24f, 24f)
                                     )
                                 }
+                                val imageButon = imageButton(
+                                    imageWithOptions = svgImage,
+                                    label = ConstantObservableProperty(player.id),
+                                    importance = if (currentPlayer.id == player.id) Importance.Normal else Importance.Low,
+                                    onClick = {
+                                        // TODO: show popup / dropdown
+                                    }
+                                ).setHeight(32f)
 
-                                -entryContext(
-                                    label = player.id,
-                                    field = imageButton(
-                                        imageWithOptions = svgImage,
-                                        importance = if (currentPlayer.id == player.id) Importance.Normal else Importance.Low,
-                                        onClick = {
-                                            // TODO: show popup / dropdown
-                                        }
-                                    ).setHeight(32f)
-                                ).setWidth(64f)
-
+                                -imageButon
+//                                -entryContext(
+//                                    label = player.id,
+//                                    field =imageButon
+//                                ).setWidth(64f)
                             }
-
                         } to Animation.Fade
                     }
                     )
@@ -119,9 +122,7 @@ class MainPentaVG<VIEW>() : MyViewGenerator<VIEW> {
                                                 Point(24f, 24f)
                                             )
                                         ),
-                                        label = ConstantObservableProperty(
-                                            "$label Button"
-                                        ),
+                                        label = ConstantObservableProperty(label),
                                         importance = if (index == selectedIndex) Importance.Normal else Importance.Low,
                                         onClick = {
                                             selectedIconIndex.value = index
@@ -134,7 +135,7 @@ class MainPentaVG<VIEW>() : MyViewGenerator<VIEW> {
 //                                    -entryContext(
 //                                        label = label,
 //                                        field = imageButton
-//                                    )
+//                                    ).setWidth(32f)
                                 }
                             }.setWidth(32f) to Animation.Fade
                         }
@@ -142,11 +143,6 @@ class MainPentaVG<VIEW>() : MyViewGenerator<VIEW> {
                     +swap(
                         view = mainSwapContent
                     )
-//                    +window(
-//                        dependency = dependency,
-//                        stack = stack,
-//                        tabs = listOf()
-//                    )
                 }
             }
 

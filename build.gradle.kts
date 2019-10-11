@@ -94,6 +94,7 @@ kotlin {
                     exclude(mapOf("group" to Data2Viz.group, "module" to "d2v-geo-common"))
                 }
                 api(ktor("client-core"))
+                api(ktor("client-json"))
                 api("com.lightningkite:kommon-metadata:${Kommon.version}")
                 api("com.lightningkite:reacktive-metadata:${Reacktive.version}")
                 api("com.lightningkite:recktangle-metadata:${Recktangle.version}")
@@ -126,6 +127,9 @@ kotlin {
                         exclude(mapOf("group" to Data2Viz.group, "module" to "d2v-geo-jvm"))
                     }
                     implementation("org.jetbrains.kotlinx:kotlinx-serialization-runtime:${Serialization.version}")
+
+                    implementation("com.lightningkite:kommon-jvm:${Kommon.version}")
+                    implementation("com.lightningkite:reacktive-jvm:${Reacktive.version}")
                 }
             }
             compilations.all {
@@ -149,6 +153,8 @@ kotlin {
                     implementation(TornadoFX.dep)
 
                     implementation(ktor("client-cio"))
+                    implementation(ktor("client-json-jvm"))
+                    implementation(ktor("client-serialization-jvm"))
 //                    implementation(ktor("client-websockets"))
 
                     implementation("com.lightningkite:kommon-jvm:${Kommon.version}")
@@ -188,18 +194,19 @@ kotlin {
                         exclude(mapOf("group" to Data2Viz.group, "module" to "geojson-js"))
                         exclude(mapOf("group" to Data2Viz.group, "module" to "d2v-geo-js"))
                     }
+
+                    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-js:${Coroutines.version}")
+                    implementation("org.jetbrains.kotlinx:kotlinx-serialization-runtime-js:${Serialization.version}")
+
                     implementation(ktor("client-core-js"))
+                    implementation(ktor("client-json-js"))
+                    implementation(ktor("client-serialization-js"))
 
                     implementation("com.lightningkite:kommon-js:${Kommon.version}")
                     implementation("com.lightningkite:reacktive-js:${Reacktive.version}")
                     implementation("com.lightningkite:recktangle-js:${Recktangle.version}")
                     implementation("com.lightningkite:lokalize-js:${Lokalize.version}")
                     implementation("com.lightningkite:koolui-js:${KoolUI.version}")
-
-//                    implementation(ktor("client-cio"))
-//                    implementation(ktor("client-websocket"))
-                    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-js:${Coroutines.version}")
-                    implementation("org.jetbrains.kotlinx:kotlinx-serialization-runtime-js:${Serialization.version}")
                 }
                 compilations["test"].defaultSourceSet {
 
