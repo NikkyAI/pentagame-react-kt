@@ -2,9 +2,11 @@ package penta.server
 
 import io.ktor.application.Application
 import io.ktor.application.install
+import io.ktor.features.CORS
 import io.ktor.features.CallLogging
 import io.ktor.features.DefaultHeaders
 import io.ktor.websocket.WebSockets
+import java.time.Duration
 
 fun Application.main() {
     install(DefaultHeaders)
@@ -14,9 +16,10 @@ fun Application.main() {
 
 //    install(HttpsRedirect)
 //    install(HSTS)
-//    install(CORS) {
-//        maxAge = Duration.ofDays(1)
-//    }
+    install(CORS) {
+        anyHost()
+        maxAge = Duration.ofMinutes(20)
+    }
 //    install(Metrics) {
 //        val reporter = Slf4jReporter.forRegistry(registry)
 //                .outputTo(log)
