@@ -2,21 +2,18 @@ package penta.view
 
 import PentaViz
 import com.lightningkite.kommon.collection.push
-import com.lightningkite.koolui.views.layout.*
 import com.lightningkite.koolui.color.Color
+import com.lightningkite.koolui.concepts.Animation
 import com.lightningkite.koolui.concepts.Importance
-import com.lightningkite.koolui.concepts.TabItem
-import com.lightningkite.koolui.geometry.Direction
-import com.lightningkite.koolui.geometry.LinearPlacement
 import com.lightningkite.koolui.image.Image
 import com.lightningkite.koolui.image.MaterialIcon
 import com.lightningkite.koolui.image.color
 import com.lightningkite.koolui.image.withOptions
-import com.lightningkite.reacktive.list.MappingObservableList
-import com.lightningkite.reacktive.list.StandardObservableList
+import com.lightningkite.koolui.views.layout.horizontal
+import com.lightningkite.koolui.views.layout.vertical
 import com.lightningkite.reacktive.list.WrapperObservableList
-import com.lightningkite.reacktive.list.asObservableList
 import com.lightningkite.reacktive.list.mutableObservableListOf
+import com.lightningkite.reacktive.property.CombineObservableProperty2
 import com.lightningkite.reacktive.property.ConstantObservableProperty
 import com.lightningkite.reacktive.property.StandardObservableProperty
 import com.lightningkite.reacktive.property.transform
@@ -29,11 +26,10 @@ class MainPentaVG<VIEW>() : MyViewGenerator<VIEW> {
 //    override val title: String = "KotlinX UI Test"
 
     val stack = WrapperObservableList<MyViewGenerator<VIEW>>()
-    val mainView = RulesVG<VIEW>()
-//    val mainView = IconsTestVG<VIEW>() // SelectorVG(stack)
 
     val views = mutableObservableListOf<Triple<String, MaterialIcon, () -> MyViewGenerator<VIEW>>>(
         Triple("Rules", MaterialIcon.help, { RulesVG<VIEW>() }),
+        Triple("Notation", MaterialIcon.history, { HistoryVG<VIEW>() }),
         Triple("Canvas Test", MaterialIcon.lineStyle, { CanvasTestVG<VIEW>() })
 //        Triple("Space Test", MaterialIcon.add, { SpaceTestVG<VIEW>() }),
 //        Triple("Original Test", MaterialIcon.add, { OriginalTestVG<VIEW>() }),
@@ -49,21 +45,7 @@ class MainPentaVG<VIEW>() : MyViewGenerator<VIEW> {
 ////            "URL Image Test" to { UrlImageTestVG<VIEW>() },
 //        Triple("Dialog", MaterialIcon.add, { DialogTestVG<VIEW>() })
     )
-    val tabOptions = views.map {(label, icon, createViewGenerator) ->
-        TabItem(
-            imageWithOptions =  icon.color(Color.gray).withOptions(
-                Point(24f, 24f)
-            ),
-            text = label,
-            description = "description"
-        )
-    }.asObservableList()
-
-    val tabSelection = StandardObservableProperty(tabOptions.first()).apply {
-        add {
-            println("tab selected: $it")
-        }
-    }
+    val selectedIconIndex = StandardObservableProperty(0)
 
     init {
         //Startup
@@ -71,87 +53,104 @@ class MainPentaVG<VIEW>() : MyViewGenerator<VIEW> {
     }
 
     override fun generate(dependency: MyViewFactory<VIEW>): VIEW = with(dependency) {
+        val mainSwapContent = StandardObservableProperty(
+            views.first().third.invoke().generate(this) to Animation.Fade
+        )
         horizontal {
             +vertical {
                 -horizontal {
                     -text(PentaViz.turnDisplay)
-                    +list(
-                        data = PentaViz.gameState.players,
-                        direction = Direction.Right,
-                        makeView = { itemObs, index ->
-                            val player = itemObs.value
-                            val svgImage = itemObs.transform {
-                                val pathNode = PathNode()
-                                with(PentaViz) {
-                                    pathNode.drawPlayer(
-                                        it.figureId,
-                                        center = io.data2viz.geom.Point(12.0, 12.0),
-                                        radius = 12.0
+                    +swap(view = CombineObservableProperty2(
+                        PentaViz.gameState.players.onListUpdate,
+                        PentaViz.gameState.currentPlayerProperty
+                    ) { players, currentPlayer ->
+                        horizontal {
+                            players.forEach { player ->
+                                val svgImage = player.figureIdProperty.transform { figureId ->
+                                    val pathNode = PathNode()
+                                    with(PentaViz) {
+                                        pathNode.drawPlayer(
+                                            figureId,
+                                            center = io.data2viz.geom.Point(12.0, 12.0),
+                                            radius = 12.0
+                                        )
+                                    }
+                                    val svgString = pathNode.path.svgPath.let {
+                                        """<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="$it"/></svg>"""
+                                    }
+                                    val color = if (currentPlayer.id == player.id) Color.white else Color.black
+                                    Image.fromSvgString(
+                                        svgString.substringBefore('g') + """g fill="${color.toAlphalessWeb()}"""" + svgString.substringAfter(
+                                            'g'
+                                        )
+                                    ).withOptions(
+                                        Point(24f, 24f)
                                     )
                                 }
-                                val svgString = pathNode.path.svgPath.let {
-                                    """<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="$it"/></svg>"""
-                                }
-                                val color = Color.black
-                                Image.fromSvgString(
-                                    svgString.substringBefore('g') + """g fill="${color.toAlphalessWeb()}"""" + svgString.substringAfter(
-                                        'g'
-                                    )
-                                ).withOptions(
-                                    Point(24f, 24f)
-                                )
+
+                                -entryContext(
+                                    label = player.id,
+                                    field = imageButton(
+                                        imageWithOptions = svgImage,
+                                        importance = if (currentPlayer.id == player.id) Importance.Normal else Importance.Low,
+                                        onClick = {
+                                            // TODO: show popup / dropdown
+                                        }
+                                    ).setHeight(32f)
+                                ).setWidth(64f)
+
                             }
 
-                            entryContext(
-                                label = player.id,
-                                field = image(svgImage)
-                            )
+                        } to Animation.Fade
+                    }
+                    )
+                }.setHeight(48f)
+                +horizontal {
+                    -swap(
+                        view = CombineObservableProperty2(
+                            selectedIconIndex,
+                            views.onListUpdate
+                        ) { selectedIndex, list ->
+                            vertical {
+                                list.forEachIndexed { index, (label, icon, createViewGenerator) ->
+                                    val imageButton = imageButton(
+                                        imageWithOptions = ConstantObservableProperty(
+                                            icon.color(if (index == selectedIndex) Color.white else Color.gray).withOptions(
+                                                Point(24f, 24f)
+                                            )
+                                        ),
+                                        label = ConstantObservableProperty(
+                                            "$label Button"
+                                        ),
+                                        importance = if (index == selectedIndex) Importance.Normal else Importance.Low,
+                                        onClick = {
+                                            selectedIconIndex.value = index
+                                            mainSwapContent.value =
+                                                createViewGenerator.invoke().generate(dependency) to Animation.Fade
+//                                            stack.push(createViewGenerator.invoke())
+                                        }
+                                    ).setHeight(32f)
+                                    -imageButton
+//                                    -entryContext(
+//                                        label = label,
+//                                        field = imageButton
+//                                    )
+                                }
+                            }.setWidth(32f) to Animation.Fade
                         }
                     )
-                }
-                +horizontal(
-                    LinearPlacement.wrapStart to list(
-                        data = views,
-                        makeView = { itemObs, index ->
-                            val (label, icon, createViewGenerator) = itemObs.value
-                            entryContext(
-                                label = label,
-                                field = imageButton(
-                                    imageWithOptions = itemObs.transform { (label, icon, createViewGenerator) ->
-                                        icon.color(Color.gray).withOptions(
-                                            Point(24f, 24f)
-                                        )
-                                    },
-                                    label = itemObs.transform { (label, icon, createViewGenerator) ->
-                                        "$label Button"
-                                    },
-                                    importance = Importance.Normal,
-                                    onClick = {
-                                        stack.push(createViewGenerator.invoke())
-                                    }
-                                )
-                            )
-                        }
-                    ),
-//                LinearPlacement.wrapStart to tabs(
-//                    tabOptions,
-//                    tabSelection
-//                ),
-                    LinearPlacement.fillCenter to window(
-                        dependency = dependency,
-                        stack = stack,
-                        tabs = listOf()
+                    +swap(
+                        view = mainSwapContent
                     )
-                )
-            }
-            val playerSymbols = listOf("triangle", "square", "cross", "circle")
-            val playerCount = 3
-            +vizCanvas(ConstantObservableProperty(PentaViz.viz)) {
-                with(PentaViz) {
-                    it.addEvents()
+//                    +window(
+//                        dependency = dependency,
+//                        stack = stack,
+//                        tabs = listOf()
+//                    )
                 }
-                PentaViz.gameState.initialize(playerSymbols.subList(0, playerCount))
             }
+
+            +vizCanvas(ConstantObservableProperty(PentaViz.viz))
         }
     }
 }

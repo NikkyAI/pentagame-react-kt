@@ -18,11 +18,13 @@ sealed class PentaMove {
     }
 
     interface CanSetBlack {
-        var setBlack: SetBlack?
+        val setBlack: SetBlack?
+        fun withSetBlack(setBlack: SetBlack): PentaMove
     }
 
     interface CanSetGrey {
-        var setGrey: SetGrey?
+        val setGrey: SetGrey?
+        fun withSetGrey(setGrey: SetGrey): PentaMove
     }
 
     // ->
@@ -30,8 +32,8 @@ sealed class PentaMove {
         override val playerPiece: Piece.Player,
         override val from: AbstractField,
         override val to: AbstractField,
-        override var setBlack: SetBlack? = null,
-        override var setGrey: SetGrey? = null
+        override val setBlack: SetBlack? = null,
+        override val setGrey: SetGrey? = null
     ) : PentaMove(), Move, CanSetBlack, CanSetGrey {
         override fun asNotation(): String = "${playerPiece.playerId}: ${playerPiece.id} (${from.id} -> ${to.id})" +
             (setBlack?.asNotation() ?: "") +
@@ -49,6 +51,9 @@ sealed class PentaMove {
                 setBlack?.serialize(),
                 setGrey?.serialize()
             )
+
+        override fun withSetBlack(setBlack: SetBlack) = copy(setBlack = setBlack)
+        override fun withSetGrey(setGrey: SetGrey) = copy(setGrey = setGrey)
     }
 
     // ->
@@ -56,7 +61,7 @@ sealed class PentaMove {
         override val playerPiece: Piece.Player,
         override val from: AbstractField,
         override val to: AbstractField,
-        override var setGrey: SetGrey? = null
+        override val setGrey: SetGrey? = null
     ) : PentaMove(), Move, CanSetGrey {
         override fun asNotation(): String = "${playerPiece.playerId}: ${playerPiece.id} (${from.id} -> ${to.id})" +
             (setGrey?.asNotation() ?: "")
@@ -71,6 +76,7 @@ sealed class PentaMove {
                 ),
                 setGrey?.serialize()
             )
+        override fun withSetGrey(setGrey: SetGrey) = copy(setGrey = setGrey)
     }
 
     // <->
@@ -79,7 +85,7 @@ sealed class PentaMove {
         override val otherPlayerPiece: Piece.Player,
         override val from: AbstractField,
         override val to: AbstractField,
-        override var setGrey: SetGrey? = null
+        override val setGrey: SetGrey? = null
     ) : PentaMove(), Swap, CanSetGrey {
         override fun asNotation(): String = "${playerPiece.playerId}: ${playerPiece.id} ${otherPlayerPiece.id}{${otherPlayerPiece.playerId}} (${from.id} <-> ${to.id})"
 
@@ -95,6 +101,7 @@ sealed class PentaMove {
                 ),
                 setGrey?.toSerializableList()?.first()
             )
+        override fun withSetGrey(setGrey: SetGrey) = copy(setGrey = setGrey)
     }
 
     // <-/->
@@ -103,7 +110,7 @@ sealed class PentaMove {
         override val otherPlayerPiece: Piece.Player,
         override val from: AbstractField,
         override val to: AbstractField,
-        override var setGrey: SetGrey? = null
+        override val setGrey: SetGrey? = null
     ) : PentaMove(), Swap, CanSetGrey {
         override fun asNotation(): String = "${playerPiece.playerId}: ${playerPiece.id} ${otherPlayerPiece.id}{${otherPlayerPiece.playerId}} (${from.id} <+> ${to.id})"
 
@@ -120,6 +127,7 @@ sealed class PentaMove {
                 ),
                 setGrey?.serialize()
             )
+        override fun withSetGrey(setGrey: SetGrey) = copy(setGrey = setGrey)
     }
 
     // <=>
@@ -128,7 +136,7 @@ sealed class PentaMove {
         override val otherPlayerPiece: Piece.Player,
         override val from: AbstractField,
         override val to: AbstractField,
-        override var setGrey: SetGrey? = null
+        override val setGrey: SetGrey? = null
     ) : PentaMove(), Swap, CanSetGrey {
         override fun asNotation(): String = "${playerPiece.playerId}: ${playerPiece.id} ${otherPlayerPiece.id}{${otherPlayerPiece.playerId}} (${from.id} <=> ${to.id})"
 
@@ -145,6 +153,7 @@ sealed class PentaMove {
                 ),
                 setGrey?.toSerializableList()?.first()
             )
+        override fun withSetGrey(setGrey: SetGrey) = copy(setGrey = setGrey)
     }
 
     data class SetBlack(

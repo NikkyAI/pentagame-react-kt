@@ -2,6 +2,8 @@ package penta
 
 import PentaBoard
 import PentaMath
+import com.lightningkite.reacktive.list.MutableObservableList
+import com.lightningkite.reacktive.list.ObservableList
 import io.data2viz.geom.Point
 import kotlinx.serialization.list
 import penta.logic.field.AbstractField
@@ -11,6 +13,7 @@ import penta.util.exhaustive
 import com.lightningkite.reacktive.list.WrapperObservableList
 import com.lightningkite.reacktive.list.mutableObservableListOf
 import com.lightningkite.reacktive.property.StandardObservableProperty
+import penta.util.replaceLast
 
 open class BoardState() {
     var updateLogPanel: (String) -> Unit = {}
@@ -29,8 +32,8 @@ open class BoardState() {
     private val positions: MutableMap<String, AbstractField?> = mutableMapOf()
     val figurePositions: Map<String, AbstractField?> get() = positions
 
-    private val mutableHistory: MutableList<PentaMove> = mutableListOf()
-    val history: List<PentaMove> = mutableHistory
+    private val mutableHistory: MutableObservableList<PentaMove> = mutableObservableListOf()
+    val history: ObservableList<PentaMove> = mutableHistory
 
     var initialized: Boolean = false
         private set
@@ -40,14 +43,14 @@ open class BoardState() {
 
     val turnProperty: StandardObservableProperty<Int> = StandardObservableProperty(0).apply {
         add {
-            println("set turn: $$it")
+            println("set turn = $it")
             currentPlayerProperty.value = if (players.isNotEmpty()) players[it % players.size] else throw IllegalStateException("no turn")
             updateBoard()
         }
     }
     var turn: Int
         inline get() = turnProperty.value
-        inline set(value) {
+        private inline set(value) {
             turnProperty.value = value
         }
 
@@ -227,9 +230,10 @@ open class BoardState() {
                 requires(move.piece.position == null || move.piece.position == move.from) { TODO("signal illegal move") }
 
                 move.piece.position = move.to
-                val lastMove = mutableHistory.last()
-                require(lastMove is PentaMove.CanSetBlack) { "last move was not the expected move type" }
-                lastMove.setBlack = move
+                mutableHistory.replaceLast {
+                    require(this is PentaMove.CanSetBlack) { "last move was not the expected move type: $this" }
+                    withSetBlack(move)
+                }
                 selectedBlackPiece = null
 
                 updatePiecesAtPos(move.to)
@@ -250,9 +254,10 @@ open class BoardState() {
                 }
 
                 move.piece.position = move.to
-                val lastMove = mutableHistory.last()
-                require(lastMove is PentaMove.CanSetGrey) { "last move was not the expected move type" }
-                lastMove.setGrey = move
+                mutableHistory.replaceLast {
+                    require(this is PentaMove.CanSetGrey) { "last move was not the expected move type: $this" }
+                    withSetGrey(move)
+                }
                 selectedGrayPiece = null
                 updatePiecesAtPos(move.to)
                 updatePiecesAtPos(move.from)

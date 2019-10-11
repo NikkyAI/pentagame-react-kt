@@ -22,13 +22,13 @@ class RulesVG<VIEW>() : MyViewGenerator<VIEW> {
 ////                web(ConstantObservableProperty("http://pentagame.org/"))
 //            },
             {
-                text(text = "Second page", size = TextSize.Header, align = AlignPair.CenterCenter)
+                text(text = "Rules page 1", size = TextSize.Header, align = AlignPair.CenterCenter)
             },
             {
-                text(text = "Third page", size = TextSize.Header, align = AlignPair.CenterCenter)
+                text(text = "Rules page 2", size = TextSize.Header, align = AlignPair.CenterCenter)
             },
             {
-                text(text = "Last page", size = TextSize.Header, align = AlignPair.CenterCenter)
+                text(text = "Rules page 3", size = TextSize.Header, align = AlignPair.CenterCenter)
             }
         )
     }

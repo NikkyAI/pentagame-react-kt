@@ -59,75 +59,15 @@ class App : Application() {
     }
 
     override fun start(stage: Stage) {
-        val viz = PentaViz.viz
+        val root = with(Factory()) { nativeViewAdapter(contentRoot(mainVg)) }
 
         val playerSymbols = listOf("triangle", "square", "cross", "circle")
         val playerCount = 3
+        with(PentaViz) {
+            viz.addEvents()
+        }
+        PentaViz.gameState.initialize(playerSymbols.subList(0, playerCount))
 
-//        val canvas = object : Canvas(WIDTH, HEIGHT) {
-//            override fun isResizable(): Boolean = true
-//            override fun prefWidth(height: Double): Double = width
-//            override fun prefHeight(width: Double): Double = height
-//        }.apply {
-//            HBox.setHgrow(this, Priority.ALWAYS)
-//            VBox.setVgrow(this, Priority.ALWAYS)
-//
-////            minWidth(WIDTH)
-////            minHeight(HEIGHT)
-//            widthProperty().addListener { _, _, new ->
-//                val newWidth = new.toDouble()
-//                println("newWidth: $newWidth height: $height")
-//                val scale = if (newWidth > height) height else newWidth
-//                viz.resize(scale, scale)
-//                viz.render()
-//            }
-//            heightProperty().addListener { _, _, new ->
-//                val newHeight = new.toDouble()
-//                println("newHeight: $newHeight width: $width")
-//                val scale = if (newHeight > width) width else newHeight
-//                viz.resize(scale, scale)
-//                viz.render()
-//            }
-//        }
-//        val uiWrapper = Pane().apply {
-//            HBox.setHgrow(this, Priority.ALWAYS)
-//            VBox.setVgrow(this, Priority.ALWAYS)
-//
-//            val koolui = with(Factory()) { nativeViewAdapter(contentRoot(mainVg)) }
-//
-//            children.add(koolui)
-//        }
-//        val root = BorderPane().apply {
-//            HBox.setHgrow(this, Priority.ALWAYS)
-//            VBox.setVgrow(this, Priority.ALWAYS)
-
-//            fun updateDimensions(width: Double, height: Double) {
-//                val scale = if (height > width) width else height
-//                canvas.width = scale
-//                canvas.height = scale
-//            }
-//
-//            widthProperty().addListener { _, _, new ->
-//                val newWidth = new.toDouble() - uiWrapper.width
-//                println("root newWidth: $newWidth height: $height")
-//                updateDimensions(newWidth, height)
-//            }
-//            heightProperty().addListener { _, _, new ->
-//                val newHeight = new.toDouble()
-//                println("root newHeight: $newHeight width: ${width - uiWrapper.width}")
-//                updateDimensions(width - uiWrapper.width, newHeight)
-//            }
-//            uiWrapper.widthProperty().addListener { _ ->
-//                updateDimensions(width - uiWrapper.width, height)
-//            }
-//            uiWrapper.heightProperty().addListener { _ ->
-//                updateDimensions(width - uiWrapper.width, height)
-//            }
-//        }
-//        root.center = canvas
-//        root.center = uiWrapper
-
-        val root = with(Factory()) { nativeViewAdapter(contentRoot(mainVg)) }
         stage.let {
             it.scene = Scene(root)
             it.show()

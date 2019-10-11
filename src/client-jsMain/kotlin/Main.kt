@@ -8,6 +8,9 @@ import penta.view.MyViewFactory
 import kotlin.browser.document
 import kotlin.browser.window
 import com.lightningkite.koolui.views.root.contentRoot
+import io.data2viz.viz.bindRendererOn
+import org.w3c.dom.HTMLCanvasElement
+import kotlin.math.min
 
 //class LayoutFactory(
 //    val underlying: LayoutHtmlViewFactory = LayoutHtmlViewFactory(penta.view.theme)
@@ -29,5 +32,26 @@ fun main(args: Array<String>) {
 //                }
             Factory().contentRoot(mainVg)
         )
+        println("UI finished")
+
+        val playerSymbols = listOf("triangle", "square", "cross", "circle")
+        val playerCount = 3
+        val canvasId = "vizCanvas"
+        val canvas = requireNotNull(document.getElementById(canvasId) as HTMLCanvasElement?)
+        with(PentaViz) {
+            viz.bindRendererOn(canvas)
+            viz.addEvents()
+            gameState.initialize(playerSymbols.subList(0, playerCount))
+        }
+        val size = min(canvas.clientWidth, canvas.clientHeight)
+        println("initial size: $size")
+        canvas.width = size
+        canvas.height = size
+        with(PentaViz.viz) {
+            height = canvas.height.toDouble()
+            width = canvas.width.toDouble()
+            resize(canvas.width.toDouble(), canvas.height.toDouble())
+            render()
+        }
     }
 }
