@@ -33,6 +33,10 @@ object Ktor {
     const val version = "1.2.5"
 }
 
+object Logback {
+    const val version = "1.2.3"
+}
+
 object Serialization {
     const val version = "0.13.0"
 }

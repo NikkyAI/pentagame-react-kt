@@ -3,18 +3,22 @@ package penta.server
 import io.ktor.application.Application
 import io.ktor.application.call
 import io.ktor.http.ContentType
+import io.ktor.http.HttpStatusCode
 import io.ktor.http.cio.websocket.CloseReason
 import io.ktor.http.cio.websocket.Frame
 import io.ktor.http.cio.websocket.close
 import io.ktor.http.cio.websocket.readText
+import io.ktor.request.receiveParameters
 import io.ktor.response.respond
 import io.ktor.response.respondText
 import io.ktor.routing.get
+import io.ktor.routing.post
 import io.ktor.routing.routing
 import io.ktor.websocket.webSocket
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.delay
 import kotlinx.serialization.list
+import kotlinx.serialization.serializer
 import penta.SerialNotation
 import penta.json
 import penta.network.ServerStatus
@@ -94,5 +98,29 @@ fun Application.routes() = routing {
             ),
             contentType = ContentType.Application.Json
         )
+    }
+    get("/api/user/{userid}") {
+        val userid = call.parameters["userid"]
+        call.respondText(
+            contentType = ContentType.Application.Json,
+            status = HttpStatusCode.NotFound,
+            text = "No such user by id '$userid'"
+        )
+    }
+    get("/api/games/") {
+        call.respondText(
+            contentType = ContentType.Application.Json,
+            text = json.stringify(
+                String.serializer().list,
+                listOf()
+            )
+        )
+    }
+    post("/login") {
+
+    }
+    webSocket("/api/ws") {
+        val gameId = call.parameters["gameId"] ?: throw IllegalArgumentException("missing parameter gameId")
+
     }
 }

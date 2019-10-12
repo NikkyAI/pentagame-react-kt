@@ -17,6 +17,7 @@ import com.lightningkite.reacktive.property.update
 import io.ktor.client.request.request
 import io.ktor.http.URLBuilder
 import io.ktor.http.Url
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import penta.ConnectionState
@@ -24,7 +25,7 @@ import penta.network.ServerStatus
 
 class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
     fun connect(urlInput: String) {
-        GlobalScope.launch {
+        GlobalScope.launch(Dispatchers.Default) {
             val baseURL = Url(urlInput)
             val url =  URLBuilder(baseURL).apply {
                 path("api", "status")
@@ -79,7 +80,7 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
                         }
                         val refreshing = StandardObservableProperty(false)
 
-                        card(refresh(
+                        refresh(
                             contains = vertical {
                                 -horizontal {
                                     +text(
@@ -95,7 +96,7 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
                                 +list(
                                     data = gameRows,
                                     makeView = { listProp, indexProp ->
-                                        vertical {
+                                        horizontal {
                                             listProp.value.forEach { gameLabel ->
                                                 +card(text(gameLabel))
                                             }
@@ -115,7 +116,7 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
                                 refreshing.value = false
                                 refreshing.update()
                             }
-                        )) to Animation.Fade
+                        ).setWidth(200f) to Animation.Fade
                     }
                 }
             }

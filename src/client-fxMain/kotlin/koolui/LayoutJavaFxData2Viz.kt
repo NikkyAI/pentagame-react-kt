@@ -3,7 +3,7 @@ package koolui
 import com.lightningkite.koolui.layout.Layout
 import com.lightningkite.koolui.layout.views.LayoutViewWrapper
 import com.lightningkite.koolui.layout.views.wrap
-import com.lightningkite.reacktive.property.ConstantObservableProperty
+import com.lightningkite.reacktive.property.ObservableProperty
 import com.lightningkite.reacktive.property.lifecycle.bind
 import io.data2viz.viz.JFxVizRenderer
 import io.data2viz.viz.Viz
@@ -22,7 +22,7 @@ interface LayoutJavaFxData2Viz : ViewFactoryData2Viz<Layout<*, Node>>, /*HasScal
             onResize()
         }
     }
-    override fun vizCanvas(viz: ConstantObservableProperty<Viz>): Layout<*, Node> {
+    override fun vizCanvas(viz: ObservableProperty<Viz>): Layout<*, Node> {
         return wrap(SquareCanvas()) { lifecycle ->
             // TODO: resize only in square ?
             lifecycle.bind(viz){ viz ->

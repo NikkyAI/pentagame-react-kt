@@ -1,20 +1,17 @@
 #!/usr/bin/env bash
-#./gradlew packageJs && \
-uglifyjs `ls build/kotlin-js-min/client-js/main/*.js` -o build/html/ugly.js
 
-rootDir=$(pwd)
-
-rm -rf build/html/uglify-js/
-mkdir build/html/uglify-js/
+./gradlew runDceClient-jsKotlin
+OUTPUT=build/html/js/
+rm -rf $OUTPUT
+mkdir $OUTPUT
 FILES=build/kotlin-js-min/client-js/main/*.js
+#FILES=build/client-js/*.js
 for f in $FILES
 do
+  if [[ "$f" == *.meta.js ]]; then continue; fi
   echo "Processing $f file..."
-  b=$(basename $f)
-  DIR=$(dirname "$f}")
-  cd $DIR
-#  uglifyjs $b -o $PWD/build/html/uglify-js/$b
-  uglifyjs $b --source-map "filename=build/kotlin-js-min/client-js/main/$b.map" -o $rootDir/build/html/uglify-js/$b
-  cd $rootDir
+  filename=$(basename $f)
+  terser $f --source-map "content='$f.map',url='$b.map'" -c -o $OUTPUT/$filename
 done
+du -h build/html/js
 #rsync -Avr build/html/ nikky@shell.c-base.org:public_html/pentagame/

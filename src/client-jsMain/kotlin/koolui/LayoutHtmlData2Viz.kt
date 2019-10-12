@@ -1,41 +1,39 @@
 package koolui
 
 
-import com.lightningkite.koolui.canvas.HtmlCanvas
-import com.lightningkite.koolui.layout.Layout
-import com.lightningkite.koolui.layout.views.LayoutViewWrapper
-import com.lightningkite.koolui.layout.views.intrinsicLayout
+import com.lightningkite.koolui.appendLifecycled
 import com.lightningkite.koolui.lifecycle
 import com.lightningkite.koolui.makeElement
-import com.lightningkite.reacktive.property.ConstantObservableProperty
+import com.lightningkite.reacktive.property.ObservableProperty
 import com.lightningkite.reacktive.property.lifecycle.bind
 import io.data2viz.viz.Viz
-import io.data2viz.viz.bindRendererOn
-import io.data2viz.viz.bindRendererOnNewCanvas
 import org.w3c.dom.HTMLCanvasElement
+import org.w3c.dom.HTMLDivElement
 import org.w3c.dom.HTMLElement
 import org.w3c.dom.events.EventListener
-import kotlin.browser.document
 import kotlin.browser.window
 import kotlin.math.min
 
 interface LayoutHtmlData2Viz : ViewFactoryData2Viz<HTMLElement> {
-    override fun vizCanvas(draw: ConstantObservableProperty<Viz>): HTMLElement {
-        return makeElement<HTMLCanvasElement>("canvas").apply {
-            val c = HtmlCanvas(this)
+    override fun vizCanvas(draw: ObservableProperty<Viz>): HTMLElement {
+        return makeElement<HTMLDivElement>("div").apply {
             lifecycle.bind(draw) { viz ->
-                val canvas = c.element
+                id = "vizContainer"
+                val canvas = makeElement<HTMLCanvasElement>("canvas")
                 canvas.id = "vizCanvas"
                 canvas.style.apply {
-                    width = "100%"
-                    height = "0%"
-                    paddingBottom = "100%"
+                    margin = "0px"
                 }
 //                viz.bindRendererOn(canvas.id)
                 window.addEventListener("resize",
                     EventListener { event ->
+                        val rect = getBoundingClientRect()
+                        println("rect width: ${rect.width} height: ${rect.height}")
                         println("canvas width: ${canvas.width} height: ${canvas.height}")
-                        val size = min(canvas.clientWidth, canvas.clientHeight)
+                        val size = min(
+                            min(rect.height, rect.width).toInt(),
+                            window.document.documentElement!!.clientHeight
+                        )
                         canvas.width = size
                         canvas.height = size
                         with(viz) {
@@ -46,6 +44,7 @@ interface LayoutHtmlData2Viz : ViewFactoryData2Viz<HTMLElement> {
                         }
                     })
 //                postSetup(viz)
+                appendLifecycled(canvas)
             }
         }
     }

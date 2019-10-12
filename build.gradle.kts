@@ -121,6 +121,9 @@ kotlin {
                     implementation(ktor("server-cio", Ktor.version))
                     implementation(ktor("websockets", Ktor.version))
 
+                    // logging
+                    implementation("ch.qos.logback:logback-classic:${Logback.version}")
+
                     // TODO: move data2viz only into commonClient
                     implementation(Data2Viz.jfx_dep) {
                         exclude(mapOf("group" to Data2Viz.group, "module" to "geojson-jvm"))
@@ -221,6 +224,110 @@ kotlin {
                 }
             }
         }
+        val target = clientJS
+
+        fun getDependencies(): FileCollection {
+            val dependencies = ArrayList<File>()
+            try {
+                for (configName in target.compilations.findByName("main")!!.relatedConfigurationNames) {
+                    try {
+                        val config = project.configurations.getByName(configName)
+                        for (file in config) {
+                            dependencies.add(file)
+                        }
+                        println("Successfully read config ${configName}")
+                    } catch (e: Throwable) {
+                        /*squish*/
+                        println("Failed read config ${configName}")
+                    }
+                }
+            } catch (e: Throwable) {
+                logger.error(e.message, e)
+//                e.printStackTrace()
+            }
+            return files(dependencies)
+        }
+
+        fun File.jarFileToJsFiles(): FileCollection {
+            return if (exists()) {
+                zipTree(this).filter { it.extension == "js" || it.extension == "map" }
+            } else {
+                files()
+            }
+        }
+
+        val jarTask = tasks.findByName("${target.name}Jar")!!
+        val dceTask = tasks.findByName("runDce${target.name.capitalize()}Kotlin")
+
+        val copyJsTask = tasks.create("${target.name}CopyJs") {
+            //, Copy::class.java) { task ->
+            group = "build"
+            val targetFolder = file("build/kotlin-js/${target.name}/")
+            if (dceTask != null) {
+                dependsOn(dceTask)
+                doLast {
+                    copy {
+                        into(targetFolder)
+                        from(dceTask.outputs.files)
+                    }
+                }
+            } else {
+                dependsOn(jarTask)
+                doLast {
+                    targetFolder.deleteRecursively()
+                    copy {
+                        into(targetFolder)
+                        jarTask.outputs.files
+                            .filter { it.extension == "jar" }
+                            .flatMap { it.jarFileToJsFiles() }
+                            .forEach {
+                                from(it)
+                            }
+                        from(getDependencies().flatMap { it.jarFileToJsFiles() })
+                    }
+                }
+            }
+        }
+        val devJsTask = tasks.create("${target.name}CopyJsDev") {
+            group = "build"
+            val targetFolder = file("build/html/js/")
+            dependsOn(jarTask)
+            doLast {
+//                targetFolder.deleteRecursively()
+                copy {
+                    into(targetFolder)
+                    jarTask.outputs.files
+                        .filter { it.extension == "jar" }
+                        .flatMap { it.jarFileToJsFiles() }
+                        .forEach {
+                            from(it)
+                        }
+                    from(getDependencies().flatMap { it.jarFileToJsFiles() })
+                }
+            }
+        }
+        val terseTask = tasks.create("${target.name}TerseJs") {
+            dependsOn(copyJsTask)
+            group = "build"
+            val outputDir = file("build/html/js")
+            outputs.dir(outputDir)
+            doLast {
+                outputDir.deleteRecursively()
+                outputDir.mkdirs()
+                file("build/kotlin-js/${target.name}/").listFiles { file, name ->
+                    !name.endsWith(".meta.js") && name.endsWith(".js")
+                }!!.forEach { file ->
+                    exec {
+                        val f = file.name
+                        commandLine(
+                            "terser", "$file", "--source-map", "content='$file.map',url='$f.map'", "-o", outputDir.resolve(f).path
+                        )
+                        logger.lifecycle(commandLine.joinToString(" "))
+                    }
+                }
+            }
+
+        }
     }
 }
 
@@ -260,8 +367,7 @@ kotlin.targets.forEach { target: KotlinTarget ->
 //}
 
 application {
-    //    mainClassName = "penta.app.PentaAppKt"
-    mainClassName = "penta.app.MainKt"
+    mainClassName = "penta.app.PentaApp"
 }
 
 val shadowJar = tasks.getByName<ShadowJar>("shadowJar") {

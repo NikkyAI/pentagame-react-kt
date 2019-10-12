@@ -6,6 +6,8 @@ build/
 # idea
 
 .idea/
+!.idea/runConfigurations/*
+
 out/
 *.iml
 *.ipr

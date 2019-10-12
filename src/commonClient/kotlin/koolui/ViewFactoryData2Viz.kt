@@ -10,6 +10,6 @@ interface ViewFactoryData2Viz<VIEW> {
      * A canvas you can draw on.
      */
     fun vizCanvas(
-        draw: ConstantObservableProperty<Viz>
+        draw: ObservableProperty<Viz>
     ): VIEW
 }
