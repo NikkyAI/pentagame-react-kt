@@ -8,12 +8,13 @@ import io.ktor.http.cio.websocket.CloseReason
 import io.ktor.http.cio.websocket.Frame
 import io.ktor.http.cio.websocket.close
 import io.ktor.http.cio.websocket.readText
-import io.ktor.request.receiveParameters
-import io.ktor.response.respond
+import io.ktor.request.receive
 import io.ktor.response.respondText
 import io.ktor.routing.get
 import io.ktor.routing.post
 import io.ktor.routing.routing
+import io.ktor.sessions.sessions
+import io.ktor.sessions.set
 import io.ktor.websocket.webSocket
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.delay
@@ -21,6 +22,8 @@ import kotlinx.serialization.list
 import kotlinx.serialization.serializer
 import penta.SerialNotation
 import penta.json
+import penta.network.LoginRequest
+import penta.network.LoginResponse
 import penta.network.ServerStatus
 
 fun Application.routes() = routing {
@@ -116,8 +119,39 @@ fun Application.routes() = routing {
             )
         )
     }
-    post("/login") {
+    post("/api/login") {
+        val loginRequest = call.receive<LoginRequest>()
+        // find registered user
+        val user: String? = listOf("alice", "bob").find { it == loginRequest.userId }
+        val (status: HttpStatusCode, response: LoginResponse) = if (user == null) {
+            // create temporary session
+            val tmpSession = UserSession(loginRequest.userId)
+            call.sessions.set(tmpSession)
 
+            HttpStatusCode.OK to LoginResponse.Success(
+                message = "hello ${tmpSession.userId}"
+            )
+        } else {
+            if (loginRequest.password != "password") {
+                HttpStatusCode.OK to LoginResponse.IncorrectPassword()
+            } else {
+                val authenticatedSession = UserSession(loginRequest.userId)
+                call.sessions.set(authenticatedSession)
+
+                HttpStatusCode.OK to LoginResponse.Success(
+                    message = "hello ${authenticatedSession.userId}"
+                )
+            }
+        }
+
+        call.respondText(
+            contentType = ContentType.Application.Json,
+            text = json.stringify(
+                LoginResponse.serializer(),
+                response
+            ),
+            status = status
+        )
     }
     webSocket("/api/ws") {
         val gameId = call.parameters["gameId"] ?: throw IllegalArgumentException("missing parameter gameId")

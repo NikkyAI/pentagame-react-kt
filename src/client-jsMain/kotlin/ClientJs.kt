@@ -3,10 +3,11 @@ import io.ktor.client.engine.js.Js
 import io.ktor.client.features.json.JsonFeature
 import io.ktor.client.features.json.serializer.KotlinxSerializer
 import io.ktor.client.features.websocket.WebSockets
+import penta.json
 
 actual val client: HttpClient = HttpClient(Js).config {
     install(WebSockets)
     install(JsonFeature) {
-        serializer = KotlinxSerializer()
+        serializer = KotlinxSerializer(json)
     }
 }

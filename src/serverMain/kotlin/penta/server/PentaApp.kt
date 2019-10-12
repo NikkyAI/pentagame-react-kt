@@ -1,17 +1,17 @@
 package penta.server
 
+import com.fasterxml.jackson.databind.MapperFeature
+import com.fasterxml.jackson.databind.SerializationFeature
+import com.fasterxml.jackson.module.kotlin.KotlinModule
 import io.ktor.application.Application
-import io.ktor.application.call
 import io.ktor.application.install
 import io.ktor.features.CORS
 import io.ktor.features.CallLogging
 import io.ktor.features.DefaultHeaders
-import io.ktor.features.StatusPages
-import io.ktor.http.HttpStatusCode
-import io.ktor.response.respond
 import io.ktor.sessions.SessionStorageMemory
+import io.ktor.features.ContentNegotiation
+import io.ktor.jackson.jackson
 import io.ktor.sessions.Sessions
-import io.ktor.sessions.cookie
 import io.ktor.sessions.header
 import io.ktor.websocket.WebSockets
 import java.time.Duration
@@ -36,8 +36,17 @@ fun Application.main() {
 //                .build()
 //        reporter.start(10, TimeUnit.SECONDS)
 //    }
+    install(ContentNegotiation) {
+        jackson {
+            registerModule(KotlinModule()) // Enable Kotlin support
+            enable(SerializationFeature.INDENT_OUTPUT)
+//            enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES)
+        }
+    }
     install(Sessions) {
-        header<MySession>("SESSION", storage = SessionStorageMemory())
+        header<UserSession>("SESSION", storage = SessionStorageMemory()) {
+//            cookie.path = "/" // Specify cookie's path '/' so it can be used in the whole site
+        }
     }
 
 }

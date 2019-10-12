@@ -120,6 +120,12 @@ kotlin {
                     implementation(ktor("server-core", Ktor.version))
                     implementation(ktor("server-cio", Ktor.version))
                     implementation(ktor("websockets", Ktor.version))
+                    implementation(ktor("jackson", Ktor.version))
+
+                    // Jackson
+                    implementation("com.fasterxml.jackson.core:jackson-databind:2.9.5")
+                    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.9.5")
+
 
                     // logging
                     implementation("ch.qos.logback:logback-classic:${Logback.version}")
