@@ -9,6 +9,7 @@ import io.ktor.http.cio.websocket.Frame
 import io.ktor.http.cio.websocket.close
 import io.ktor.http.cio.websocket.readText
 import io.ktor.request.receive
+import io.ktor.response.respond
 import io.ktor.response.respondText
 import io.ktor.routing.get
 import io.ktor.routing.post
@@ -24,6 +25,7 @@ import kotlinx.serialization.serializer
 import mu.KotlinLogging
 import penta.SerialNotation
 import penta.json
+import penta.network.GameSessionInfo
 import penta.network.LoginRequest
 import penta.network.LoginResponse
 import penta.network.ServerStatus
@@ -94,19 +96,11 @@ fun Application.routes() = routing {
     }
     get("/api/user/{userid}") {
         val userid = call.parameters["userid"]
+        // TODO retreive public user data
         call.respondText(
             contentType = ContentType.Application.Json,
             status = HttpStatusCode.NotFound,
             text = "No such user by id '$userid'"
-        )
-    }
-    get("/api/games/") {
-        call.respondText(
-            contentType = ContentType.Application.Json,
-            text = json.stringify(
-                String.serializer().list,
-                listOf()
-            )
         )
     }
     post("/api/login") {
@@ -127,7 +121,7 @@ fun Application.routes() = routing {
 
                 else -> {
                     val illegalMatches = "[^A-Za-z0-9_-]".toRegex().findAll(loginRequest.userId).toList()
-                    if(illegalMatches.isNotEmpty()) {
+                    if (illegalMatches.isNotEmpty()) {
                         val illegalChars = illegalMatches.map {
                             it.value
                         }.toSet().joinToString(" ")
@@ -136,32 +130,29 @@ fun Application.routes() = routing {
                         )
                     } else {
                         // create temporary user
-                        val user = User.TemporaryUser(loginRequest.userId)
-                        val tmpSession = UserSession(user)
+                        val tmpUser = User.TemporaryUser(loginRequest.userId)
+                        val tmpSession = UserSession(tmpUser.userId)
                         call.sessions.set(tmpSession)
 
                         LoginResponse.Success(
-                            message = "Welcome ${tmpSession.user.displayName}"
+                            message = "Welcome ${tmpUser.displayName}"
                         )
                     }
-
-
                 }
             }
 
             // create temporary session
-
         } else {
             // TODO: retrieve User
             val registeredUser = User.RegisteredUser(loginRequest.userId, passwordHash = "password")
             if (loginRequest.password != registeredUser.passwordHash) {
                 LoginResponse.IncorrectPassword
             } else {
-                val authenticatedSession = UserSession(registeredUser)
+                val authenticatedSession = UserSession(registeredUser.userId)
                 call.sessions.set(authenticatedSession)
 
                 LoginResponse.Success(
-                    message = "Welcome back ${authenticatedSession.user.displayName}"
+                    message = "Welcome back ${registeredUser.displayName}"
                 )
             }
         }
@@ -175,14 +166,47 @@ fun Application.routes() = routing {
             status = HttpStatusCode.OK
         )
     }
+
+    get("/api/games") {
+        val session = call.sessions.get<UserSession>()
+
+        if (session == null) {
+            call.respondText(
+                text = "not logged in",
+                status = HttpStatusCode.Unauthorized
+            )
+        } else {
+            call.respondText(
+                text = json.stringify(
+                    GameSessionInfo.serializer().list,
+                    GameController.games.map { gameState ->
+                        gameState.info
+                    }
+                ),
+                contentType = ContentType.Application.Json
+            )
+        }
+    }
+
     get("/whoami") {
         val session = call.sessions.get<UserSession>()
         call.respondText(
             session.toString()
         )
     }
-    webSocket("/api/ws") {
+    webSocket("/api/game/{gameId}") {
         val gameId = call.parameters["gameId"] ?: throw IllegalArgumentException("missing parameter gameId")
 
+        val session = call.sessions.get<UserSession>() ?: run {
+            return@webSocket close(CloseReason(CloseReason.Codes.CANNOT_ACCEPT, "not authenticated"))
+        }
+
+        val game = GameController.games.find {
+            it.id == gameId
+        } ?: run {
+            return@webSocket close(CloseReason(CloseReason.Codes.CANNOT_ACCEPT, "game not found"))
+        }
+
+        game.handle(this, session)
     }
 }

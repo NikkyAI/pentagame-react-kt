@@ -1,8 +1,8 @@
 package penta.server
 
 object GameController {
-    val games = mutableMapOf<String, ServerGamestate>()
-
-
+    val games = mutableListOf<ServerGamestate>(
+        ServerGamestate("game_1", "nikky")
+    )
 
 }

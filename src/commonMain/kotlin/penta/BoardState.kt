@@ -106,6 +106,10 @@ open class BoardState() {
     }
 
     fun processMove(move: PentaMove, render: Boolean = true) {
+
+        // TODO: if playing online.. send move
+        // only process received moves
+
         logger.info { "turn: $turn" }
         logger.info {"currentPlayer: $currentPlayer" }
         logger.info {"processing $move" }
