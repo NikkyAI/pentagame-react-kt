@@ -17,7 +17,7 @@ suspend fun <T> HttpResponse.parse(serializer: KSerializer<T>, json: Json = pent
     serializer,
     readText()
 )
-fun HttpRequestBuilder.authenticateWith(state: LoginState.Connected) {
+fun HttpRequestBuilder.authenticateWith(state: LoginState.HasSession) {
     header("SESSION", state.session)
 }
 

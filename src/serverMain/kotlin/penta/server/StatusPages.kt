@@ -13,6 +13,7 @@ import kotlinx.io.StringWriter
 fun Application.install() {
     install(StatusPages) {
         exception<Throwable> { cause ->
+            cause.printStackTrace()
             call.respond(
                 HttpStatusCode.InternalServerError,
                 StackTraceMessage(cause)

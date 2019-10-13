@@ -78,7 +78,7 @@ sealed class SerialNotation {
 
     @Serializable
     data class InitGame(
-        val players: List<String>
+        val players: List<PlayerState>
     ) : SerialNotation()
 
     @Serializable

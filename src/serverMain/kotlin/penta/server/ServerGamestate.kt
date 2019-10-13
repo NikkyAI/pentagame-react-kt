@@ -13,6 +13,8 @@ import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.launch
 import mu.KotlinLogging
 import penta.BoardState
+import penta.PentaMove
+import penta.PlayerState
 import penta.SerialNotation
 import penta.json
 import penta.network.GameSessionInfo
@@ -28,6 +30,15 @@ class ServerGamestate(
 ): BoardState() {
     companion object {
         private val logger = KotlinLogging.logger {}
+    }
+    init {
+        // TODO: init game later
+        logger.info { "players: ${players.joinToString()}"}
+        players.addAll(listOf(PlayerState(ownerId, "triangle"), PlayerState("other", "square")))
+        players.removeAt(0)
+        logger.info { "initializing with ${players.joinToString()}" }
+        currentPlayerProperty.value = players.first()
+        processMove(PentaMove.InitGame(players.toList()))
     }
     var running: Boolean = false
     val observers = mutableMapOf<UserSession, DefaultWebSocketServerSession>()
@@ -56,6 +67,7 @@ class ServerGamestate(
 
             // play back history
             history.forEach {
+                logger.info { "transmitting ${history.joinToString()}" }
                 it.toSerializableList().forEach { serialNotation ->
                     outgoing.send(Frame.Text(json.stringify(serializer, serialNotation)))
                 }
@@ -72,19 +84,22 @@ class ServerGamestate(
             }
             while(true) {
                 val notationJson = (incoming.receive() as Frame.Text).readText()
+                logger.info { "ws received: $notationJson" }
 
                 val notation = json.parse(serializer, notationJson)
                 val moves = SerialNotation.toMoves(
                     listOf(notation),
                     this@ServerGamestate
                 ) {
-                  this@ServerGamestate.processMove(it, false)
+                  this@ServerGamestate.processMove(it)
                 }
                 // apply move ?
             }
         } catch (e: ClosedReceiveChannelException) {
+            observers.remove(session)
             logger.suspendDebug(e) { "onClose ${closeReason.await()}" }
         } catch (e: Throwable) {
+            observers.remove(session)
             logger.suspendError(e) { "onClose ${closeReason.await()}" }
         }
 

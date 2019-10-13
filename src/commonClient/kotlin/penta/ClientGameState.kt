@@ -6,6 +6,9 @@ import com.lightningkite.reacktive.property.StandardObservableProperty
 import io.data2viz.geom.Point
 import io.data2viz.math.Angle
 import io.data2viz.math.deg
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import mu.KotlinLogging
 import penta.logic.Piece
 import penta.logic.field.AbstractField
@@ -34,9 +37,30 @@ class ClientGameState : BoardState() {
         figures.forEach(::updatePiecePos)
     }
 
-    fun initialize(players: List<String>) {
+    fun initialize(players: List<PlayerState>) {
         logger.info { "initializing with $players" }
         processMove(PentaMove.InitGame(players))
+    }
+
+    override fun processMove(move: PentaMove) {
+        super.processMove(move)
+    }
+
+    fun preProcessMove(move: PentaMove) {
+
+        when(val state = multiplayerState.value) {
+            is LoginState.Playing -> {
+                GlobalScope.launch(Dispatchers.Default) {
+                    state.sendMove(move)
+                }
+            }
+            else -> {
+                    processMove(move)
+            }
+        }
+        // TODO: if playing online.. send move
+        // only process received moves
+
     }
 
     // TODO: move to client
@@ -256,7 +280,7 @@ class ClientGameState : BoardState() {
                     )
                 }
             }
-            processMove(move)
+            preProcessMove(move)
 
             return
         }
@@ -393,7 +417,7 @@ class ClientGameState : BoardState() {
                 TODO("handle else case")
             }
         }
-        processMove(move)
+        preProcessMove(move)
     }
 
     override fun resetBoard() {

@@ -20,7 +20,10 @@ import javafx.scene.Node
 import javafx.scene.Scene
 import javafx.stage.Stage
 import koolui.LayoutJavaFxData2Viz
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 import mu.KotlinLogging
+import penta.PlayerState
 import penta.view.MainPentaVG
 import penta.view.MyViewFactory
 import kotlin.system.exitProcess
@@ -63,7 +66,7 @@ class PentaApp : Application() {
         with(PentaViz) {
             viz.addEvents()
         }
-        PentaViz.gameState.initialize(playerSymbols.subList(0, playerCount))
+        PentaViz.gameState.initialize(playerSymbols.subList(0, playerCount).map { PlayerState(it, it) })
 
         primaryStage.apply {
             scene = Scene(root, 1200.0, 600.0)
@@ -72,6 +75,9 @@ class PentaApp : Application() {
                 Platform.exit()
                 exitProcess(0)
             }
+        }
+        runBlocking {
+            Dispatchers.Default
         }
     }
 }

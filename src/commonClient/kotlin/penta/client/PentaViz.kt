@@ -22,6 +22,7 @@ import penta.logic.Piece
 import penta.logic.field.AbstractField
 import penta.logic.field.ConnectionField
 import penta.logic.field.CornerField
+import penta.view.MultiplayerVG
 import kotlin.math.pow
 import kotlin.math.sqrt
 
@@ -215,6 +216,7 @@ object PentaViz {
     }
 
     fun resetBoard() {
+        logger.info { "resetting" }
         gameState.updatePiece = ::updatePiece
 
         viz.apply {
@@ -274,6 +276,8 @@ object PentaViz {
 //            val scale = kotlin.math.min(width, height)
 //            resize(scale, scale)
         }
+
+        logger.info { "reset complete" }
     }
 
     fun recolor() {

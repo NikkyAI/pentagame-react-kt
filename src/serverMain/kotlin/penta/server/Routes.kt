@@ -35,52 +35,69 @@ import penta.util.suspendError
 private val logger = KotlinLogging.logger {}
 fun Application.routes() = routing {
     val received = mutableListOf<String>()
-    webSocket("/") {
-        // websocketSession
-        while (true) {
-            when (val frame = incoming.receive()) {
-                is Frame.Text -> {
-                    val text = frame.readText()
-                    outgoing.send(Frame.Text("YOU SAID: $text"))
-                    if (text.equals("bye", ignoreCase = true)) {
-                        close(CloseReason(CloseReason.Codes.NORMAL, "Client said BYE"))
-                    }
-                }
-            }
+//    webSocket("/") {
+//        // websocketSession
+//        while (true) {
+//            when (val frame = incoming.receive()) {
+//                is Frame.Text -> {
+//                    val text = frame.readText()
+//                    outgoing.send(Frame.Text("YOU SAID: $text"))
+//                    if (text.equals("bye", ignoreCase = true)) {
+//                        close(CloseReason(CloseReason.Codes.NORMAL, "Client said BYE"))
+//                    }
+//                }
+//            }
+//        }
+//    }
+//    webSocket("/echo") {
+//        logger.debug { "onConnect" }
+//        try {
+//            while (true) {
+//                val text = (incoming.receive() as Frame.Text).readText()
+//                logger.info { "onMessage $text" }
+//                received += text
+//                outgoing.send(Frame.Text(text))
+//            }
+//        } catch (e: ClosedReceiveChannelException) {
+//            logger.suspendDebug(e) { "onClose ${closeReason.await()}" }
+//        } catch (e: Throwable) {
+//            logger.suspendError(e) { "onClose ${closeReason.await()}" }
+//        }
+//    }
+//    webSocket("/replay") {
+//        logger.info { "onConnect" }
+//
+//        val gameJson = (incoming.receive() as Frame.Text).readText()
+//
+//        val notationList = json.parse(SerialNotation.serializer().list, gameJson)
+//
+//
+//        notationList.forEach {
+//            delay(500)
+//            val notationJson = json.stringify(SerialNotation.serializer(), it)
+//            logger.info { "sending: $notationJson" }
+//            outgoing.send(Frame.Text(notationJson))
+//        }
+//        logger.info { "done" }
+//
+//        close(CloseReason(CloseReason.Codes.NORMAL, "Replay done"))
+//    }
+    webSocket("/ws/game/{gameId}") {
+        logger.info { "websocket connection opened" }
+        val session = call.sessions.get<UserSession>() ?: run {
+            logger.error { "not authenticated" }
+            return@webSocket close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "not authenticated"))
         }
-    }
-    webSocket("/echo") {
-        logger.debug { "onConnect" }
-        try {
-            while (true) {
-                val text = (incoming.receive() as Frame.Text).readText()
-                logger.info { "onMessage $text" }
-                received += text
-                outgoing.send(Frame.Text(text))
-            }
-        } catch (e: ClosedReceiveChannelException) {
-            logger.suspendDebug(e) { "onClose ${closeReason.await()}" }
-        } catch (e: Throwable) {
-            logger.suspendError(e) { "onClose ${closeReason.await()}" }
+
+        val gameId = call.parameters["gameId"] ?: throw IllegalArgumentException("missing parameter gameId")
+
+        val game = GameController.games.find {
+            it.id == gameId
+        } ?: run {
+            return@webSocket close(CloseReason(CloseReason.Codes.CANNOT_ACCEPT, "game not found"))
         }
-    }
-    webSocket("/replay") {
-        logger.info { "onConnect" }
 
-        val gameJson = (incoming.receive() as Frame.Text).readText()
-
-        val notationList = json.parse(SerialNotation.serializer().list, gameJson)
-
-
-        notationList.forEach {
-            delay(500)
-            val notationJson = json.stringify(SerialNotation.serializer(), it)
-            logger.info { "sending: $notationJson" }
-            outgoing.send(Frame.Text(notationJson))
-        }
-        logger.info { "done" }
-
-        close(CloseReason(CloseReason.Codes.NORMAL, "Replay done"))
+        game.handle(this, session)
     }
     get("/api/status") {
         logger.info { "received status request" }
@@ -193,20 +210,5 @@ fun Application.routes() = routing {
         call.respondText(
             session.toString()
         )
-    }
-    webSocket("/api/game/{gameId}") {
-        val gameId = call.parameters["gameId"] ?: throw IllegalArgumentException("missing parameter gameId")
-
-        val session = call.sessions.get<UserSession>() ?: run {
-            return@webSocket close(CloseReason(CloseReason.Codes.CANNOT_ACCEPT, "not authenticated"))
-        }
-
-        val game = GameController.games.find {
-            it.id == gameId
-        } ?: run {
-            return@webSocket close(CloseReason(CloseReason.Codes.CANNOT_ACCEPT, "game not found"))
-        }
-
-        game.handle(this, session)
     }
 }

@@ -180,8 +180,8 @@ sealed class PentaMove {
         )
     }
 
-    data class InitGame(val players: List<String>) : PentaMove() {
-        override fun asNotation(): String = ">>> [${players.joinToString(" & ")}]"
+    data class InitGame(val players: List<PlayerState>) : PentaMove() {
+        override fun asNotation(): String = ">>> [${players.joinToString(" & ") { it.id }}]"
         fun serialize() = SerialNotation.InitGame(players)
         override fun toSerializableList() = listOf(
             serialize()

@@ -15,6 +15,10 @@ import com.lightningkite.reacktive.list.MutableObservableList
 import com.lightningkite.reacktive.list.mutableObservableListOf
 import com.lightningkite.reacktive.property.StandardObservableProperty
 import com.lightningkite.reacktive.property.transform
+import io.ktor.client.features.websocket.webSocket
+import io.ktor.client.features.websocket.ws
+import io.ktor.client.features.websocket.wss
+import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.request
 import io.ktor.client.response.HttpResponse
@@ -23,12 +27,17 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpMethod
 import io.ktor.http.URLBuilder
 import io.ktor.http.Url
+import io.ktor.http.cio.websocket.Frame
+import io.ktor.http.cio.websocket.readText
 import io.ktor.http.content.TextContent
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.launch
 import kotlinx.serialization.list
 import mu.KotlinLogging
 import penta.LoginState
+import penta.SerialNotation
 import penta.json
 import penta.network.GameSessionInfo
 import penta.network.LoginRequest
@@ -37,6 +46,8 @@ import penta.network.ServerStatus
 import penta.util.authenticateWith
 import penta.util.authenticatedRequest
 import penta.util.parse
+import penta.util.suspendDebug
+import penta.util.suspendError
 import penta.util.suspendInfo
 
 class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
@@ -131,18 +142,75 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
         onSuccess: () -> Unit = {}
     ) {
         GlobalScope.launch {
-            val listGamesUrl = URLBuilder(state.baseUrl).apply {
-                path("api", "games")
-            }.build()
+            val listGamesUrl = URLBuilder(state.baseUrl)
+                .path("api", "games")
+                .build()
 
-            val receivedList = client.authenticatedRequest(listGamesUrl, state, HttpMethod.Get, GameSessionInfo.serializer().list)
+            val receivedList =
+                client.authenticatedRequest(listGamesUrl, state, HttpMethod.Get, GameSessionInfo.serializer().list)
             gamesList.replace(receivedList)
             onSuccess()
         }
     }
 
     fun joinGame(state: LoginState.Connected, game: GameSessionInfo) {
+        val wsUrl = URLBuilder(state.baseUrl)
+            .path("ws", "game", game.id)
+            .build()
+        GlobalScope.launch(Dispatchers.Default) {
+            client.webSocket(
+                method = HttpMethod.Get,
+                host = "127.0.0.1",
+                port = 55555, path = "/ws/game/${game.id}",
+//                urlString = wsUrl.toString(),
+                request = {
+                    authenticateWith(state)
+//                    parameter("gameId", game.id)
+                }
+            ) {
+                logger.info { "connection opened" }
+//                PentaViz.resetBoard()
+                PentaViz.gameState.multiplayerState.value = LoginState.Playing(
+                    baseUrl = state.baseUrl,
+                    userId = state.userId,
+                    session = state.session,
+                    gameId = game.id,
+                    websocketSession = this
+                ).also {
+                    logger.info { "setting multiplayerStatus to $it" }
+                }
+                try {
+                    while (true) {
+                        val notationJson = (incoming.receive() as Frame.Text).readText()
 
+                        logger.info { "receiving $notationJson" }
+                        val notation = json.parse(SerialNotation.serializer(), notationJson)
+                        SerialNotation.toMoves(
+                            listOf(notation),
+                            PentaViz.gameState
+                        ) {
+                            PentaViz.gameState.processMove(it)
+                        }
+                        // apply move ?
+                    }
+                } catch (e: ClosedReceiveChannelException) {
+                    logger.suspendDebug(e) { "onClose ${closeReason.await()}" }
+                    // TODO transition to state `ConnectionLost`
+                } catch (e: Throwable) {
+                    logger.suspendError(e) { "onClose ${closeReason.await()}" }
+                    // TODO transition to state `ConnectionLost`
+                } finally {
+                    logger.info { "connection closing" }
+                }
+            }
+
+            // connection closed "normally" ?
+//            PentaViz.gameState.multiplayerState.value = LoginState.Connected(
+//                baseUrl = state.baseUrl,
+//                userId = state.userId,
+//                session = state.session
+//            )
+        }
     }
 
     override fun generate(dependency: MyViewFactory<VIEW>): VIEW = with(dependency) {
@@ -151,9 +219,7 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
                 when (state) {
                     is LoginState.Disconnected, is LoginState.UserIDRejected -> {
                         val urlInput = StandardObservableProperty(state.baseUrl.toString())
-                        val userIdInput = StandardObservableProperty(
-                            (state as? LoginState.UserIDRejected)?.run { userId } ?: ""
-                        )
+                        val userIdInput = StandardObservableProperty(state.userId)
 
                         vertical {
                             +space()
@@ -260,7 +326,7 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
                                                     +text("observers: ${observers.size}")
                                                 }
                                                 -button(
-                                                    label ="Join",
+                                                    label = "Join",
                                                     onClick = {
                                                         joinGame(state, game)
                                                     }
@@ -281,6 +347,21 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
                                 }
                             }
                         ).setWidth(200f) to Animation.Fade
+                    }
+                    is LoginState.Playing -> {
+                        vertical {
+                            +space()
+                            -button(
+                                label = "Leave Game",
+                                onClick = {
+                                    PentaViz.gameState.multiplayerState.value = LoginState.Connected(
+                                        baseUrl = state.baseUrl,
+                                        userId = state.userId,
+                                        session = state.session
+                                    )
+                                }
+                            )
+                        } to Animation.Fade
                     }
                 }
             }

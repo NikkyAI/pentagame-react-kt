@@ -105,11 +105,7 @@ open class BoardState() {
         if(!b) error()
     }
 
-    fun processMove(move: PentaMove, render: Boolean = true) {
-
-        // TODO: if playing online.. send move
-        // only process received moves
-
+    open fun processMove(move: PentaMove) {
         logger.info { "turn: $turn" }
         logger.info {"currentPlayer: $currentPlayer" }
         logger.info {"processing $move" }
@@ -274,7 +270,7 @@ open class BoardState() {
                 initialized = true
                 //TODO: create ClientPlayerState or ServerPlayerState ?
                 players.clear()
-                players += move.players.map { PlayerState(it, it) } // TODO: add players one by one
+                players += move.players // TODO: add players one by one
                 turn = 0
                 // TODO: set player count and names from `GameInit`
                 val playerPieces = (0 until move.players.size).flatMap { p ->

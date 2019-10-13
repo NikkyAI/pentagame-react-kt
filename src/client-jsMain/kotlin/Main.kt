@@ -13,6 +13,7 @@ import koolui.HtmlViewFactoryOverrides
 import mu.KotlinLogging
 import org.w3c.dom.HTMLCanvasElement
 import org.w3c.dom.HTMLDivElement
+import penta.PlayerState
 import penta.view.myTheme
 import kotlin.math.min
 
@@ -46,7 +47,7 @@ fun main(args: Array<String>) {
         with(PentaViz) {
             viz.bindRendererOn(canvas)
             viz.addEvents()
-            gameState.initialize(playerSymbols.subList(0, playerCount))
+            gameState.initialize(playerSymbols.subList(0, playerCount).map { PlayerState(it, it) })
         }
         val rect = container.getBoundingClientRect()
         val size =  min(
