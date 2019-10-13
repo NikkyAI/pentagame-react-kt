@@ -10,6 +10,7 @@ import kotlin.browser.window
 import com.lightningkite.koolui.views.root.contentRoot
 import io.data2viz.viz.bindRendererOn
 import koolui.HtmlViewFactoryOverrides
+import mu.KotlinLogging
 import org.w3c.dom.HTMLCanvasElement
 import org.w3c.dom.HTMLDivElement
 import penta.view.myTheme
@@ -19,6 +20,7 @@ import kotlin.math.min
 //    val underlying: LayoutHtmlViewFactory = LayoutHtmlViewFactory(penta.view.theme)
 //) : MyViewFactory<Layout<*, HTMLElement>>, ViewFactory<Layout<*, HTMLElement>> by underlying, LayoutHtmlData2Viz by underlying
 
+private val logger = KotlinLogging.logger {}
 
 class Factory :
     MyViewFactory<HTMLElement>,
@@ -34,7 +36,7 @@ fun main(args: Array<String>) {
 //                }
             Factory().contentRoot(mainVg)
         )
-        println("UI finished")
+        logger.info { "UI finished" }
 
         val playerSymbols = listOf("triangle", "square", "cross", "circle")
         val playerCount = 3
@@ -55,7 +57,7 @@ fun main(args: Array<String>) {
 //           ,
 //
 //        )
-        println("initial size: $size")
+        logger.info { "initial size: $size" }
         canvas.width = size
         canvas.height = size
         with(PentaViz.viz) {

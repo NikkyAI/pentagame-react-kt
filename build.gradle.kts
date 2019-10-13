@@ -1,13 +1,4 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
-import kotlinx.html.body
-import kotlinx.html.canvas
-import kotlinx.html.head
-import kotlinx.html.html
-import kotlinx.html.id
-import kotlinx.html.script
-import kotlinx.html.stream.appendHTML
-import kotlinx.html.style
-import kotlinx.html.unsafe
 import org.jetbrains.kotlin.gradle.plugin.KotlinTarget
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinJvmCompilation
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinOnlyTarget
@@ -73,6 +64,7 @@ kotlin {
                 // serialization
                 api("org.jetbrains.kotlinx:kotlinx-serialization-runtime-common:${Serialization.version}")
 
+                api("io.github.microutils:kotlin-logging-common:${KotlinLogging.version}")
 
                 api("com.lightningkite:kommon-metadata:${Kommon.version}")
                 api("com.lightningkite:reacktive-metadata:${Reacktive.version}")
@@ -122,21 +114,23 @@ kotlin {
                     implementation(ktor("websockets", Ktor.version))
                     implementation(ktor("jackson", Ktor.version))
 
+                    // serialization
+                    implementation("org.jetbrains.kotlinx:kotlinx-serialization-runtime:${Serialization.version}")
+
                     // Jackson
                     implementation("com.fasterxml.jackson.core:jackson-databind:2.9.5")
                     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.9.5")
 
-
                     // logging
                     implementation("ch.qos.logback:logback-classic:${Logback.version}")
+                    implementation("io.github.microutils:kotlin-logging:${KotlinLogging.version}")
 
                     // TODO: move data2viz only into commonClient
                     implementation(Data2Viz.jfx_dep) {
                         exclude(mapOf("group" to Data2Viz.group, "module" to "geojson-jvm"))
                         exclude(mapOf("group" to Data2Viz.group, "module" to "d2v-geo-jvm"))
                     }
-                    implementation("org.jetbrains.kotlinx:kotlinx-serialization-runtime:${Serialization.version}")
-
+                    // krosslin
                     implementation("com.lightningkite:kommon-jvm:${Kommon.version}")
                     implementation("com.lightningkite:reacktive-jvm:${Reacktive.version}")
                 }
@@ -161,21 +155,30 @@ kotlin {
                     }
                     implementation(TornadoFX.dep)
 
+                    // coroutines
+                    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Coroutines.version}")
+                    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-javafx:${Coroutines.version}")
+
+                    // serialization
+                    implementation("org.jetbrains.kotlinx:kotlinx-serialization-runtime:${Serialization.version}")
+
+                    // logging
+                    implementation("ch.qos.logback:logback-classic:${Logback.version}")
+                    implementation("io.github.microutils:kotlin-logging:${KotlinLogging.version}")
+
+                    // ktor client
                     implementation(ktor("client-cio"))
                     implementation(ktor("client-json-jvm"))
                     implementation(ktor("client-serialization-jvm"))
 //                    implementation(ktor("client-websockets"))
 
+                    // krosslin
                     implementation("com.lightningkite:kommon-jvm:${Kommon.version}")
                     implementation("com.lightningkite:reacktive-jvm:${Reacktive.version}")
                     implementation("com.lightningkite:recktangle-jvm:${Recktangle.version}")
                     implementation("com.lightningkite:lokalize-jvm:${Lokalize.version}")
                     implementation("com.lightningkite:koolui-javafx:${KoolUI.version}")
 
-                    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Coroutines.version}")
-                    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-javafx:${Coroutines.version}")
-
-                    implementation("org.jetbrains.kotlinx:kotlinx-serialization-runtime:${Serialization.version}")
                 }
             }
             // JVM-specific tests and their dependencies:
@@ -204,13 +207,21 @@ kotlin {
                         exclude(mapOf("group" to Data2Viz.group, "module" to "d2v-geo-js"))
                     }
 
+                    // coroutines
                     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-js:${Coroutines.version}")
+
+                    // serialization
                     implementation("org.jetbrains.kotlinx:kotlinx-serialization-runtime-js:${Serialization.version}")
 
+                    // logging
+                    implementation("io.github.microutils:kotlin-logging-js:${KotlinLogging.version}")
+
+                    // ktor client
                     implementation(ktor("client-core-js"))
                     implementation(ktor("client-json-js"))
                     implementation(ktor("client-serialization-js"))
 
+                    // krosslin
                     implementation("com.lightningkite:kommon-js:${Kommon.version}")
                     implementation("com.lightningkite:reacktive-js:${Reacktive.version}")
                     implementation("com.lightningkite:recktangle-js:${Recktangle.version}")
@@ -385,7 +396,10 @@ val shadowJar = tasks.getByName<ShadowJar>("shadowJar") {
     from(target.compilations.getByName("main").output)
     val runtimeClasspath = target.compilations.getByName("main").runtimeDependencyFiles as Configuration
     configurations = listOf(runtimeClasspath)
-    logger.lifecycle("task shadow jar")
+    doLast {
+        logger.lifecycle("task shadow jar")
+    }
+
 }
 
 val shadowJarServer = tasks.create<ShadowJar>("shadowJarServer") {
@@ -401,7 +415,9 @@ val shadowJarServer = tasks.create<ShadowJar>("shadowJarServer") {
     from(target.compilations.getByName("main").output)
     val runtimeClasspath = target.compilations.getByName("main").runtimeDependencyFiles as Configuration
     configurations = listOf(runtimeClasspath)
-    logger.lifecycle("task shadow jar")
+    doLast {
+        logger.lifecycle("task shadow jar")
+    }
 }
 
 val minimizedServerJar = tasks.create<proguard.gradle.ProGuardTask>("minimizedServerJar") {
@@ -537,42 +553,6 @@ val packageJs = tasks.create("packageJs") {
         jsInput.listFiles().forEach { file ->
             file.copyTo(jsOutput.resolve(file.name))
         }
-
-//        val htmlText = buildString {
-//            appendln("<!DOCTYPE html>")
-//            appendHTML().html {
-//                head {
-//                    script(src = "https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.5/require.min.js") {
-//                        this.attributes["data-main"] = "js/penta.js"
-//                    }
-//                    style {
-//                        unsafe {
-//                            this.raw(
-//                                """
-//                                |
-//                                |    html, body {
-//                                |      width: 100%;
-//                                |      height: 100%;
-//                                |      margin: 0px;
-//                                |      border: 0;
-//                                |      overflow: hidden; /*  Disable scrollbars */
-//                                |      display: block;  /* No floating content on sides */
-//                                |    }
-//                                |
-//                            """.trimMargin()
-//                            )
-//                        }
-//                    }
-//                }
-//                body {
-//                    canvas {
-//                        id = "viz"
-//                    }
-//                }
-//            }
-//            appendln()
-//        }
-//        htmlDir.resolve("index.html").writeText(htmlText)
         copy {
             from("src/client-jsMain/web")
             into(htmlDir)

@@ -45,6 +45,10 @@ object Coroutines {
     const val version = "1.3.2"
 }
 
+object KotlinLogging {
+    const val version = "1.7.6-custom"
+}
+
 object Kommon {
     const val version = "0.1.8"
 }

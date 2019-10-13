@@ -1,6 +1,5 @@
 package penta.server
 
-import com.fasterxml.jackson.databind.MapperFeature
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import io.ktor.application.Application
@@ -10,15 +9,22 @@ import io.ktor.features.CallLogging
 import io.ktor.features.DefaultHeaders
 import io.ktor.sessions.SessionStorageMemory
 import io.ktor.features.ContentNegotiation
+import io.ktor.http.HttpMethod
 import io.ktor.jackson.jackson
 import io.ktor.sessions.Sessions
 import io.ktor.sessions.header
 import io.ktor.websocket.WebSockets
+import mu.KotlinLogging
+import org.slf4j.event.Level
 import java.time.Duration
 
+private val logger = KotlinLogging.logger {}
 fun Application.main() {
     install(DefaultHeaders)
-    install(CallLogging)
+    install(CallLogging) {
+        logger = penta.server.logger
+        level = Level.INFO
+    }
 
     install(WebSockets)
 
@@ -26,6 +32,11 @@ fun Application.main() {
 //    install(HSTS)
     install(CORS) {
         anyHost()
+        method(HttpMethod.Get)
+        allowNonSimpleContentTypes = true
+        allowSameOrigin = true
+        header("SESSION")
+        exposeHeader("SESSION")
         maxAge = Duration.ofMinutes(20)
     }
 //    install(Metrics) {

@@ -1,10 +1,11 @@
 package penta
 
-import kotlinx.coroutines.flow.Flow
+import PentaBoard
 import kotlinx.serialization.Polymorphic
 import kotlinx.serialization.PolymorphicSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModuleBuilder
+import mu.KotlinLogging
 import penta.logic.Piece
 
 @Polymorphic
@@ -91,6 +92,7 @@ sealed class SerialNotation {
     ): SerialNotation()
 
     companion object {
+        private val logger = KotlinLogging.logger {}
         fun install(builder: SerializersModuleBuilder) {
             builder.polymorphic<SerialNotation> {
                 MovePlayer::class with MovePlayer.serializer()
@@ -111,7 +113,7 @@ sealed class SerialNotation {
 
             while(iter.hasNext()) {
                 val notation = iter.next()
-                println("converting: $notation")
+                logger.debug{"converting: $notation"}
 
                 fun getSetBlack(notation: SetBlack): PentaMove.SetBlack =
                     PentaMove.SetBlack(
@@ -141,13 +143,13 @@ sealed class SerialNotation {
                         setGrey = if(notation.setGrey && combine) getSetGrey(iter.next() as SetGrey) else null
                     )
                     is SwapOwnPiece -> {
-                        val plyerpieces = boardState.figures.filterIsInstance<Piece.Player>()
-                        println(plyerpieces)
+                        val playerpieces = boardState.figures.filterIsInstance<Piece.Player>()
+                        logger.debug { playerpieces }
                         PentaMove.SwapOwnPiece(
                             playerPiece = boardState.figures.filterIsInstance<Piece.Player>().first { it.playerId == notation.player && it.id == notation.piece },
                             otherPlayerPiece = boardState.figures.filterIsInstance<Piece.Player>().first { it.playerId == notation.player && it.id == notation.otherPiece },
-                            from = PentaBoard.get(notation.from)!!,
-                            to =  PentaBoard.get(notation.to)!!,
+                            from = PentaBoard[notation.from]!!,
+                            to =  PentaBoard[notation.to]!!,
                             setGrey = if(notation.setGrey && combine) getSetGrey(iter.next() as SetGrey) else null
                         )
                     }

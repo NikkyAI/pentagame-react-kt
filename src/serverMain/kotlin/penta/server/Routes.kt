@@ -13,6 +13,7 @@ import io.ktor.response.respondText
 import io.ktor.routing.get
 import io.ktor.routing.post
 import io.ktor.routing.routing
+import io.ktor.sessions.get
 import io.ktor.sessions.sessions
 import io.ktor.sessions.set
 import io.ktor.websocket.webSocket
@@ -20,19 +21,22 @@ import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.delay
 import kotlinx.serialization.list
 import kotlinx.serialization.serializer
+import mu.KotlinLogging
 import penta.SerialNotation
 import penta.json
 import penta.network.LoginRequest
 import penta.network.LoginResponse
 import penta.network.ServerStatus
+import penta.util.suspendDebug
+import penta.util.suspendError
 
+private val logger = KotlinLogging.logger {}
 fun Application.routes() = routing {
     val received = mutableListOf<String>()
     webSocket("/") {
         // websocketSession
         while (true) {
-            val frame = incoming.receive()
-            when (frame) {
+            when (val frame = incoming.receive()) {
                 is Frame.Text -> {
                     val text = frame.readText()
                     outgoing.send(Frame.Text("YOU SAID: $text"))
@@ -44,23 +48,22 @@ fun Application.routes() = routing {
         }
     }
     webSocket("/echo") {
-        println("onConnect")
+        logger.debug { "onConnect" }
         try {
             while (true) {
                 val text = (incoming.receive() as Frame.Text).readText()
-                println("onMessage")
+                logger.info { "onMessage $text" }
                 received += text
                 outgoing.send(Frame.Text(text))
             }
         } catch (e: ClosedReceiveChannelException) {
-            println("onClose ${closeReason.await()}")
+            logger.suspendDebug(e) { "onClose ${closeReason.await()}" }
         } catch (e: Throwable) {
-            println("onError ${closeReason.await()}")
-            e.printStackTrace()
+            logger.suspendError(e) { "onClose ${closeReason.await()}" }
         }
     }
     webSocket("/replay") {
-        println("onConnect")
+        logger.info { "onConnect" }
 
         val gameJson = (incoming.receive() as Frame.Text).readText()
 
@@ -70,28 +73,15 @@ fun Application.routes() = routing {
         notationList.forEach {
             delay(500)
             val notationJson = json.stringify(SerialNotation.serializer(), it)
-            println("sending: $notationJson")
+            logger.info { "sending: $notationJson" }
             outgoing.send(Frame.Text(notationJson))
         }
-        println("done")
+        logger.info { "done" }
 
         close(CloseReason(CloseReason.Codes.NORMAL, "Replay done"))
-//        try {
-//            while (true) {
-//                val text = (incoming.receive() as Frame.Text).readText()
-//                println("onMessage")
-//                received += text
-//                outgoing.send(Frame.Text(text))
-//            }
-//        } catch (e: ClosedReceiveChannelException) {
-//            println("onClose ${closeReason.await()}")
-//        } catch (e: Throwable) {
-//            println("onError ${closeReason.await()}")
-//            e.printStackTrace()
-//        }
     }
     get("/api/status") {
-        println("received status request")
+        logger.info { "received status request" }
         call.respondText(
             text = json.stringify(
                 ServerStatus.serializer(),
@@ -123,23 +113,55 @@ fun Application.routes() = routing {
         val loginRequest = call.receive<LoginRequest>()
         // find registered user
         val user: String? = listOf("alice", "bob").find { it == loginRequest.userId }
-        val (status: HttpStatusCode, response: LoginResponse) = if (user == null) {
-            // create temporary session
-            val tmpSession = UserSession(loginRequest.userId)
-            call.sessions.set(tmpSession)
+        val response: LoginResponse = if (user == null) {
+            when {
+                loginRequest.userId.length < 5 ->
+                    LoginResponse.UserIdRejected(
+                        reason = "userId is too short"
+                    )
 
-            HttpStatusCode.OK to LoginResponse.Success(
-                message = "hello ${tmpSession.userId}"
-            )
+                loginRequest.userId.length > 16 ->
+                    LoginResponse.UserIdRejected(
+                        reason = "userId is too long"
+                    )
+
+                else -> {
+                    val illegalMatches = "[^A-Za-z0-9_-]".toRegex().findAll(loginRequest.userId).toList()
+                    if(illegalMatches.isNotEmpty()) {
+                        val illegalChars = illegalMatches.map {
+                            it.value
+                        }.toSet().joinToString(" ")
+                        LoginResponse.UserIdRejected(
+                            reason = "userId contains illegal characters: $illegalChars"
+                        )
+                    } else {
+                        // create temporary user
+                        val user = User.TemporaryUser(loginRequest.userId)
+                        val tmpSession = UserSession(user)
+                        call.sessions.set(tmpSession)
+
+                        LoginResponse.Success(
+                            message = "Welcome ${tmpSession.user.displayName}"
+                        )
+                    }
+
+
+                }
+            }
+
+            // create temporary session
+
         } else {
-            if (loginRequest.password != "password") {
-                HttpStatusCode.OK to LoginResponse.IncorrectPassword()
+            // TODO: retrieve User
+            val registeredUser = User.RegisteredUser(loginRequest.userId, passwordHash = "password")
+            if (loginRequest.password != registeredUser.passwordHash) {
+                LoginResponse.IncorrectPassword
             } else {
-                val authenticatedSession = UserSession(loginRequest.userId)
+                val authenticatedSession = UserSession(registeredUser)
                 call.sessions.set(authenticatedSession)
 
-                HttpStatusCode.OK to LoginResponse.Success(
-                    message = "hello ${authenticatedSession.userId}"
+                LoginResponse.Success(
+                    message = "Welcome back ${authenticatedSession.user.displayName}"
                 )
             }
         }
@@ -150,7 +172,13 @@ fun Application.routes() = routing {
                 LoginResponse.serializer(),
                 response
             ),
-            status = status
+            status = HttpStatusCode.OK
+        )
+    }
+    get("/whoami") {
+        val session = call.sessions.get<UserSession>()
+        call.respondText(
+            session.toString()
         )
     }
     webSocket("/api/ws") {

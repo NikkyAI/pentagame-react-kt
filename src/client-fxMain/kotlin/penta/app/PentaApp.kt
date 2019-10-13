@@ -20,6 +20,7 @@ import javafx.scene.Node
 import javafx.scene.Scene
 import javafx.stage.Stage
 import koolui.LayoutJavaFxData2Viz
+import mu.KotlinLogging
 import penta.view.MainPentaVG
 import penta.view.MyViewFactory
 import kotlin.system.exitProcess
@@ -27,6 +28,7 @@ import kotlin.system.exitProcess
 
 class PentaApp : Application() {
     companion object {
+        private val logger = KotlinLogging.logger {}
         @JvmStatic
         fun main(args: Array<String>) {
             launch(PentaApp::class.java)
@@ -54,7 +56,7 @@ class PentaApp : Application() {
 
     override fun start(primaryStage: Stage) {
         val root = with(Factory()) { nativeViewAdapter(contentRoot(mainVg)) }
-        println("UI constructed")
+        logger.info { "UI constructed" }
 
         val playerSymbols = listOf("triangle", "square", "cross", "circle")
         val playerCount = 3

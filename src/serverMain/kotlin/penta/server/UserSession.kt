@@ -1,6 +1,6 @@
 package penta.server
 
 
-class UserSession(
-    val userId: String
+data class UserSession(
+    val user: User
 )

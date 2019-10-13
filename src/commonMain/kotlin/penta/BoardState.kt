@@ -13,12 +13,16 @@ import penta.util.exhaustive
 import com.lightningkite.reacktive.list.WrapperObservableList
 import com.lightningkite.reacktive.list.mutableObservableListOf
 import com.lightningkite.reacktive.property.StandardObservableProperty
+import mu.KotlinLogging
 import penta.util.replaceLast
 
 open class BoardState() {
+    companion object {
+        private val logger = KotlinLogging.logger {}
+    }
     var updateLogPanel: (String) -> Unit = {}
 
-   val players: WrapperObservableList<PlayerState> = mutableObservableListOf(PlayerState("", ""))
+    val players: WrapperObservableList<PlayerState> = mutableObservableListOf(PlayerState("", ""))
 
     // player id to team id
     lateinit var teams: Map<String, Int>
@@ -43,7 +47,7 @@ open class BoardState() {
 
     val turnProperty: StandardObservableProperty<Int> = StandardObservableProperty(0).apply {
         add {
-            println("set turn = $it")
+            logger.debug {"set turn = $it"}
             currentPlayerProperty.value = if (players.isNotEmpty()) players[it % players.size] else throw IllegalStateException("no turn")
             updateBoard()
         }
@@ -102,9 +106,9 @@ open class BoardState() {
     }
 
     fun processMove(move: PentaMove, render: Boolean = true) {
-        println("turn: $turn")
-        println("currentPlayer: $currentPlayer")
-        println("processing $move")
+        logger.info { "turn: $turn" }
+        logger.info {"currentPlayer: $currentPlayer" }
+        logger.info {"processing $move" }
         when (move) {
             is PentaMove.MovePlayer -> {
                 require(move.playerPiece.playerId == currentPlayer.id) { "signal illegal move" }
@@ -131,7 +135,7 @@ open class BoardState() {
                 if (pieceOnTarget != null) {
                     when(pieceOnTarget) {
                         is Piece.GrayBlocker -> {
-                            println("taking ${pieceOnTarget.id} off the board")
+                            logger.info {"taking ${pieceOnTarget.id} off the board"}
                             pieceOnTarget.position = null
                             updatePiecesAtPos(null)
                         }
@@ -139,7 +143,7 @@ open class BoardState() {
                             selectedBlackPiece = pieceOnTarget
                             pieceOnTarget.position = null // TODO: set corner field
                             updatePiecesAtPos(null)
-                            println("holding ${pieceOnTarget.id} for repositioning")
+                            logger.info {"holding ${pieceOnTarget.id} for repositioning"}
                         }
                         else -> {
                             TODO("signal illegal move")
@@ -223,7 +227,7 @@ open class BoardState() {
 
             is PentaMove.SetBlack -> {
                 if (figurePositions.values.any { it == move.to }) {
-                    println("target position not empty")
+                    logger.error { "target position not empty: ${move.to}" }
                     TODO("signal illegal move")
                     return
                 }
@@ -241,12 +245,12 @@ open class BoardState() {
             }
             is PentaMove.SetGrey -> {
                 if (positions.values.any { it == move.to }) {
-                    println("target position not empty")
+                    logger.error { "target position not empty: ${move.to}" }
                     TODO("signal illegal move")
                     return
                 }
                 requires(move.piece.position == move.from) { TODO("signal illegal move") }
-                println("selected: $selectedGrayPiece")
+                logger.debug { "selected: $selectedGrayPiece" }
                 if(selectingGrayPiece) {
                     requires(selectingGrayPiece && move.from != null){ TODO("signal illegal move") }
                 } else {
@@ -323,8 +327,14 @@ open class BoardState() {
         selectedPlayerPiece = null
 
         val targetField = move.to
-        println("playerColor = ${move.playerPiece.pentaColor}")
-        if (targetField is JointField) println("pentaColor = ${targetField.pentaColor}")
+        logger.debug { "playerColor = ${move.playerPiece.pentaColor}" }
+        logger.debug {
+            if (targetField is JointField) {
+                "pentaColor = ${targetField.pentaColor}"
+            } else {
+                "not a JointField"
+            }
+        }
         if (targetField is JointField && targetField.pentaColor == move.playerPiece.pentaColor) {
             // take piece off the board
             move.playerPiece.position = null
@@ -336,7 +346,7 @@ open class BoardState() {
                 .firstOrNull()
             if (selectedGrayPiece == null) {
                 selectingGrayPiece = true
-                println("selected gray piece: ${selectedGrayPiece?.id}")
+                logger.info {"selected gray piece: ${selectedGrayPiece?.id}" }
             }
             updatePiecesAtPos(null)
         }
@@ -385,7 +395,7 @@ open class BoardState() {
             val toIterate = next.toList()
             next.clear()
             toIterate.map { nextField ->
-                println("checking: ${nextField.id}")
+                logger.debug {"checking: ${nextField.id}"}
                 nextField.connected.forEach { connectedField ->
                     if (connectedField == end) return true
                     if (connectedField in backtrack) return@forEach

@@ -1,9 +1,23 @@
 package penta.server
 
-data class User(
-    val hashId: String,
-    var name: String? = null,
-    var passwordHash: String? = null
-) {
-    val displayName: String = name ?: "noob_"+hashId.substring(0, 5)
+sealed class User {
+    abstract val userId: String
+    abstract val displayName: String
+
+    data class RegisteredUser(
+        override val userId: String,
+        var displayNameProperty: String? = null,
+        var passwordHash: String? = null
+    ): User() {
+        override val displayName: String
+            get() = displayNameProperty ?: userId
+    }
+
+    data class TemporaryUser(
+        override val userId: String
+    ): User() {
+        override val displayName: String
+            get() = "guest_$userId"
+    }
+
 }

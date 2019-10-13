@@ -9,8 +9,12 @@ import io.data2viz.viz.JFxVizRenderer
 import io.data2viz.viz.Viz
 import javafx.scene.Node
 import javafx.scene.canvas.Canvas
+import mu.KotlinLogging
 
 interface LayoutJavaFxData2Viz : ViewFactoryData2Viz<Layout<*, Node>>, /*HasScale,*/ LayoutViewWrapper<Node> {
+    companion object{
+        private val logger = KotlinLogging.logger {}
+    }
 
     class SquareCanvas: Canvas(600.0 ,600.0) {
         var onResize: ()->Unit = {}
@@ -26,7 +30,7 @@ interface LayoutJavaFxData2Viz : ViewFactoryData2Viz<Layout<*, Node>>, /*HasScal
         return wrap(SquareCanvas()) { lifecycle ->
             // TODO: resize only in square ?
             lifecycle.bind(viz){ viz ->
-                println("initalizing viz")
+                logger.info("initalizing viz")
                 JFxVizRenderer(
                     canvas = this,
                     viz = viz
@@ -38,8 +42,6 @@ interface LayoutJavaFxData2Viz : ViewFactoryData2Viz<Layout<*, Node>>, /*HasScal
 //                postSetup(viz)
 //                viz.render()
             }
-        }.apply {
-            println("parent.view: ${parent?.view}")
         }
     }
 }

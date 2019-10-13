@@ -28,6 +28,6 @@ pluginManagement {
     }
 }
 
-enableFeaturePreview("GRADLE_METADATA")
+//enableFeaturePreview("GRADLE_METADATA")
 
 rootProject.name = "penta"
