@@ -220,6 +220,10 @@ object PentaViz {
         gameState.updatePiece = ::updatePiece
 
         viz.apply {
+            playerCorners.forEach { corner ->
+                corner.face.remove()
+                corner.graySlot.remove()
+            }
             // clear old pieces
             pieces.values.forEach { (circle, path) ->
                 circle.remove()
@@ -241,6 +245,9 @@ object PentaViz {
                         strokeWidth = 1.0
                     }
                 )
+            }
+            if(::currentPlayerMarker.isInitialized) {
+                currentPlayerMarker.remove()
             }
             currentPlayerMarker = circle {
                 stroke = 0.col
@@ -381,6 +388,7 @@ object PentaViz {
             "circle" -> {
                 arc(center.x, center.y, radius, 0.0, 180.0, false)
             }
+            else -> throw IllegalStateException("illegal figureId: ''")
         }
         closePath()
     }

@@ -32,6 +32,7 @@ import io.ktor.http.cio.websocket.readText
 import io.ktor.http.content.TextContent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.launch
 import kotlinx.serialization.list
@@ -183,21 +184,23 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
                     while (true) {
                         val notationJson = (incoming.receive() as Frame.Text).readText()
 
-                        logger.info { "receiving $notationJson" }
+                        logger.info { "receiving notation $notationJson" }
                         val notation = json.parse(SerialNotation.serializer(), notationJson)
                         SerialNotation.toMoves(
                             listOf(notation),
                             PentaViz.gameState
                         ) {
+                            // apply move
                             PentaViz.gameState.processMove(it)
                         }
-                        // apply move ?
                     }
                 } catch (e: ClosedReceiveChannelException) {
-                    logger.suspendDebug(e) { "onClose ${closeReason.await()}" }
+                    val reason = closeReason.await()
+                    logger.debug(e) { "onClose $reason" }
                     // TODO transition to state `ConnectionLost`
                 } catch (e: Throwable) {
-                    logger.suspendError(e) { "onClose ${closeReason.await()}" }
+                    val reason = closeReason.await()
+                    logger.error(e) { "onClose $reason" }
                     // TODO transition to state `ConnectionLost`
                 } finally {
                     logger.info { "connection closing" }

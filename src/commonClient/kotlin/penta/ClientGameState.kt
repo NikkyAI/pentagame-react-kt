@@ -47,7 +47,7 @@ class ClientGameState : BoardState() {
     }
 
     fun preProcessMove(move: PentaMove) {
-
+        logger.info { "preProcess $move" }
         when(val state = multiplayerState.value) {
             is LoginState.Playing -> {
                 GlobalScope.launch(Dispatchers.Default) {
@@ -390,6 +390,7 @@ class ClientGameState : BoardState() {
                     logger.error { ("target position not empty") }
                     return
                 }
+                logger.info { "history last: ${history.last()}" }
                 val lastMove = history.last() as PentaMove.Move
                 if (lastMove !is PentaMove.CanSetBlack) {
                     logger.error { ("last move cannot set black") }
@@ -434,8 +435,8 @@ class ClientGameState : BoardState() {
 
     // TODO: clientside
     override fun updatePiecesAtPos(field: AbstractField?) {
-        figurePositions.filterValues { it == field }.keys.map { id ->
-            figures.find { it.id == id }!!
+        figurePositions.filterValues { it?.id == field?.id }.keys.map { id ->
+            figures.find { it.id == id } ?: throw IllegalStateException("cannot find figure with id: $id in ${figures.map { it.id }}")
         }.forEach { piece ->
             updatePiecePos(piece)
         }

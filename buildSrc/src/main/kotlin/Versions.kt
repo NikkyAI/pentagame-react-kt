@@ -46,7 +46,7 @@ object Coroutines {
 }
 
 object KotlinLogging {
-    const val version = "1.7.6-custom"
+    const val version = "1.7.6"
 }
 
 object Kommon {

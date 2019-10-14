@@ -11,6 +11,7 @@ import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.launch
+import kotlinx.io.IOException
 import mu.KotlinLogging
 import penta.BoardState
 import penta.PentaMove
@@ -39,6 +40,7 @@ class ServerGamestate(
         logger.info { "initializing with ${players.joinToString()}" }
         currentPlayerProperty.value = players.first()
         processMove(PentaMove.InitGame(players.toList()))
+        logger.info { "after init: " + figures.joinToString { it.id } }
     }
     var running: Boolean = false
     val observers = mutableMapOf<UserSession, DefaultWebSocketServerSession>()
@@ -67,7 +69,7 @@ class ServerGamestate(
 
             // play back history
             history.forEach {
-                logger.info { "transmitting ${history.joinToString()}" }
+                logger.info { "transmitting move $it" }
                 it.toSerializableList().forEach { serialNotation ->
                     outgoing.send(Frame.Text(json.stringify(serializer, serialNotation)))
                 }
@@ -75,14 +77,16 @@ class ServerGamestate(
 
             // new move added
             history.onListAdd.add { move, index ->
+                logger.info { "transmitting move $move" }
                 // send
                 GlobalScope.launch {
                     move.toSerializableList().forEach { serialNotation ->
+                        logger.info { "transmitting ${serialNotation}" }
                         outgoing.send(Frame.Text(json.stringify(serializer, serialNotation)))
                     }
                 }
             }
-            while(true) {
+            while (true) {
                 val notationJson = (incoming.receive() as Frame.Text).readText()
                 logger.info { "ws received: $notationJson" }
 
@@ -91,10 +95,13 @@ class ServerGamestate(
                     listOf(notation),
                     this@ServerGamestate
                 ) {
-                  this@ServerGamestate.processMove(it)
+                    this@ServerGamestate.processMove(it)
                 }
                 // apply move ?
             }
+        } catch (e: IOException) {
+            observers.remove(session)
+            logger.suspendDebug(e) { "onClose ${closeReason.await()}" }
         } catch (e: ClosedReceiveChannelException) {
             observers.remove(session)
             logger.suspendDebug(e) { "onClose ${closeReason.await()}" }
