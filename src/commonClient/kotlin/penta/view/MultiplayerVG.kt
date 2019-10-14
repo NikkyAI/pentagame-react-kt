@@ -17,9 +17,6 @@ import com.lightningkite.reacktive.list.mutableObservableListOf
 import com.lightningkite.reacktive.property.StandardObservableProperty
 import com.lightningkite.reacktive.property.transform
 import io.ktor.client.features.websocket.webSocket
-import io.ktor.client.features.websocket.ws
-import io.ktor.client.features.websocket.wss
-import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.request
 import io.ktor.client.response.HttpResponse
@@ -31,9 +28,7 @@ import io.ktor.http.Url
 import io.ktor.http.cio.websocket.Frame
 import io.ktor.http.cio.websocket.readText
 import io.ktor.http.content.TextContent
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.launch
 import kotlinx.serialization.list
@@ -48,8 +43,6 @@ import penta.network.ServerStatus
 import penta.util.authenticateWith
 import penta.util.authenticatedRequest
 import penta.util.parse
-import penta.util.suspendDebug
-import penta.util.suspendError
 import penta.util.suspendInfo
 
 class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
@@ -187,10 +180,7 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
 
                         logger.info { "receiving notation $notationJson" }
                         val notation = json.parse(SerialNotation.serializer(), notationJson)
-                        SerialNotation.toMoves(
-                            listOf(notation),
-                            PentaViz.gameState
-                        ) {
+                        notation.asMove(PentaViz.gameState).also {
                             // apply move
                             PentaViz.gameState.processMove(it)
                         }

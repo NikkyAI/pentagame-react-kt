@@ -86,10 +86,7 @@ class ServerGamestate(
                 logger.info { "ws received: $notationJson" }
 
                 val notation = json.parse(serializer, notationJson)
-                val moves = SerialNotation.toMoves(
-                    listOf(notation),
-                    this@ServerGamestate
-                ) {
+                notation.asMove(this@ServerGamestate).also {
                     this@ServerGamestate.processMove(it) { illegalMove ->
                         logger.error {
                             "handle illegal move: $illegalMove"

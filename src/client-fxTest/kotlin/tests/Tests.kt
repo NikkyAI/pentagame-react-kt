@@ -19,8 +19,8 @@ object Tests {
         }
 
         val testState = TestState()
-        val moves = SerialNotation.toMoves(notationList, testState) {
-            testState.processMove(it)
+        val moves = notationList.map {
+            it.asMove(testState)
         }
 
         moves.forEach {
