@@ -1,15 +1,11 @@
 package penta.server
 
-import com.lightningkite.reacktive.list.MutableObservableList
-import com.lightningkite.reacktive.list.mutableObservableListOf
 import io.ktor.http.cio.websocket.Frame
 import io.ktor.http.cio.websocket.readText
 import io.ktor.websocket.DefaultWebSocketServerSession
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
-import kotlinx.coroutines.channels.SendChannel
-import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.launch
 import kotlinx.io.IOException
 import mu.KotlinLogging
@@ -55,6 +51,10 @@ class ServerGamestate(
         )
     }
 
+    fun handleIllegalMove(illegalMove: PentaMove.IllegalMove) {
+
+    }
+
     val serializer = SerialNotation.serializer()
 
     suspend fun handle(websocketSession: DefaultWebSocketServerSession, session: UserSession) = with(websocketSession) {
@@ -68,11 +68,9 @@ class ServerGamestate(
 //            }
 
             // play back history
-            history.forEach {
-                logger.info { "transmitting move $it" }
-                it.toSerializableList().forEach { serialNotation ->
-                    outgoing.send(Frame.Text(json.stringify(serializer, serialNotation)))
-                }
+            history.forEach { move ->
+                logger.info { "transmitting move $move" }
+                outgoing.send(Frame.Text(json.stringify(serializer, move.toSerializable())))
             }
 
             // new move added
@@ -80,10 +78,7 @@ class ServerGamestate(
                 logger.info { "transmitting move $move" }
                 // send
                 GlobalScope.launch {
-                    move.toSerializableList().forEach { serialNotation ->
-                        logger.info { "transmitting ${serialNotation}" }
-                        outgoing.send(Frame.Text(json.stringify(serializer, serialNotation)))
-                    }
+                    outgoing.send(Frame.Text(json.stringify(serializer, move.toSerializable())))
                 }
             }
             while (true) {
@@ -95,7 +90,14 @@ class ServerGamestate(
                     listOf(notation),
                     this@ServerGamestate
                 ) {
-                    this@ServerGamestate.processMove(it)
+                    this@ServerGamestate.processMove(it) { illegalMove ->
+                        logger.error {
+                            "handle illegal move: $illegalMove"
+                        }
+                        GlobalScope.launch(Dispatchers.Default) {
+                            outgoing.send(Frame.Text(json.stringify(SerialNotation.serializer(), illegalMove.toSerializable())))
+                        }
+                    }
                 }
                 // apply move ?
             }

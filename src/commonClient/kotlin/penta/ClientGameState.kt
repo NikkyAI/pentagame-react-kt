@@ -42,10 +42,6 @@ class ClientGameState : BoardState() {
         processMove(PentaMove.InitGame(players))
     }
 
-    override fun processMove(move: PentaMove) {
-        super.processMove(move)
-    }
-
     fun preProcessMove(move: PentaMove) {
         logger.info { "preProcess $move" }
         when(val state = multiplayerState.value) {
@@ -55,7 +51,9 @@ class ClientGameState : BoardState() {
                 }
             }
             else -> {
-                    processMove(move)
+                processMove(move) { illegalMove ->
+                    logger.error { "TODO: add popup about $illegalMove" }
+                }
             }
         }
         // TODO: if playing online.. send move

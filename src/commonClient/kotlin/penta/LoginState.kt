@@ -38,11 +38,9 @@ sealed class LoginState {
         private val websocketSession: DefaultClientWebSocketSession
     ): LoginState(), HasSession {
         suspend fun sendMove(move: PentaMove) {
-            move.toSerializableList().forEach {
-                websocketSession.outgoing.send(
-                    Frame.Text(json.stringify(SerialNotation.serializer(), it))
-                )
-            }
+            websocketSession.outgoing.send(
+                Frame.Text(json.stringify(SerialNotation.serializer(), move.toSerializable()))
+            )
         }
     }
 }

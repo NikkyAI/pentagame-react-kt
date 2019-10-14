@@ -14,7 +14,6 @@ import com.lightningkite.reacktive.list.WrapperObservableList
 import com.lightningkite.reacktive.list.mutableObservableListOf
 import com.lightningkite.reacktive.property.StandardObservableProperty
 import mu.KotlinLogging
-import penta.util.replaceLast
 
 open class BoardState() {
     companion object {
@@ -109,7 +108,16 @@ open class BoardState() {
         if(!b) error()
     }
 
-    open fun processMove(move: PentaMove) {
+    private fun defaultHandleIllegalMove(illegalMove: PentaMove.IllegalMove) {
+        logger.error {
+            "illegal move: " + illegalMove
+        }
+    }
+
+    open fun processMove(
+        move: PentaMove,
+        handleIllegalMove: (PentaMove.IllegalMove)-> Unit = ::defaultHandleIllegalMove
+    ) {
         try {
             logger.info { "turn: $turn" }
             logger.info { "currentPlayer: $currentPlayer" }
@@ -118,7 +126,11 @@ open class BoardState() {
                 is PentaMove.MovePlayer -> {
                     require(move.playerPiece.playerId == currentPlayer.id) { "signal illegal move" }
                     if (!canMove(move.from, move.to)) {
-                        TODO("signal IllegalMove")
+                        handleIllegalMove(PentaMove.IllegalMove(
+                            "move is not from currentPlayer: ${currentPlayer.id}",
+                            move
+                        ))
+                        return
                     }
 
                     val piecesOnTarget = positions
@@ -132,7 +144,13 @@ open class BoardState() {
                         }
 
                     if (piecesOnTarget.size > 1) {
-                        TODO("signal illegal move")
+                        handleIllegalMove(
+                            PentaMove.IllegalMove(
+                                "multiple pieces on target field ${move.to.id}",
+                                move
+                            )
+                        )
+                        return
                     }
 
                     val pieceOnTarget = piecesOnTarget.firstOrNull()
@@ -151,7 +169,13 @@ open class BoardState() {
                                 logger.info { "holding ${pieceOnTarget.id} for repositioning" }
                             }
                             else -> {
-                                TODO("signal illegal move")
+                                handleIllegalMove(
+                                    PentaMove.IllegalMove(
+                                        "cannot click on piece type: ${pieceOnTarget::class.simpleName}",
+                                        move
+                                    )
+                                )
+                                return
                             }
                         }
                         // TODO: can unset when pieces float on pointer
@@ -171,33 +195,67 @@ open class BoardState() {
 
                     logger.info { "append history" }
                     mutableHistory += move
-
-                    move.setBlack?.let {
-                        processMove(it)
-                    }
-                    move.setGrey?.let {
-                        processMove(it)
-                    }
                 }
                 is PentaMove.ForcedPlayerMove -> {
-                    requires(move.playerPiece.playerId == currentPlayer.id) { TODO("signal illegal move") }
+                    requires(move.playerPiece.playerId == currentPlayer.id) {
+                        handleIllegalMove(
+                            PentaMove.IllegalMove(
+                                "move is not from currentPlayer: ${currentPlayer.id}",
+                                move
+                            )
+                        )
+                        return
+                    }
                     val sourceField = move.from
                     if (sourceField is JointField && move.playerPiece.pentaColor == sourceField.pentaColor) {
                         postProcess(move)
                     } else {
-                        TODO("signal illegal move")
+                        handleIllegalMove(
+                            PentaMove.IllegalMove(
+                                "Forced player move cannot happen",
+                                move
+                            )
+                        )
+                        return
                     }
                     mutableHistory += move
-                    move.setGrey?.let {
-                        processMove(it)
-                    }
                 }
                 is PentaMove.SwapOwnPiece -> {
-                    requires(canMove(move.from, move.to)) { TODO("signal illegal move") }
-                    requires(move.playerPiece.playerId == currentPlayer.id) { TODO("signal illegal move") }
-                    requires(move.playerPiece.position == move.from) { TODO("signal illegal move") }
-                    requires(move.otherPlayerPiece.playerId == currentPlayer.id) { TODO("signal illegal move") }
-                    requires(move.otherPlayerPiece.position == move.to) { TODO("signal illegal move") }
+                    requires(canMove(move.from, move.to)) {
+                        handleIllegalMove(PentaMove.IllegalMove(
+                            "no path between ${move.from.id} and ${move.to.id}",
+                            move
+                        ))
+                        return
+                    }
+                    requires(move.playerPiece.playerId == currentPlayer.id) {
+                        handleIllegalMove(PentaMove.IllegalMove(
+                            "move is not from currentPlayer: ${currentPlayer.id}",
+                            move
+                        ))
+                        return
+                    }
+                    requires(move.playerPiece.position == move.from) {
+                        handleIllegalMove(PentaMove.IllegalMove(
+                            "piece ${move.playerPiece.id} is not on expected position ${move.from.id}",
+                            move
+                        ))
+                        return
+                    }
+                    requires(move.otherPlayerPiece.playerId == currentPlayer.id) {
+                        handleIllegalMove(PentaMove.IllegalMove(
+                            "piece ${move.otherPlayerPiece.id} is not from another player",
+                            move
+                        ))
+                        return
+                    }
+                    requires(move.otherPlayerPiece.position == move.to) {
+                        handleIllegalMove(PentaMove.IllegalMove(
+                            "piece ${move.otherPlayerPiece.id} is not on expected position ${move.to.id}",
+                            move
+                        ))
+                        return
+                    }
 
                     move.playerPiece.position = move.to
                     move.otherPlayerPiece.position = move.from
@@ -206,16 +264,43 @@ open class BoardState() {
 
                     postProcess(move)
                     mutableHistory += move
-                    move.setGrey?.let {
-                        processMove(it)
-                    }
                 }
                 is PentaMove.SwapHostilePieces -> {
-                    requires(canMove(move.from, move.to)) { TODO("signal illegal move") }
-                    requires(move.playerPiece.playerId == currentPlayer.id) { TODO("signal illegal move") }
-                    requires(move.playerPiece.position == move.from) { TODO("signal illegal move") }
-                    requires(move.otherPlayerPiece.playerId != currentPlayer.id) { TODO("signal illegal move") }
-                    requires(move.otherPlayerPiece.position == move.to) { TODO("signal illegal move") }
+                    requires(canMove(move.from, move.to)) {
+                        handleIllegalMove(PentaMove.IllegalMove(
+                            "no path between ${move.from.id} and ${move.to.id}",
+                            move
+                        ))
+                        return
+                    }
+                    requires(move.playerPiece.playerId == currentPlayer.id) {
+                        handleIllegalMove(PentaMove.IllegalMove(
+                            "move is not from currentPlayer: ${currentPlayer.id}",
+                            move
+                        ))
+                        return
+                    }
+                    requires(move.playerPiece.position == move.from) {
+                        handleIllegalMove(PentaMove.IllegalMove(
+                            "piece ${move.playerPiece.id} is not on expected position ${move.from.id}",
+                            move
+                        ))
+                        return
+                    }
+                    requires(move.otherPlayerPiece.playerId != currentPlayer.id) {
+                        handleIllegalMove(PentaMove.IllegalMove(
+                            "piece ${move.otherPlayerPiece.id} is from another player",
+                            move
+                        ))
+                        return
+                    }
+                    requires(move.otherPlayerPiece.position == move.to) {
+                        handleIllegalMove(PentaMove.IllegalMove(
+                            "piece ${move.otherPlayerPiece.id} is not on expected position ${move.to.id}",
+                            move
+                        ))
+                        return
+                    }
 
                     move.playerPiece.position = move.to
                     move.otherPlayerPiece.position = move.from
@@ -224,9 +309,6 @@ open class BoardState() {
                     // TODO
                     postProcess(move)
                     mutableHistory += move
-                    move.setGrey?.let {
-                        processMove(it)
-                    }
                 }
                 is PentaMove.CooperativeSwap -> {
                     TODO("implement cooperative swap")
@@ -235,17 +317,31 @@ open class BoardState() {
 
                 is PentaMove.SetBlack -> {
                     if (figurePositions.values.any { it == move.to }) {
-                        logger.error { "target position not empty: ${move.to}" }
-                        TODO("signal illegal move")
+                        handleIllegalMove(PentaMove.IllegalMove(
+                            "target position not empty: ${move.to.id}",
+                            move
+                        ))
                         return
                     }
-                    requires(move.piece.position == null || move.piece.position == move.from) { TODO("signal illegal move") }
+                    requires(move.piece.position == null || move.piece.position == move.from) {
+                        handleIllegalMove(PentaMove.IllegalMove(
+                            "illegal source position of ${move.piece.position?.id}",
+                            move
+                        ))
+                        return
+                    }
 
                     move.piece.position = move.to
-                    mutableHistory.replaceLast {
-                        require(this is PentaMove.CanSetBlack) { "last move was not the expected move type: $this" }
-                        withSetBlack(move)
+
+                    val lastMove = history.asReversed().find { it !is PentaMove.SetGrey }
+                    if(lastMove !is PentaMove.CanSetBlack) {
+                        handleIllegalMove(PentaMove.IllegalMove(
+                            "last move was not the expected move type: ${lastMove!!::class.simpleName} instead of ${PentaMove.CanSetBlack::class.simpleName}",
+                            move
+                        ))
+                        return
                     }
+                    mutableHistory += move
                     selectedBlackPiece = null
 
                     updatePiecesAtPos(move.to)
@@ -253,38 +349,63 @@ open class BoardState() {
                 }
                 is PentaMove.SetGrey -> {
                     if (positions.values.any { it == move.to }) {
-                        logger.error { "target position not empty: ${move.to}" }
-                        TODO("signal illegal move")
+                        handleIllegalMove(PentaMove.IllegalMove(
+                            "target position not empty: ${move.to.id}",
+                            move
+                        ))
                         return
                     }
-                    requires(move.piece.position == move.from) { TODO("signal illegal move") }
+                    requires(move.piece.position == move.from) {
+                        handleIllegalMove(PentaMove.IllegalMove(
+                            "source and target position are the same: ${move.from?.id}",
+                            move
+                        ))
+                        return
+                    }
                     logger.debug { "selected: $selectedGrayPiece" }
                     if (selectingGrayPiece) {
-                        requires(selectingGrayPiece && move.from != null) { TODO("signal illegal move") }
+                        requires(selectingGrayPiece && move.from != null) {
+                            handleIllegalMove(PentaMove.IllegalMove(
+                                "source is null",
+                                move
+                            ))
+                            return
+                        }
                     } else {
-                        requires(selectedGrayPiece == move.piece) { TODO("signal illegal move") }
+                        requires(selectedGrayPiece == move.piece) {
+                            handleIllegalMove(PentaMove.IllegalMove(
+                                "piece ${move.piece.id} is not the same as selected gray piece: ${selectedGrayPiece?.id}",
+                                move
+                            ))
+                            return
+                        }
                     }
 
                     move.piece.position = move.to
-                    mutableHistory.replaceLast {
-                        require(this is PentaMove.CanSetGrey) { "last move was not the expected move type: $this" }
-                        withSetGrey(move)
+                    val lastMove = history.asReversed().find { it !is PentaMove.SetBlack }
+                    if(lastMove !is PentaMove.CanSetGrey) {
+                        handleIllegalMove(PentaMove.IllegalMove(
+                            "last move was not the expected move type: ${lastMove!!::class.simpleName} instead of ${PentaMove.CanSetGrey::class.simpleName}",
+                            move
+                        ))
+                        return
                     }
+                    mutableHistory += move
+
                     selectedGrayPiece = null
                     updatePiecesAtPos(move.to)
                     updatePiecesAtPos(move.from)
                 }
                 is PentaMove.InitGame -> {
-                    //
+                    // remove old player pieces positions
                     figures.filterIsInstance<Piece.Player>().forEach {
                         positions.remove(it.id)
                     }
                     initialized = true
-                    //TODO: create ClientPlayerState or ServerPlayerState ?
                     players.clear()
                     players += move.players // TODO: add players one by one
                     turn = 0
-                    // TODO: set player count and names from `GameInit`
+                    // set player count and names from `GameInit`
                     val playerPieces = (0 until move.players.size).flatMap { p ->
                         (0 until 5).map { i ->
                             Piece.Player(
@@ -312,9 +433,12 @@ open class BoardState() {
                     logger.info { "after init: " + figures.joinToString { it.id } }
                 }
                 is PentaMove.Win -> {
-                    // TODO
+                    // TODO handle win
                     mutableHistory += move
                     updateBoard()
+                }
+                is PentaMove.IllegalMove -> {
+                    handleIllegalMove(move)
                 }
             }.exhaustive
 
@@ -451,8 +575,8 @@ open class BoardState() {
     protected open fun updateBoard() {
         updateLogPanel(
             json.stringify(SerialNotation.serializer().list,
-                history.flatMap {
-                    it.toSerializableList()
+                history.map {
+                    it.toSerializable()
                 }
             ) + "\n" +
                     history.joinToString("\n") {

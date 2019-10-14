@@ -2,6 +2,7 @@ package penta.view
 
 import PentaViz
 import client
+import clientDispatcher
 import com.lightningkite.koolui.concepts.Animation
 import com.lightningkite.koolui.concepts.Importance
 import com.lightningkite.koolui.concepts.TextInputType
@@ -158,7 +159,7 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
         val wsUrl = URLBuilder(state.baseUrl)
             .path("ws", "game", game.id)
             .build()
-        GlobalScope.launch(Dispatchers.Default) {
+        GlobalScope.launch(clientDispatcher) {
             client.webSocket(
                 method = HttpMethod.Get,
                 host = "127.0.0.1",
