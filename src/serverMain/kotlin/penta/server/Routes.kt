@@ -84,7 +84,12 @@ fun Application.routes() = routing {
 //    }
     webSocket("/ws/game/{gameId}") {
         logger.info { "websocket connection opened" }
-        val session = call.sessions.get<UserSession>() ?: run {
+        val findName = call.sessions.findName(UserSession::class)
+        logger.info { "findName: $findName" }
+        val sessionId = (incoming.receive() as Frame.Text).readText()
+        val session = call.sessions.get<UserSession>()
+//        call.sessions
+        if(session == null) {
             logger.error { "not authenticated" }
             return@webSocket close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "not authenticated"))
         }

@@ -34,6 +34,7 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.list
 import mu.KotlinLogging
 import penta.LoginState
+import penta.PlayerState
 import penta.SerialNotation
 import penta.json
 import penta.network.GameSessionInfo
@@ -198,12 +199,15 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
                 }
             }
 
+            PentaViz.gameState.players.replace(listOf(PlayerState("triangle", "triangle"), PlayerState("square", "square")))
+            PentaViz.resetBoard()
+
             // connection closed "normally" ?
-//            PentaViz.gameState.multiplayerState.value = LoginState.Connected(
-//                baseUrl = state.baseUrl,
-//                userId = state.userId,
-//                session = state.session
-//            )
+            PentaViz.gameState.multiplayerState.value = LoginState.Connected(
+                baseUrl = state.baseUrl,
+                userId = state.userId,
+                session = state.session
+            )
         }
     }
 

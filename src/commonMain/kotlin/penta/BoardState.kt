@@ -397,6 +397,8 @@ open class BoardState() {
                     updatePiecesAtPos(move.from)
                 }
                 is PentaMove.InitGame -> {
+                    // TODO: setup UI for players related stuff here
+
                     // remove old player pieces positions
                     figures.filterIsInstance<Piece.Player>().forEach {
                         positions.remove(it.id)
