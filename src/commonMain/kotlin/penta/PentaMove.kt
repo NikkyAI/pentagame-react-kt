@@ -130,9 +130,15 @@ sealed class PentaMove {
         override fun toSerializable() = SerialNotation.SetGrey(piece.id, from?.id, to.id)
     }
 
-    data class InitGame(val players: List<PlayerState>) : PentaMove() {
-        override fun asNotation(): String = ">>> [${players.joinToString(" & ") { it.id }}]"
-        override fun toSerializable() = SerialNotation.InitGame(players)
+    data class PlayerJoin(val player: PlayerState) : PentaMove() {
+        override fun asNotation(): String = ">>> [${player.id}]"
+        override fun toSerializable() = SerialNotation.PlayerJoin(player)
+
+    }
+
+    object InitGame : PentaMove() {
+        override fun asNotation(): String = ">>>"
+        override fun toSerializable() = SerialNotation.InitGame
     }
 
     data class Win(val players: List<String>) : PentaMove() {

@@ -12,6 +12,7 @@ import io.ktor.features.ContentNegotiation
 import io.ktor.http.HttpMethod
 import io.ktor.jackson.jackson
 import io.ktor.sessions.Sessions
+import io.ktor.sessions.cookie
 import io.ktor.sessions.header
 import io.ktor.websocket.WebSockets
 import mu.KotlinLogging
@@ -35,8 +36,11 @@ fun Application.main() {
         method(HttpMethod.Get)
         allowNonSimpleContentTypes = true
         allowSameOrigin = true
-        header("SESSION")
-        exposeHeader("SESSION")
+        allowCredentials = true
+//        header("SESSION")
+//        header("Set-Cookie")
+//        exposeHeader("SESSION")
+//        exposeHeader("Set-Cookie")
         maxAge = Duration.ofMinutes(20)
     }
 //    install(Metrics) {
@@ -55,7 +59,7 @@ fun Application.main() {
         }
     }
     install(Sessions) {
-        header<UserSession>("SESSION", storage = SessionStorageMemory()) {
+        cookie<UserSession>("SESSION", storage = SessionStorageMemory()) {
 //            cookie.path = "/" // Specify cookie's path '/' so it can be used in the whole site
         }
     }

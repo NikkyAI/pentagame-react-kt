@@ -61,8 +61,8 @@ class PentaApp : Application() {
         val root = with(Factory()) { nativeViewAdapter(contentRoot(mainVg)) }
         logger.info { "UI constructed" }
 
-        val playerSymbols = listOf("triangle", "square", "cross", "circle")
-        val playerCount = 3
+        val playerSymbols = listOf("square", "cross", "circle")
+        val playerCount = 2
         with(PentaViz) {
             viz.addEvents()
         }

@@ -7,6 +7,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModuleBuilder
 import mu.KotlinLogging
 import penta.logic.Piece
+import penta.util.ObjectSerializer
 
 @Polymorphic
 @Serializable(PolymorphicSerializer::class)
@@ -115,12 +116,16 @@ sealed class SerialNotation {
     }
 
     @Serializable
-    data class InitGame(
-        val players: List<PlayerState>
+    data class PlayerJoin(
+        val player: PlayerState
     ) : SerialNotation() {
-        override fun asMove(boardState: BoardState) = PentaMove.InitGame(
-            players = players
+        override fun asMove(boardState: BoardState) = PentaMove.PlayerJoin(
+            player = player
         )
+    }
+
+    object InitGame : SerialNotation() {
+        override fun asMove(boardState: BoardState) = PentaMove.InitGame
     }
 
     @Serializable
@@ -153,7 +158,8 @@ sealed class SerialNotation {
                 CooperativeSwap::class with CooperativeSwap.serializer()
                 SetBlack::class with SetBlack.serializer()
                 SetGrey::class with SetGrey.serializer()
-                InitGame::class with InitGame.serializer()
+                PlayerJoin::class with PlayerJoin.serializer()
+                InitGame::class with ObjectSerializer(InitGame)
                 Win::class with Win.serializer()
                 IllegalMove::class with IllegalMove.serializer()
             }

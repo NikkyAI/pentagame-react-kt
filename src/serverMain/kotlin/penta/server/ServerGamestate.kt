@@ -23,20 +23,20 @@ import penta.util.suspendError
  */
 class ServerGamestate(
     val id: String,
-    var ownerId: String
+    var owner: User
 ): BoardState() {
     companion object {
         private val logger = KotlinLogging.logger {}
     }
     init {
         // TODO: init game later
-        logger.info { "players: ${players.joinToString()}"}
-        players.addAll(listOf(PlayerState(ownerId, "triangle"), PlayerState("other", "square")))
-        players.removeAt(0)
-        logger.info { "initializing with ${players.joinToString()}" }
-        currentPlayerProperty.value = players.first()
-        processMove(PentaMove.InitGame(players.toList()))
-        logger.info { "after init: " + figures.joinToString { it.id } }
+//        logger.info { "players: ${players.joinToString()}"}
+//        players.addAll(listOf(PlayerState(ownerId, "triangle"), PlayerState("other", "square")))
+//        players.removeAt(0)
+//        logger.info { "initializing with ${players.joinToString()}" }
+//        currentPlayerProperty.value = players.first()
+//        processMove(PentaMove.InitGame(players.toList()))
+//        logger.info { "after init: " + figures.joinToString { it.id } }
     }
     var running: Boolean = false
     val observers = mutableMapOf<UserSession, DefaultWebSocketServerSession>()
@@ -51,21 +51,11 @@ class ServerGamestate(
         )
     }
 
-    fun handleIllegalMove(illegalMove: PentaMove.IllegalMove) {
-
-    }
-
     val serializer = SerialNotation.serializer()
 
     suspend fun handle(websocketSession: DefaultWebSocketServerSession, session: UserSession) = with(websocketSession) {
         observers[session] = this
         try {
-//            val channel = Channel<String>()
-//            launch {
-//                channel.consumeEach {
-//
-//                }
-//            }
 
             // play back history
             history.forEach { move ->
@@ -111,4 +101,23 @@ class ServerGamestate(
 
     }
 
+    fun requestJoin(user: User) {
+        if(players.size > 3) {
+            logger.error { "max player limit reached" }
+            return
+        }
+        if(initialized) {
+            logger.error { "game has already started" }
+            return
+        }
+
+        val shapes = listOf("triangle", "square", "cross", "circle")
+        processMove(PentaMove.PlayerJoin(PlayerState(user.userId, shapes[players.size])))
+    }
+
+    fun requestStart(user: User) {
+        if(user.userId == owner.userId) {
+            processMove(PentaMove.InitGame)
+        }
+    }
 }

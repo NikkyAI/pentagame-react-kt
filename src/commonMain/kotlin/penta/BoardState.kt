@@ -21,7 +21,7 @@ open class BoardState() {
     }
     var updateLogPanel: (String) -> Unit = {}
 
-    val players: WrapperObservableList<PlayerState> = mutableObservableListOf(PlayerState("initial", "triangle"))
+    val players: WrapperObservableList<PlayerState> = mutableObservableListOf()
 
     // player id to team id
     lateinit var teams: Map<String, Int>
@@ -45,14 +45,17 @@ open class BoardState() {
     var initialized: Boolean = false
         private set
 
-    val currentPlayerProperty = StandardObservableProperty(players.first())
+    val currentPlayerProperty = StandardObservableProperty(PlayerState("ghost", "circle"))
     val currentPlayer: PlayerState inline get() = currentPlayerProperty.value
 
     val turnProperty: StandardObservableProperty<Int> = StandardObservableProperty(0).apply {
         add {
             logger.debug {"set turn = $it"}
-            currentPlayerProperty.value = if (players.isNotEmpty()) players[it % players.size] else throw IllegalStateException("no turn")
-            updateBoard()
+            if(initialized) {
+                currentPlayerProperty.value = if (players.isNotEmpty()) players[it % players.size] else throw IllegalStateException("no turn")
+                updateBoard()
+            }
+
         }
     }
     var turn: Int
@@ -69,9 +72,9 @@ open class BoardState() {
 
     var selectedPlayerPiece: Piece.Player? = null
         protected set
-    open var selectedBlackPiece: Piece.BlackBlocker? = null
+    var selectedBlackPiece: Piece.BlackBlocker? = null
         protected set
-    open var selectedGrayPiece: Piece.GrayBlocker? = null
+    var selectedGrayPiece: Piece.GrayBlocker? = null
         protected set
 
     /**
@@ -86,9 +89,10 @@ open class BoardState() {
                 "b$i",
                 Point(0.0, 0.0),
                 PentaMath.s / 2.5,
-                PentaColor.values()[i]
+                PentaColor.values()[i],
+                PentaBoard.j[i]
             ).also {
-                it.position = PentaBoard.j[i]
+                it.position = it.originalPosition
             }
         }
         greys = (0 until 5).map { i ->
@@ -124,10 +128,23 @@ open class BoardState() {
             logger.info { "processing $move" }
             when (move) {
                 is PentaMove.MovePlayer -> {
-                    require(move.playerPiece.playerId == currentPlayer.id) { "signal illegal move" }
-                    if (!canMove(move.from, move.to)) {
+                    require(initialized) {
+                        handleIllegalMove(PentaMove.IllegalMove(
+                            "game ist not started yet",
+                            move
+                        ))
+                        return
+                    }
+                    require(move.playerPiece.playerId == currentPlayer.id) {
                         handleIllegalMove(PentaMove.IllegalMove(
                             "move is not from currentPlayer: ${currentPlayer.id}",
+                            move
+                        ))
+                        return
+                    }
+                    if (!canMove(move.from, move.to)) {
+                        handleIllegalMove(PentaMove.IllegalMove(
+                            "no path between ${move.from.id} and ${move.to.id}",
                             move
                         ))
                         return
@@ -188,15 +205,22 @@ open class BoardState() {
 
                     postProcess(move)
 
-                    logger.info { "all figures: " + figures.joinToString { it.id } }
-
-                    updatePiecesAtPos(move.to)
                     updatePiecesAtPos(move.from)
+                    updatePiecesAtPos(move.to)
+
+                    updateBoard()
 
                     logger.info { "append history" }
                     mutableHistory += move
                 }
                 is PentaMove.ForcedPlayerMove -> {
+                    require(initialized) {
+                        handleIllegalMove(PentaMove.IllegalMove(
+                            "game ist not started yet",
+                            move
+                        ))
+                        return
+                    }
                     requires(move.playerPiece.playerId == currentPlayer.id) {
                         handleIllegalMove(
                             PentaMove.IllegalMove(
@@ -221,6 +245,13 @@ open class BoardState() {
                     mutableHistory += move
                 }
                 is PentaMove.SwapOwnPiece -> {
+                    require(initialized) {
+                        handleIllegalMove(PentaMove.IllegalMove(
+                            "game ist not started yet",
+                            move
+                        ))
+                        return
+                    }
                     requires(canMove(move.from, move.to)) {
                         handleIllegalMove(PentaMove.IllegalMove(
                             "no path between ${move.from.id} and ${move.to.id}",
@@ -266,6 +297,13 @@ open class BoardState() {
                     mutableHistory += move
                 }
                 is PentaMove.SwapHostilePieces -> {
+                    require(initialized) {
+                        handleIllegalMove(PentaMove.IllegalMove(
+                            "game ist not started yet",
+                            move
+                        ))
+                        return
+                    }
                     requires(canMove(move.from, move.to)) {
                         handleIllegalMove(PentaMove.IllegalMove(
                             "no path between ${move.from.id} and ${move.to.id}",
@@ -396,19 +434,17 @@ open class BoardState() {
                     updatePiecesAtPos(move.to)
                     updatePiecesAtPos(move.from)
                 }
-                is PentaMove.InitGame -> {
-                    // TODO: setup UI for players related stuff here
-
-                    // remove old player pieces positions
-                    figures.filterIsInstance<Piece.Player>().forEach {
-                        positions.remove(it.id)
+                is PentaMove.PlayerJoin -> {
+                    require(!initialized) {
+                        handleIllegalMove(PentaMove.IllegalMove(
+                            "game ist already started",
+                            move
+                        ))
+                        return
                     }
-                    initialized = true
-                    players.clear()
-                    players += move.players // TODO: add players one by one
-                    turn = 0
-                    // set player count and names from `GameInit`
-                    val playerPieces = (0 until move.players.size).flatMap { p ->
+                    players += move.player
+
+                    val playerPieces = (0 until players.size).flatMap { p ->
                         (0 until 5).map { i ->
                             Piece.Player(
                                 "p$p$i",
@@ -423,13 +459,38 @@ open class BoardState() {
                         }
                     }
                     figures = arrayOf<Piece>(*blacks.toTypedArray(), *greys.toTypedArray(), *playerPieces.toTypedArray())
-                    //(blacks + greys + playerPieces).toTypedArray<Piece>()
 
-                    // TODO: reset viz and readd pieces
-                    resetBoard()
+                    resetPlayers()
+                    updateAllPieces()
+                    updateBoard()
+                    mutableHistory += move
+                }
+                is PentaMove.InitGame -> {
+                    require(!initialized) {
+                        handleIllegalMove(PentaMove.IllegalMove(
+                            "game ist already started",
+                            move
+                        ))
+                        return
+                    }
+                    // TODO: setup UI for players related stuff here
+
+                    // remove old player pieces positions
+//                    figures.filterIsInstance<Piece.Player>().forEach {
+//                        positions.remove(it.id)
+//                    }
+//                    figures.filterIsInstance<Piece.BlackBlocker>().forEach {
+//                        it.position = it.originalPosition
+//                    }
+//                    figures.filterIsInstance<Piece.GrayBlocker>().forEach {
+//                        it.position = null
+//                    }
+                    initialized = true
+                    turn = 0
+
+//                    resetBoard()
                     updateAllPieces()
 
-                    mutableHistory.clear()
                     mutableHistory += move
 
                     logger.info { "after init: " + figures.joinToString { it.id } }
@@ -562,11 +623,27 @@ open class BoardState() {
     var Piece.position: AbstractField?
         get() = positions[id]
         private set(value) {
+            logger.info { "move $id to ${value?.id}" }
             positions[id] = value
         }
 
+    fun resetPiecePositions() {
+        figures.filterIsInstance<Piece.Player>().forEach {
+            positions.remove(it.id)
+        }
+        figures.filterIsInstance<Piece.BlackBlocker>().forEach {
+            it.position = it.originalPosition
+        }
+        figures.filterIsInstance<Piece.GrayBlocker>().forEach {
+            it.position = null
+        }
+    }
 
+    @Deprecated("do not use")
     protected open fun resetBoard() {}
+
+    protected open fun resetPlayers() {}
+
     protected open fun updateAllPieces() {
         figures.forEach { piece ->
             updatePiecePos(piece)

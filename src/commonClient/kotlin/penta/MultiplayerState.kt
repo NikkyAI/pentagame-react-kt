@@ -4,39 +4,37 @@ import io.ktor.client.features.websocket.DefaultClientWebSocketSession
 import io.ktor.http.Url
 import io.ktor.http.cio.websocket.Frame
 
-sealed class LoginState {
+sealed class MultiplayerState {
     abstract val baseUrl: Url
     abstract val userId: String
     interface NotLoggedIn
     class  Disconnected(
         override val baseUrl: Url = Url("http://127.0.0.1:55555"),
         override val userId: String = ""
-    ): LoginState(), NotLoggedIn
+    ): MultiplayerState(), NotLoggedIn
     class UserIDRejected(
         override val baseUrl: Url,
         override val userId: String,
         val reason: String
-    ): LoginState(), NotLoggedIn
+    ): MultiplayerState(), NotLoggedIn
     class RequiresPassword(
         override val baseUrl: Url,
         override val userId: String
-    ): LoginState(), NotLoggedIn
+    ): MultiplayerState(), NotLoggedIn
 
-    interface HasSession {
-        abstract var session: String
-    }
+    interface HasSession
+
     open class Connected(
         override val baseUrl: Url,
-        override val userId: String,
-        override var session: String
-    ): LoginState(), HasSession
+        override val userId: String
+    ): MultiplayerState(), HasSession
+
     class Playing(
         override val baseUrl: Url,
         override val userId: String,
-        override var session: String,
         val gameId: String,
         private val websocketSession: DefaultClientWebSocketSession
-    ): LoginState(), HasSession {
+    ): MultiplayerState(), HasSession {
         suspend fun sendMove(move: PentaMove) {
             websocketSession.outgoing.send(
                 Frame.Text(json.stringify(SerialNotation.serializer(), move.toSerializable()))

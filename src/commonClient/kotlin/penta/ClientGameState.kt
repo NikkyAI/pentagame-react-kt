@@ -15,14 +15,14 @@ import penta.logic.field.AbstractField
 import penta.logic.field.CornerField
 import penta.util.length
 
-class ClientGameState : BoardState() {
+class ClientGameState(localPlayerCount: Int = 0) : BoardState() {
     companion object {
         private val logger = KotlinLogging.logger {}
     }
 
     //    override var updateLogPanel: (String) -> Unit = {}
     var updatePiece: (Piece) -> Unit = { piece -> }
-    val multiplayerState = StandardObservableProperty<LoginState>(LoginState.Disconnected())
+    val multiplayerState = StandardObservableProperty<MultiplayerState>(MultiplayerState.Disconnected())
 
     fun cornerPoint(index: Int, angleDelta: Angle = 0.deg, radius: Double = PentaMath.R_): Point {
         val angle = (-45 + (index) * 90).deg + angleDelta
@@ -33,19 +33,27 @@ class ClientGameState : BoardState() {
         ) / 2 + (Point(0.5, 0.5) * PentaMath.R_)
     }
 
-    init {
-        figures.forEach(::updatePiecePos)
-    }
-
     fun initialize(players: List<PlayerState>) {
         logger.info { "initializing with $players" }
-        processMove(PentaMove.InitGame(players))
+        players.forEach {
+            processMove(PentaMove.PlayerJoin(it))
+        }
+        processMove(PentaMove.InitGame)
+    }
+
+    init {
+        val localSymbols = listOf("triangle", "square", "cross", "circle")
+        if (localPlayerCount > 0) {
+            initialize(localSymbols.subList(0, localPlayerCount).map { PlayerState(it, it) })
+        }
+
+        figures.forEach(::updatePiecePos)
     }
 
     fun preProcessMove(move: PentaMove) {
         logger.info { "preProcess $move" }
-        when(val state = multiplayerState.value) {
-            is LoginState.Playing -> {
+        when (val state = multiplayerState.value) {
+            is MultiplayerState.Playing -> {
                 GlobalScope.launch(Dispatchers.Default) {
                     state.sendMove(move)
                 }
@@ -58,12 +66,11 @@ class ClientGameState : BoardState() {
         }
         // TODO: if playing online.. send move
         // only process received moves
-
     }
 
     // TODO: move to client
     // TODO: not common code
-    override fun updatePiecePos(piece: Piece/*, override: Boolean, fieldOverride: AbstractField?*/) {
+    override fun updatePiecePos(piece: Piece) {
         val field: AbstractField? = figurePositions[piece.id]
         updatePiecePos(piece, field)
     }
@@ -420,8 +427,14 @@ class ClientGameState : BoardState() {
     }
 
     override fun resetBoard() {
+        super.resetBoard()
 //        PentaViz.gameState = this
-        PentaViz.resetBoard()
+//        PentaViz.resetBoard()
+    }
+
+    override fun resetPlayers() {
+        super.resetPlayers()
+        PentaViz.updatePlayers()
     }
 
     // TODO: clientside
@@ -433,8 +446,9 @@ class ClientGameState : BoardState() {
 
     // TODO: clientside
     override fun updatePiecesAtPos(field: AbstractField?) {
-        figurePositions.filterValues { it?.id == field?.id }.keys.map { id ->
-            figures.find { it.id == id } ?: throw IllegalStateException("cannot find figure with id: $id in ${figures.map { it.id }}")
+        figurePositions.filterValues { it == field }.keys.map { id ->
+            figures.find { it.id == id }
+                ?: throw IllegalStateException("cannot find figure with id: $id in ${figures.map { it.id }}")
         }.forEach { piece ->
             updatePiecePos(piece)
         }

@@ -9,7 +9,6 @@ import io.ktor.http.cio.websocket.Frame
 import io.ktor.http.cio.websocket.close
 import io.ktor.http.cio.websocket.readText
 import io.ktor.request.receive
-import io.ktor.response.respond
 import io.ktor.response.respondText
 import io.ktor.routing.get
 import io.ktor.routing.post
@@ -18,78 +17,23 @@ import io.ktor.sessions.get
 import io.ktor.sessions.sessions
 import io.ktor.sessions.set
 import io.ktor.websocket.webSocket
-import kotlinx.coroutines.channels.ClosedReceiveChannelException
-import kotlinx.coroutines.delay
 import kotlinx.serialization.list
-import kotlinx.serialization.serializer
 import mu.KotlinLogging
-import penta.SerialNotation
 import penta.json
 import penta.network.GameSessionInfo
 import penta.network.LoginRequest
 import penta.network.LoginResponse
 import penta.network.ServerStatus
-import penta.util.suspendDebug
-import penta.util.suspendError
+import kotlin.random.Random
 
 private val logger = KotlinLogging.logger {}
 fun Application.routes() = routing {
-    val received = mutableListOf<String>()
-//    webSocket("/") {
-//        // websocketSession
-//        while (true) {
-//            when (val frame = incoming.receive()) {
-//                is Frame.Text -> {
-//                    val text = frame.readText()
-//                    outgoing.send(Frame.Text("YOU SAID: $text"))
-//                    if (text.equals("bye", ignoreCase = true)) {
-//                        close(CloseReason(CloseReason.Codes.NORMAL, "Client said BYE"))
-//                    }
-//                }
-//            }
-//        }
-//    }
-//    webSocket("/echo") {
-//        logger.debug { "onConnect" }
-//        try {
-//            while (true) {
-//                val text = (incoming.receive() as Frame.Text).readText()
-//                logger.info { "onMessage $text" }
-//                received += text
-//                outgoing.send(Frame.Text(text))
-//            }
-//        } catch (e: ClosedReceiveChannelException) {
-//            logger.suspendDebug(e) { "onClose ${closeReason.await()}" }
-//        } catch (e: Throwable) {
-//            logger.suspendError(e) { "onClose ${closeReason.await()}" }
-//        }
-//    }
-//    webSocket("/replay") {
-//        logger.info { "onConnect" }
-//
-//        val gameJson = (incoming.receive() as Frame.Text).readText()
-//
-//        val notationList = json.parse(SerialNotation.serializer().list, gameJson)
-//
-//
-//        notationList.forEach {
-//            delay(500)
-//            val notationJson = json.stringify(SerialNotation.serializer(), it)
-//            logger.info { "sending: $notationJson" }
-//            outgoing.send(Frame.Text(notationJson))
-//        }
-//        logger.info { "done" }
-//
-//        close(CloseReason(CloseReason.Codes.NORMAL, "Replay done"))
-//    }
     webSocket("/ws/game/{gameId}") {
         logger.info { "websocket connection opened" }
         val findName = call.sessions.findName(UserSession::class)
-        logger.info { "findName: $findName" }
-        val sessionId = (incoming.receive() as Frame.Text).readText()
         val session = call.sessions.get<UserSession>()
 //        call.sessions
-        if(session == null) {
+        if (session == null) {
             logger.error { "not authenticated" }
             return@webSocket close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "not authenticated"))
         }
@@ -151,6 +95,7 @@ fun Application.routes() = routing {
                             reason = "userId contains illegal characters: $illegalChars"
                         )
                     } else {
+                        val randomString = Random.nextInt(2048).toString(16)
                         // create temporary user
                         val tmpUser = User.TemporaryUser(loginRequest.userId)
                         val tmpSession = UserSession(tmpUser.userId)
@@ -208,6 +153,73 @@ fun Application.routes() = routing {
                 contentType = ContentType.Application.Json
             )
         }
+    }
+
+    get("/api/game/create") {
+        val session = call.sessions.get<UserSession>()
+
+        if (session == null) {
+            call.respondText(
+                text = "not logged in",
+                status = HttpStatusCode.Unauthorized
+            )
+        } else {
+            val game = GameController.create(session.asUser())
+
+            call.respondText(
+                text = json.stringify(
+                    GameSessionInfo.serializer(),
+                    game.info
+                ),
+                contentType = ContentType.Application.Json
+            )
+        }
+    }
+
+    get("/api/game/{gameId}/join") {
+        val session = call.sessions.get<UserSession>()
+
+        if (session == null) {
+            call.respondText(
+                text = "not logged in",
+                status = HttpStatusCode.Unauthorized
+            )
+            return@get
+        }
+        val gameId = call.parameters["gameId"] ?: throw IllegalArgumentException("missing parameter gameId")
+        val game = GameController.get(gameId) ?: throw IllegalArgumentException("no game found with id $gameId")
+        game.requestJoin(session.asUser())
+
+        call.respondText(
+            text = json.stringify(
+                GameSessionInfo.serializer(),
+                game.info
+            ),
+            contentType = ContentType.Application.Json
+        )
+    }
+
+    get("/api/game/{gameId}/start") {
+        val session = call.sessions.get<UserSession>()
+
+        if (session == null) {
+            call.respondText(
+                text = "not logged in",
+                status = HttpStatusCode.Unauthorized
+            )
+            return@get
+        }
+        val gameId = call.parameters["gameId"] ?: throw IllegalArgumentException("missing parameter gameId")
+        val game = GameController.get(gameId) ?: throw IllegalArgumentException("no game found with id $gameId")
+        game.requestStart(session.asUser())
+
+        call.respondText(
+            text = json.stringify(
+                GameSessionInfo.serializer(),
+                game.info
+            ),
+            contentType = ContentType.Application.Json
+        )
     }
 
     get("/whoami") {

@@ -39,8 +39,8 @@ fun main(args: Array<String>) {
         )
         logger.info { "UI finished" }
 
-        val playerSymbols = listOf("triangle", "square", "cross", "circle")
-        val playerCount = 3
+        val playerSymbols = listOf("square", "cross", "circle")
+        val playerCount = 2
         val canvasId = "vizCanvas"
         val canvas = requireNotNull(document.getElementById(canvasId) as HTMLCanvasElement?)
         val container = requireNotNull(document.getElementById("vizContainer") as HTMLDivElement?)
