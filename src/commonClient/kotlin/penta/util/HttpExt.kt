@@ -8,6 +8,7 @@ import io.ktor.client.response.readText
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.Url
+import io.ktor.util.AttributeKey
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.Json
 import penta.MultiplayerState
@@ -17,6 +18,7 @@ suspend fun <T> HttpResponse.parse(serializer: KSerializer<T>, json: Json = pent
     readText()
 )
 fun HttpRequestBuilder.authenticateWith(state: MultiplayerState.HasSession) {
+    attributes.put(AttributeKey("credentials"), "include")
 //    header("SESSION", state.session)
 }
 

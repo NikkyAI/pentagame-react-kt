@@ -442,6 +442,13 @@ open class BoardState() {
                         ))
                         return
                     }
+                    require(players.none { it.id == move.player.id }) {
+                        handleIllegalMove(PentaMove.IllegalMove(
+                            "player already joined",
+                            move
+                        ))
+                        return
+                    }
                     players += move.player
 
                     val playerPieces = (0 until players.size).flatMap { p ->

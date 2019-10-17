@@ -60,7 +60,7 @@ fun Application.main() {
     }
     install(Sessions) {
         cookie<UserSession>("SESSION", storage = SessionStorageMemory()) {
-//            cookie.path = "/" // Specify cookie's path '/' so it can be used in the whole site
+            cookie.path = "/" // Specify cookie's path '/' so it can be used in the whole site
         }
     }
 

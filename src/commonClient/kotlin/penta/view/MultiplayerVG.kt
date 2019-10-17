@@ -28,6 +28,9 @@ import io.ktor.http.Url
 import io.ktor.http.cio.websocket.Frame
 import io.ktor.http.cio.websocket.readText
 import io.ktor.http.content.TextContent
+import io.ktor.http.fullPath
+import io.ktor.http.setCookie
+import io.ktor.util.AttributeKey
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.launch
@@ -95,7 +98,8 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
                     contentType = ContentType.Application.Json
                 )
             }.run {
-                logger.debug { "headers: $headers" }
+                logger.info { "headers: $headers" }
+                logger.info { "setCookie: ${setCookie()}" }
                 parse(LoginResponse.serializer()) // to headers["SESSION"]
             }
             PentaViz.gameState.multiplayerState.value = when (loginResponse) {
@@ -123,7 +127,7 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
                     client.authenticatedRequest(whoAmIUrl, state, HttpMethod.Get) {
                         authenticateWith(state)
                     }.run {
-                        logger.suspendInfo { readText() }
+                        logger.suspendInfo { "response: " + readText() }
                     }
                 }
             }
@@ -159,13 +163,10 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
             .path("ws", "game", game.id)
             .build()
         client.webSocket(
-            method = HttpMethod.Get,
-            host = "127.0.0.1",
-            port = 55555, path = "/ws/game/${game.id}",
-//                urlString = wsUrl.toString(),
+            host = wsUrl.host,
+            port = wsUrl.port, path = wsUrl.fullPath,
             request = {
                 authenticateWith(state)
-//                    parameter("gameId", game.id)
             }
         ) {
             logger.info { "connection opened" }
@@ -369,7 +370,7 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
                                                 -button(
                                                     label = "Join",
                                                     onClick = {
-                                                        GlobalScope.launch(/*clientDispatcher*/) {
+                                                        GlobalScope.launch(clientDispatcher) {
                                                             connectToGame(state, game)
                                                         }
                                                     }
