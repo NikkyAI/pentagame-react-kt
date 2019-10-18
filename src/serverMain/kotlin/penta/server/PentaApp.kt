@@ -37,9 +37,9 @@ fun Application.main() {
         allowNonSimpleContentTypes = true
         allowSameOrigin = true
         allowCredentials = true
-//        header("SESSION")
+        header("SESSION")
 //        header("Set-Cookie")
-//        exposeHeader("SESSION")
+        exposeHeader("SESSION")
 //        exposeHeader("Set-Cookie")
         maxAge = Duration.ofMinutes(20)
     }

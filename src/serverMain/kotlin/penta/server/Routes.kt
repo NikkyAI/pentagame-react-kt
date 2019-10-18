@@ -30,9 +30,8 @@ private val logger = KotlinLogging.logger {}
 fun Application.routes() = routing {
     webSocket("/ws/game/{gameId}") {
         logger.info { "websocket connection opened" }
-        val findName = call.sessions.findName(UserSession::class)
-        val session = call.sessions.get<UserSession>()
-//        call.sessions
+        val sessionId = (incoming.receive() as Frame.Text).readText()
+        val session = SessionController.get(sessionId)
         if (session == null) {
             logger.error { "not authenticated" }
             return@webSocket close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "not authenticated"))
@@ -99,7 +98,8 @@ fun Application.routes() = routing {
                         // create temporary user
                         val tmpUser = User.TemporaryUser(loginRequest.userId)
                         val tmpSession = UserSession(tmpUser.userId)
-                        call.sessions.set(tmpSession)
+//                        call.sessions.set(tmpSession)
+                        SessionController.set(tmpSession, call)
 
                         LoginResponse.Success(
                             message = "Welcome ${tmpUser.displayName}"
@@ -116,7 +116,8 @@ fun Application.routes() = routing {
                 LoginResponse.IncorrectPassword
             } else {
                 val authenticatedSession = UserSession(registeredUser.userId)
-                call.sessions.set(authenticatedSession)
+//                call.sessions.set(authenticatedSession)
+                SessionController.set(authenticatedSession, call)
 
                 LoginResponse.Success(
                     message = "Welcome back ${registeredUser.displayName}"
@@ -135,7 +136,7 @@ fun Application.routes() = routing {
     }
 
     get("/api/games") {
-        val session = call.sessions.get<UserSession>()
+        val session = SessionController.get(call)
 
         if (session == null) {
             call.respondText(
@@ -156,7 +157,8 @@ fun Application.routes() = routing {
     }
 
     get("/api/game/create") {
-        val session = call.sessions.get<UserSession>()
+        val session = SessionController.get(call)
+//        val session = call.sessions.get<UserSession>()
 
         if (session == null) {
             call.respondText(
@@ -177,7 +179,7 @@ fun Application.routes() = routing {
     }
 
     get("/api/game/{gameId}/join") {
-        val session = call.sessions.get<UserSession>()
+        val session = SessionController.get(call)
 
         if (session == null) {
             call.respondText(
@@ -200,7 +202,7 @@ fun Application.routes() = routing {
     }
 
     get("/api/game/{gameId}/start") {
-        val session = call.sessions.get<UserSession>()
+        val session = SessionController.get(call)
 
         if (session == null) {
             call.respondText(
@@ -223,7 +225,7 @@ fun Application.routes() = routing {
     }
 
     get("/whoami") {
-        val session = call.sessions.get<UserSession>()
+        val session = SessionController.get(call)
         call.respondText(
             session.toString()
         )

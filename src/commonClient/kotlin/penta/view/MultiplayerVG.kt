@@ -30,7 +30,6 @@ import io.ktor.http.cio.websocket.readText
 import io.ktor.http.content.TextContent
 import io.ktor.http.fullPath
 import io.ktor.http.setCookie
-import io.ktor.util.AttributeKey
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.launch
@@ -86,7 +85,7 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
             val loginUrl = URLBuilder(baseURL).apply {
                 path("api", "login")
             }.build()
-            val loginResponse = client.post<HttpResponse>(loginUrl) {
+            val (loginResponse, sessionId) = client.post<HttpResponse>(loginUrl) {
                 body = TextContent(
                     text = json.stringify(
                         LoginRequest.serializer(),
@@ -100,7 +99,7 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
             }.run {
                 logger.info { "headers: $headers" }
                 logger.info { "setCookie: ${setCookie()}" }
-                parse(LoginResponse.serializer()) // to headers["SESSION"]
+                parse(LoginResponse.serializer()) to headers["SESSION"]
             }
             PentaViz.gameState.multiplayerState.value = when (loginResponse) {
                 is LoginResponse.UserIdRejected -> {
@@ -116,8 +115,8 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
                 )
                 is LoginResponse.Success -> MultiplayerState.Connected(
                     baseUrl = baseURL,
-                    userId = userIdInput
-//                    session = sessionId ?: throw IllegalStateException("missing SESSION header")
+                    userId = userIdInput,
+                    session = sessionId ?:  throw IllegalStateException("missing SESSION header")
                 ).also { state ->
                     onSuccess()
 
@@ -173,10 +172,13 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
             PentaViz.gameStateProperty.value = ClientGameState()
 //                PentaViz.resetBoard()
 
+            outgoing.send(Frame.Text(state.session))
+
             logger.info { "setting multiplayerStatus to Playing" }
             PentaViz.gameState.multiplayerState.value = MultiplayerState.Playing(
                 baseUrl = state.baseUrl,
                 userId = state.userId,
+                session = state.session,
                 gameId = game.id,
                 websocketSession = this@webSocket
             ).also {
@@ -218,7 +220,8 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
         // connection closed "normally" ?
         PentaViz.gameState.multiplayerState.value = MultiplayerState.Connected(
             baseUrl = state.baseUrl,
-            userId = state.userId
+            userId = state.userId,
+            session = state.session
         )
     }
 
@@ -422,7 +425,8 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
                                 onClick = {
                                     PentaViz.gameState.multiplayerState.value = MultiplayerState.Connected(
                                         baseUrl = state.baseUrl,
-                                        userId = state.userId
+                                        userId = state.userId,
+                                        session = state.session
                                     )
                                 }
                             )

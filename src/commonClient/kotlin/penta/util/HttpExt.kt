@@ -2,6 +2,7 @@ package penta.util
 
 import io.ktor.client.HttpClient
 import io.ktor.client.request.HttpRequestBuilder
+import io.ktor.client.request.header
 import io.ktor.client.request.request
 import io.ktor.client.response.HttpResponse
 import io.ktor.client.response.readText
@@ -18,8 +19,8 @@ suspend fun <T> HttpResponse.parse(serializer: KSerializer<T>, json: Json = pent
     readText()
 )
 fun HttpRequestBuilder.authenticateWith(state: MultiplayerState.HasSession) {
-    attributes.put(AttributeKey("credentials"), "include")
-//    header("SESSION", state.session)
+//    attributes.put(AttributeKey("credentials"), "include")
+    header("SESSION", state.session)
 }
 
 suspend fun HttpClient.authenticatedRequest(
@@ -33,9 +34,9 @@ suspend fun HttpClient.authenticatedRequest(
         authenticateWith(state)
         builder()
     }.apply {
-//        headers["SESSION"]?.let {
-//            state.session = it
-//        }
+        headers["SESSION"]?.let {
+            state.session = it
+        }
         check(status == HttpStatusCode.OK) { "response was $status" }
         // TODO: handle 403
     }

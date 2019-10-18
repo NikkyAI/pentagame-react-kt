@@ -22,16 +22,20 @@ sealed class MultiplayerState {
         override val userId: String
     ): MultiplayerState(), NotLoggedIn
 
-    interface HasSession
+    interface HasSession {
+        var session: String
+    }
 
     open class Connected(
         override val baseUrl: Url,
-        override val userId: String
+        override val userId: String,
+        override var session: String
     ): MultiplayerState(), HasSession
 
     class Playing(
         override val baseUrl: Url,
         override val userId: String,
+        override var session: String,
         val gameId: String,
         private val websocketSession: DefaultClientWebSocketSession
     ): MultiplayerState(), HasSession {
