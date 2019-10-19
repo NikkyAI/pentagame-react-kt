@@ -134,7 +134,13 @@ kotlin {
                     implementation("com.lightningkite:kommon-jvm:${Kommon.version}")
                     implementation("com.lightningkite:reacktive-jvm:${Reacktive.version}")
                 }
+
+                resources.srcDirs(project.rootDir.resolve("build/html/").path)
             }
+//            compilations["main"].allKotlinSourceSets.forEach {
+//                logger.lifecycle("sourceSet: $it")
+//                it.resources
+//            }
             compilations.all {
                 kotlinOptions {
                     jvmTarget = "1.8"
@@ -383,6 +389,44 @@ kotlin.targets.forEach { target: KotlinTarget ->
 //    archivesBaseName = ""
 //}
 
+// JAVASCRIPT
+
+val runDce = tasks.getByName("runDceClient-jsKotlin")
+
+val packageJs = tasks.create("packageJs") {
+    group = "build"
+    dependsOn(runDce)
+
+    doLast {
+        val jsInput = buildDir
+            .resolve("kotlin-js-min")
+            .resolve("client-js")
+            .resolve("main")
+
+        val htmlDir = buildDir
+            .resolve("html")
+            .resolve("pentagame")
+
+        htmlDir.deleteRecursively()
+        htmlDir.mkdir()
+        val jsOutput = htmlDir.resolve("js").apply {
+            mkdir()
+        }
+
+        logger.lifecycle("input directory: $jsInput")
+
+        jsInput.listFiles().forEach { file ->
+            file.copyTo(jsOutput.resolve(file.name))
+        }
+        copy {
+            from("src/client-jsMain/web")
+            into(htmlDir)
+        }
+    }
+}
+
+// JVM
+
 application {
     mainClassName = "penta.app.PentaApp"
 }
@@ -404,6 +448,10 @@ val shadowJar = tasks.getByName<ShadowJar>("shadowJar") {
 
 val shadowJarServer = tasks.create<ShadowJar>("shadowJarServer") {
     archiveClassifier.set("server")
+
+    dependsOn(packageJs)
+//    include(project.rootDir.resolve("build/html").path)
+//    include("*.jar")
 
     group = "shadow"
 
@@ -522,41 +570,6 @@ val runServer = tasks.create<JavaExec>("runServer") {
 
     workingDir = file("run").apply {
         mkdirs()
-    }
-}
-
-// JAVASCRIPT
-
-val runDce = tasks.getByName("runDceClient-jsKotlin")
-
-val packageJs = tasks.create("packageJs") {
-    group = "build"
-    dependsOn(runDce)
-
-    doLast {
-        val jsInput = buildDir
-            .resolve("kotlin-js-min")
-            .resolve("client-js")
-            .resolve("main")
-
-        val htmlDir = buildDir
-            .resolve("html")
-
-        htmlDir.deleteRecursively()
-        htmlDir.mkdir()
-        val jsOutput = htmlDir.resolve("js").apply {
-            mkdir()
-        }
-
-        logger.lifecycle("input directory: $jsInput")
-
-        jsInput.listFiles().forEach { file ->
-            file.copyTo(jsOutput.resolve(file.name))
-        }
-        copy {
-            from("src/client-jsMain/web")
-            into(htmlDir)
-        }
     }
 }
 

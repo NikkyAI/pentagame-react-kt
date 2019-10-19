@@ -8,10 +8,18 @@ import io.ktor.http.cio.websocket.CloseReason
 import io.ktor.http.cio.websocket.Frame
 import io.ktor.http.cio.websocket.close
 import io.ktor.http.cio.websocket.readText
+import io.ktor.http.content.default
+import io.ktor.http.content.defaultResource
+import io.ktor.http.content.resource
+import io.ktor.http.content.resources
+import io.ktor.http.content.static
+import io.ktor.http.content.staticBasePackage
 import io.ktor.request.receive
+import io.ktor.response.respondRedirect
 import io.ktor.response.respondText
 import io.ktor.routing.get
 import io.ktor.routing.post
+import io.ktor.routing.route
 import io.ktor.routing.routing
 import io.ktor.sessions.get
 import io.ktor.sessions.sessions
@@ -28,6 +36,18 @@ import kotlin.random.Random
 
 private val logger = KotlinLogging.logger {}
 fun Application.routes() = routing {
+    //    static("/index.html") {
+//    }
+    get("/") {
+        call.respondRedirect("pentagame/index.html", false)
+    }
+    static("pentagame") {
+//        staticBasePackage = "pentagame"
+        resources("js")
+        resources("html")
+//        defaultResource("index.html")
+    }
+
     webSocket("/ws/game/{gameId}") {
         logger.info { "websocket connection opened" }
         val sessionId = (incoming.receive() as Frame.Text).readText()

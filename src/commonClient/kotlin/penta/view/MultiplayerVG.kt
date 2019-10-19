@@ -385,7 +385,7 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
                                                     +space()
                                                     -vertical {
                                                         +text("owner: ${game.owner}")
-                                                        +text("observers: ${observers.size}")
+                                                        +text("running: ${game.running}")
                                                     }
                                                     +space()
                                                     -vertical {
@@ -423,6 +423,7 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
                             vertical {
                                 -text("gameId: ${state.game.id}")
                                 -text("owner: ${state.game.owner}")
+                                // TODO: list of connected observers
                                 // TODO: chat ?
                                 -swap(
                                     CombineObservableProperty2(

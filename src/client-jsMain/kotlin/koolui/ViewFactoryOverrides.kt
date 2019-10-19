@@ -1,15 +1,19 @@
 package koolui
 
 import com.lightningkite.koolui.appendLifecycled
+import com.lightningkite.koolui.async.UI
 import com.lightningkite.koolui.color.ColorSet
 import com.lightningkite.koolui.color.Theme
 import com.lightningkite.koolui.concepts.Animation
 import com.lightningkite.koolui.concepts.TextSize
 import com.lightningkite.koolui.geometry.Align
 import com.lightningkite.koolui.geometry.AlignPair
+import com.lightningkite.koolui.geometry.LinearPlacement
 import com.lightningkite.koolui.image.MaterialIcon
 import com.lightningkite.koolui.image.color
 import com.lightningkite.koolui.image.withOptions
+import com.lightningkite.koolui.removeLifecycled
+import com.lightningkite.koolui.toWeb
 import com.lightningkite.koolui.views.HtmlViewFactory
 import com.lightningkite.koolui.views.Themed
 import com.lightningkite.koolui.views.ViewFactory
@@ -25,8 +29,12 @@ import com.lightningkite.koolui.views.navigation.ViewFactoryNavigationDefault
 import com.lightningkite.reacktive.property.ConstantObservableProperty
 import com.lightningkite.reacktive.property.MutableObservableProperty
 import com.lightningkite.reacktive.property.ObservableProperty
+import com.lightningkite.reacktive.property.lifecycle.bind
 import com.lightningkite.reacktive.property.transform
 import com.lightningkite.recktangle.Point
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import org.w3c.dom.HTMLDivElement
 import org.w3c.dom.HTMLElement
 import org.w3c.dom.events.MouseEvent
@@ -139,6 +147,65 @@ open class HtmlViewFactoryOverrides(
             appendLifecycled(view)
         }
     }
+
+    override fun swap(view: ObservableProperty<Pair<HTMLElement, Animation>>, staticViewForSizing: HTMLElement?): HTMLElement =
+        makeElement<HTMLDivElement>("div") {
+            id = "swap"
+            style.maxWidth = "100%"
+//            style.maxHeight = "100%"
+            style.position = "relative"
+
+            var currentView: HTMLElement? = null
+            lifecycle.bind(view) { (view, animation) ->
+                GlobalScope.launch(Dispatchers.UI) {
+                    try {
+                        removeLifecycled(currentView!!)
+                    } catch (e: dynamic) {/*squish*/
+                    }
+                    appendLifecycled(view.apply {
+                        style.width = "100%"
+                        style.height = "100%"
+                    })
+                    currentView = view
+                }
+            }
+        }
+
+    override fun horizontal(vararg views: Pair<LinearPlacement, HTMLElement>): HTMLElement =
+        makeElement<HTMLDivElement>("div") {
+            id = "horizontal"
+            style.maxWidth = "100%"
+//            style.maxHeight = "100%"
+            style.display = "flex"
+            style.flexDirection = "row"
+            for ((placement, view) in views) {
+                view.style.alignSelf = placement.align.toWeb()
+                view.style.flexGrow = placement.weight.toString()
+                view.style.flexShrink = placement.weight.toString()
+                if (placement.weight != 0f) {
+                    style.width = "100%"
+                }
+                appendLifecycled(view)
+            }
+        }
+
+    override fun vertical(vararg views: Pair<LinearPlacement, HTMLElement>): HTMLElement =
+        makeElement<HTMLDivElement>("div") {
+            id = "vertical"
+            style.maxWidth = "100%"
+//            style.maxHeight = "100%"
+            style.display = "flex"
+            style.flexDirection = "column"
+            for ((placement, view) in views) {
+                view.style.alignSelf = placement.align.toWeb()
+                view.style.flexGrow = placement.weight.toString()
+                view.style.flexShrink = placement.weight.toString()
+                if (placement.weight != 0f) {
+                    style.height = "100%"
+                }
+                appendLifecycled(view)
+            }
+        }
 
 //    override fun contentRoot(view: HTMLElement): HTMLElement = makeElement<HTMLDivElement>("div") {
 //        applyDefaultCss()
