@@ -2,7 +2,6 @@ package penta
 
 import PentaMath
 import PentaViz
-import com.lightningkite.reacktive.property.StandardObservableProperty
 import io.data2viz.geom.Point
 import io.data2viz.math.Angle
 import io.data2viz.math.deg
@@ -22,7 +21,6 @@ class ClientGameState(localPlayerCount: Int = 0) : BoardState() {
 
     //    override var updateLogPanel: (String) -> Unit = {}
     var updatePiece: (Piece) -> Unit = { piece -> }
-    val multiplayerState = StandardObservableProperty<MultiplayerState>(MultiplayerState.Disconnected())
 
     fun cornerPoint(index: Int, angleDelta: Angle = 0.deg, radius: Double = PentaMath.R_): Point {
         val angle = (-45 + (index) * 90).deg + angleDelta
@@ -44,7 +42,7 @@ class ClientGameState(localPlayerCount: Int = 0) : BoardState() {
     init {
         val localSymbols = listOf("triangle", "square", "cross", "circle")
         if (localPlayerCount > 0) {
-            initialize(localSymbols.subList(0, localPlayerCount).map { PlayerState(it, it) })
+            initialize(localSymbols.subList(0, localPlayerCount).map { PlayerState("local+"+it, it) })
         }
 
         figures.forEach(::updatePiecePos)
@@ -52,8 +50,8 @@ class ClientGameState(localPlayerCount: Int = 0) : BoardState() {
 
     fun preProcessMove(move: PentaMove) {
         logger.info { "preProcess $move" }
-        when (val state = multiplayerState.value) {
-            is MultiplayerState.Playing -> {
+        when (val state = PentaViz.multiplayerState.value) {
+            is MultiplayerState.Observing -> {
                 GlobalScope.launch(Dispatchers.Default) {
                     state.sendMove(move)
                 }
@@ -79,8 +77,8 @@ class ClientGameState(localPlayerCount: Int = 0) : BoardState() {
         var pos: Point = field?.pos ?: run {
             val radius = when (piece) {
                 is Piece.GrayBlocker -> {
-                    logger.info { "piece: ${piece.id}" }
-                    logger.info { "selected: ${selectedGrayPiece?.id}" }
+                    logger.debug { "piece: ${piece.id}" }
+                    logger.debug { "selected: ${selectedGrayPiece?.id}" }
                     if (selectedGrayPiece == piece) {
                         val index = players.indexOf(currentPlayer)
                         val pos = cornerPoint(index, 10.deg, radius = (PentaMath.R_ + (3 * PentaMath.s)))
@@ -153,6 +151,13 @@ class ClientGameState(localPlayerCount: Int = 0) : BoardState() {
         }
         if (figurePositions[clickedPiece.id] == null) {
             return false
+        }
+        when(val state = PentaViz.multiplayerState.value) {
+            is MultiplayerState.HasGameSession -> {
+                if(currentPlayer.id != state.userId) {
+                    return false
+                }
+            }
         }
         if (
         // make sure you are not selecting black or gray
@@ -307,6 +312,13 @@ class ClientGameState(localPlayerCount: Int = 0) : BoardState() {
         ) {
             return false
         }
+        when(val state = PentaViz.multiplayerState.value) {
+            is MultiplayerState.HasGameSession -> {
+                if(currentPlayer.id != state.userId) {
+                    return false
+                }
+            }
+        }
         when {
             selectedPlayerPiece != null && currentPlayer.id == selectedPlayerPiece!!.playerId -> {
                 val playerPiece = selectedPlayerPiece!!
@@ -424,12 +436,6 @@ class ClientGameState(localPlayerCount: Int = 0) : BoardState() {
             }
         }
         preProcessMove(move)
-    }
-
-    override fun resetBoard() {
-        super.resetBoard()
-//        PentaViz.gameState = this
-//        PentaViz.resetBoard()
     }
 
     override fun resetPlayers() {

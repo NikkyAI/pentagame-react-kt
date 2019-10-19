@@ -2,7 +2,7 @@ package penta.view
 
 import PentaViz
 import client
-import clientDispatcher
+import com.lightningkite.koolui.async.UI
 import com.lightningkite.koolui.concepts.Animation
 import com.lightningkite.koolui.concepts.Importance
 import com.lightningkite.koolui.concepts.TextInputType
@@ -14,6 +14,7 @@ import com.lightningkite.koolui.views.layout.space
 import com.lightningkite.koolui.views.layout.vertical
 import com.lightningkite.reacktive.list.MutableObservableList
 import com.lightningkite.reacktive.list.mutableObservableListOf
+import com.lightningkite.reacktive.property.CombineObservableProperty2
 import com.lightningkite.reacktive.property.StandardObservableProperty
 import com.lightningkite.reacktive.property.transform
 import io.ktor.client.features.websocket.webSocket
@@ -30,9 +31,11 @@ import io.ktor.http.cio.websocket.readText
 import io.ktor.http.content.TextContent
 import io.ktor.http.fullPath
 import io.ktor.http.setCookie
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.list
 import mu.KotlinLogging
 import penta.ClientGameState
@@ -101,7 +104,7 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
                 logger.info { "setCookie: ${setCookie()}" }
                 parse(LoginResponse.serializer()) to headers["SESSION"]
             }
-            PentaViz.gameState.multiplayerState.value = when (loginResponse) {
+            PentaViz.multiplayerState.value = when (loginResponse) {
                 is LoginResponse.UserIdRejected -> {
                     MultiplayerState.UserIDRejected(
                         baseUrl = baseURL,
@@ -170,22 +173,33 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
         ) {
             logger.info { "connection opened" }
             PentaViz.gameStateProperty.value = ClientGameState()
-//                PentaViz.resetBoard()
+            PentaViz.updateBoard()
 
             outgoing.send(Frame.Text(state.session))
 
             logger.info { "setting multiplayerStatus to Playing" }
-            PentaViz.gameState.multiplayerState.value = MultiplayerState.Playing(
+            PentaViz.multiplayerState.value = MultiplayerState.Observing(
                 baseUrl = state.baseUrl,
                 userId = state.userId,
                 session = state.session,
-                gameId = game.id,
+                game = game,
                 websocketSession = this@webSocket
             ).also {
                 logger.info { "setting multiplayerStatus to $it" }
             }
 
             try {
+                val notationListJson = (incoming.receive() as Frame.Text).readText()
+                logger.info { "receiving notation $notationListJson" }
+                val history = json.parse(SerialNotation.serializer().list, notationListJson)
+                withContext(Dispatchers.UI) {
+                    history.forEach { notation ->
+                        notation.asMove(PentaViz.gameState).also {
+                            PentaViz.gameState.processMove(it)
+                        }
+                    }
+                }
+
                 while (true) {
                     val notationJson = (incoming.receive() as Frame.Text).readText()
 
@@ -193,11 +207,12 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
                     val notation = json.parse(SerialNotation.serializer(), notationJson)
                     notation.asMove(PentaViz.gameState).also {
                         // apply move
-                        launch(clientDispatcher) {
+                        withContext(Dispatchers.UI) {
                             PentaViz.gameState.processMove(it)
                         }
 
                     }
+//                    outgoing.send(Frame.Text("received"))
                 }
             } catch (e: ClosedReceiveChannelException) {
                 val reason = closeReason.await()
@@ -216,224 +231,250 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
 //        PentaViz.resetBoard()
         logger.info { "connection closed" }
         PentaViz.gameStateProperty.value = ClientGameState(2)
+        PentaViz.updateBoard()
 
         // connection closed "normally" ?
-        PentaViz.gameState.multiplayerState.value = MultiplayerState.Connected(
+        PentaViz.multiplayerState.value = MultiplayerState.Connected(
             baseUrl = state.baseUrl,
             userId = state.userId,
             session = state.session
         )
     }
 
-    suspend fun joinGame(state: MultiplayerState.Playing) {
+    suspend fun joinGame(state: MultiplayerState.Observing) {
         val joinGameUrl = URLBuilder(state.baseUrl)
-            .path("api", "game", state.gameId, "join")
+            .path("api", "game", state.game.id, "join")
             .build()
 
         client.authenticatedRequest(joinGameUrl, state, HttpMethod.Get)
     }
 
-    suspend fun startGame(state: MultiplayerState.Playing) {
+    suspend fun startGame(state: MultiplayerState.Observing) {
         val startGameUrl = URLBuilder(state.baseUrl)
-            .path("api", "game", state.gameId, "start")
+            .path("api", "game", state.game.id, "start")
             .build()
 
         client.authenticatedRequest(startGameUrl, state, HttpMethod.Get)
     }
 
     override fun generate(dependency: MyViewFactory<VIEW>): VIEW = with(dependency) {
-        swap(
-            PentaViz.gameState.multiplayerState.transform { state ->
-                when (state) {
-                    is MultiplayerState.Disconnected, is MultiplayerState.UserIDRejected -> {
-                        val urlInput = StandardObservableProperty(state.baseUrl.toString())
-                        val userIdInput = StandardObservableProperty(state.userId)
+        swap(PentaViz.gameStateProperty.transform { gameState ->
+            swap(
+                PentaViz.multiplayerState.transform { state ->
+                    when (state) {
+                        is MultiplayerState.Disconnected, is MultiplayerState.UserIDRejected -> {
+                            val urlInput = StandardObservableProperty(state.baseUrl.toString())
+                            val userIdInput = StandardObservableProperty(state.userId)
 
-                        vertical {
-                            +space()
-                            if (state is MultiplayerState.UserIDRejected) {
-                                -card(
-                                    text(
-                                        text = state.reason,
-                                        size = TextSize.Body.bigger,
-                                        importance = Importance.Danger
-                                    )
-                                )//.background(theme.importance(Importance.Danger).background)
-                            }
-                            -text("Username:")
-                            -textField(
-                                text = userIdInput,
-                                type = TextInputType.Name
-                            ).background(theme.main.background)
-                            -text("Enter Server URL:")
-                            -horizontal {
-                                +textField(
-                                    text = urlInput,
-                                    placeholder = "localhost",
-                                    type = TextInputType.URL
-                                ).background(theme.main.background)
-                                -button(
-                                    label = "Connect",
-                                    onClick = {
-                                        GlobalScope.launch(clientDispatcher) {
-                                            login(urlInput.value, userIdInput.value, null)
-                                        }
-                                    }
-                                )
-                            }.setHeight(32f)
-                            +space()
-                        } to Animation.Fade
-                    }
-                    is MultiplayerState.RequiresPassword -> {
-                        val passwordInput = StandardObservableProperty("")
-
-                        vertical {
-                            +space()
-                            -text("Enter password")
-                            -horizontal {
-                                +textField(
-                                    text = passwordInput,
-                                    type = TextInputType.Password
-                                ).background(theme.main.background)
-                                -button(
-                                    label = "Login",
-                                    onClick = {
-                                        GlobalScope.launch(clientDispatcher) {
-                                            login(state.baseUrl, state.userId, passwordInput.value)
-                                        }
-                                    }
-                                )
-                            }.setHeight(32f)
-                            -button(
-                                label = "back",
-                                onClick = {
-                                    PentaViz.gameState.multiplayerState.value = MultiplayerState.Disconnected(
-                                        baseUrl = state.baseUrl,
-                                        userId = state.userId
-                                    )
+                            vertical {
+                                +space()
+                                if (state is MultiplayerState.UserIDRejected) {
+                                    -card(
+                                        text(
+                                            text = state.reason,
+                                            size = TextSize.Body.bigger,
+                                            importance = Importance.Danger
+                                        )
+                                    )//.background(theme.importance(Importance.Danger).background)
                                 }
-                            )
-                            +space()
-
-                        } to Animation.Fade
-                    }
-                    is MultiplayerState.Connected -> {
-                        //TODO: receive games list initially
-                        val games = mutableObservableListOf<GameSessionInfo>()
-                        games.onListUpdate.add {
-                            logger.info { "list updated: ${it.joinToString()}" }
-                        }
-                        GlobalScope.launch(clientDispatcher) {
-                            listGames(state, games)
-                        }
-                        val refreshing = StandardObservableProperty(false)
-
-                        refresh(
-                            contains = vertical {
+                                -text("Username:")
+                                -textField(
+                                    text = userIdInput,
+                                    type = TextInputType.Name
+                                ).background(theme.main.background)
+                                -text("Enter Server URL:")
                                 -horizontal {
-                                    +text(
-                                        "Connected with ${state.baseUrl}"
-                                    )
+                                    +textField(
+                                        text = urlInput,
+                                        placeholder = "localhost",
+                                        type = TextInputType.URL
+                                    ).background(theme.main.background)
                                     -button(
-                                        label = "Disconnect",
+                                        label = "Connect",
                                         onClick = {
-                                            PentaViz.gameState.multiplayerState.value = MultiplayerState.Disconnected(
-                                                baseUrl = state.baseUrl,
-                                                userId = state.userId
-                                            )
-                                        }
-                                    )
-                                }
-                                -horizontal {
-                                    -button(
-                                        label = "Create Game",
-                                        onClick = {
-                                            GlobalScope.launch(/*clientDispatcher*/) {
-                                                createGameAndConnect(state)
+                                            GlobalScope.launch(Dispatchers.UI) {
+                                                login(urlInput.value, userIdInput.value, null)
                                             }
                                         }
                                     )
-                                    +space()
-                                }
-                                +list(
-                                    data = games,
-                                    makeView = { obs, indexProp ->
-                                        val game = obs.value
-                                        game.run {
-                                            horizontal {
-                                                -vertical {
-                                                    -text("id: $id")
-                                                    -text("running: $running")
-                                                }
-                                                +space()
-                                                -vertical {
-                                                    +text("players: ${players.size}")
-                                                    +text("observers: ${observers.size}")
-                                                }
-                                                -button(
-                                                    label = "Join",
-                                                    onClick = {
-                                                        GlobalScope.launch(clientDispatcher) {
-                                                            connectToGame(state, game)
-                                                        }
-                                                    }
+                                }.setHeight(32f)
+                                +space()
+                            } to Animation.Fade
+                        }
+                        is MultiplayerState.RequiresPassword -> {
+                            val passwordInput = StandardObservableProperty("")
+
+                            vertical {
+                                +space()
+                                -text("Enter password")
+                                -horizontal {
+                                    +textField(
+                                        text = passwordInput,
+                                        type = TextInputType.Password
+                                    ).background(theme.main.background)
+                                    -button(
+                                        label = "Login",
+                                        onClick = {
+                                            GlobalScope.launch(Dispatchers.UI) {
+                                                login(state.baseUrl, state.userId, passwordInput.value)
+                                            }
+                                        }
+                                    )
+                                }.setHeight(32f)
+                                -button(
+                                    label = "back",
+                                    onClick = {
+                                        PentaViz.multiplayerState.value = MultiplayerState.Disconnected(
+                                            baseUrl = state.baseUrl,
+                                            userId = state.userId
+                                        )
+                                    }
+                                )
+                                +space()
+
+                            } to Animation.Fade
+                        }
+                        is MultiplayerState.Connected -> {
+                            //TODO: receive games list initially
+                            val games = mutableObservableListOf<GameSessionInfo>()
+                            games.onListUpdate.add {
+                                logger.info { "list updated: ${it.joinToString()}" }
+                            }
+                            GlobalScope.launch(Dispatchers.UI) {
+                                listGames(state, games)
+                            }
+                            val refreshing = StandardObservableProperty(false)
+
+                            refresh(
+                                contains = vertical {
+                                    -horizontal {
+                                        +text(
+                                            "Connected with ${state.baseUrl}"
+                                        )
+                                        -button(
+                                            label = "Disconnect",
+                                            onClick = {
+                                                PentaViz.multiplayerState.value = MultiplayerState.Disconnected(
+                                                    baseUrl = state.baseUrl,
+                                                    userId = state.userId
                                                 )
                                             }
-                                        }
+                                        )
+                                    }
+                                    -horizontal {
+                                        -button(
+                                            label = "Create Game",
+                                            onClick = {
+                                                GlobalScope.launch(/*Dispatchers.UI*/) {
+                                                    createGameAndConnect(state)
+                                                }
+                                            }
+                                        )
+                                        +space()
+                                    }
+                                    +list(
+                                        data = games,
+                                        makeView = { obs, _ ->
+                                            val game = obs.value
+                                            game.run {
+                                                horizontal {
+                                                    -vertical {
+                                                        -text("id: $id")
+                                                        -text("running: $running")
+                                                    }
+                                                    +space()
+                                                    -vertical {
+                                                        +text("owner: ${game.owner}")
+                                                        +text("observers: ${observers.size}")
+                                                    }
+                                                    +space()
+                                                    -vertical {
+                                                        +text("players: ${players.size}")
+                                                        +text("observers: ${observers.size}")
+                                                    }
+                                                    -button(
+                                                        label = "Join",
+                                                        onClick = {
+                                                            GlobalScope.launch(Dispatchers.UI) {
+                                                                connectToGame(state, game)
+                                                            }
+                                                        }
+                                                    )
+                                                }
+                                            }
 
+                                        }
+                                    )
+                                },
+                                working = refreshing,
+                                onRefresh = {
+                                    refreshing.value = true
+
+                                    // TODO: receive fresh game list from server
+                                    GlobalScope.launch(Dispatchers.UI) {
+                                        listGames(state, games) {
+                                            refreshing.value = false
+                                        }
+                                    }
+                                }
+                            ).setWidth(200f) to Animation.Fade
+                        }
+                        is MultiplayerState.Observing -> {
+                            vertical {
+                                -text("gameId: ${state.game.id}")
+                                -text("owner: ${state.game.owner}")
+                                // TODO: chat ?
+                                -swap(
+                                    CombineObservableProperty2(
+                                        gameState.initializedProperty,
+                                        gameState.players.onListUpdate
+                                    ) { initialized, players ->
+                                        if(!initialized && players.none { it.id == state.userId }) {
+                                            button(
+                                                label = "Join",
+                                                onClick = {
+                                                    GlobalScope.launch(Dispatchers.UI) {
+                                                        joinGame(state)
+                                                    }
+                                                }
+                                            )
+                                        } else {
+                                            // TODO: add "spectate" ?
+                                            space()
+                                        } to Animation.Fade
                                     }
                                 )
-                            },
-                            working = refreshing,
-                            onRefresh = {
-                                refreshing.value = true
-
-                                // TODO: receive fresh game list from server
-                                GlobalScope.launch(clientDispatcher) {
-                                    listGames(state, games) {
-                                        refreshing.value = false
+                                +space()
+                                // TODO: move to top row instead
+                                -swap(gameState.initializedProperty.transform {
+                                    if (!it && state.game.owner == state.userId) {
+                                        button(
+                                            // TODO: hide once started
+                                            label = "Start",
+                                            onClick = {
+                                                GlobalScope.launch(Dispatchers.UI) {
+                                                    startGame(state)
+                                                }
+                                            }
+                                        )
+                                    } else {
+                                        space()
+                                    } to Animation.Fade
+                                })
+                                +space()
+                                -button(
+                                    label = "Leave Game",
+                                    onClick = {
+                                        GlobalScope.launch(Dispatchers.UI) {
+                                            state.leave()
+                                        }
                                     }
-                                }
-                            }
-                        ).setWidth(200f) to Animation.Fade
-                    }
-                    is MultiplayerState.Playing -> {
-                        vertical {
-                            +space()
-                            -button(
-                                // TODO: hide once joined
-                                label = "Join",
-                                onClick = {
-                                    GlobalScope.launch(clientDispatcher) {
-                                        joinGame(state)
-                                    }
-                                }
-                            )
-                            +space()
-                            -button(
-                                // TODO: hide once started
-                                label = "Start",
-                                onClick = {
-                                    GlobalScope.launch(clientDispatcher) {
-                                        startGame(state)
-                                    }
-                                }
-                            )
-                            +space()
-                            -button(
-                                label = "Leave Game",
-                                onClick = {
-                                    PentaViz.gameState.multiplayerState.value = MultiplayerState.Connected(
-                                        baseUrl = state.baseUrl,
-                                        userId = state.userId,
-                                        session = state.session
-                                    )
-                                }
-                            )
-                        } to Animation.Fade
+                                )
+                            } to Animation.Fade
+                        }
                     }
                 }
-            }
-        )
+            ) to Animation.Fade
+        })
     }
 }

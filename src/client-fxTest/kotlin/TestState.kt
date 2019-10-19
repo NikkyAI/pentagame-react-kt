@@ -6,9 +6,6 @@ class TestState() : BoardState() {
         private val logger = KotlinLogging.logger {}
     }
     init {
-        updateLogPanel = { t ->
-            logger.info { t }
-        }
     }
 
 }

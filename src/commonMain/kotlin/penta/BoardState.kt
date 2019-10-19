@@ -5,23 +5,23 @@ import PentaMath
 import com.lightningkite.reacktive.list.MutableObservableList
 import com.lightningkite.reacktive.list.ObservableList
 import io.data2viz.geom.Point
-import kotlinx.serialization.list
 import penta.logic.field.AbstractField
 import penta.logic.field.JointField
 import penta.logic.Piece
 import penta.util.exhaustive
 import com.lightningkite.reacktive.list.WrapperObservableList
 import com.lightningkite.reacktive.list.mutableObservableListOf
+import com.lightningkite.reacktive.map.WrapperObservableMap
 import com.lightningkite.reacktive.property.StandardObservableProperty
 import mu.KotlinLogging
 
-open class BoardState() {
+open class BoardState {
     companion object {
         private val logger = KotlinLogging.logger {}
     }
-    var updateLogPanel: (String) -> Unit = {}
 
     val players: WrapperObservableList<PlayerState> = mutableObservableListOf()
+    val scoringColors: WrapperObservableMap<String, List<PentaColor>> = WrapperObservableMap()
 
     // player id to team id
     lateinit var teams: Map<String, Int>
@@ -42,8 +42,9 @@ open class BoardState() {
     }
     val history: ObservableList<PentaMove> = mutableHistory
 
-    var initialized: Boolean = false
-        private set
+    val initializedProperty = StandardObservableProperty(false)
+    val initialized: Boolean
+        get() = initializedProperty.value
 
     val currentPlayerProperty = StandardObservableProperty(PlayerState("ghost", "circle"))
     val currentPlayer: PlayerState inline get() = currentPlayerProperty.value
@@ -469,7 +470,6 @@ open class BoardState() {
 
                     resetPlayers()
                     updateAllPieces()
-                    updateBoard()
                     mutableHistory += move
                 }
                 is PentaMove.InitGame -> {
@@ -492,7 +492,7 @@ open class BoardState() {
 //                    figures.filterIsInstance<Piece.GrayBlocker>().forEach {
 //                        it.position = null
 //                    }
-                    initialized = true
+                    initializedProperty.value = true
                     turn = 0
 
 //                    resetBoard()
@@ -505,7 +505,6 @@ open class BoardState() {
                 is PentaMove.Win -> {
                     // TODO handle win
                     mutableHistory += move
-                    updateBoard()
                 }
                 is PentaMove.IllegalMove -> {
                     handleIllegalMove(move)
@@ -549,6 +548,13 @@ open class BoardState() {
         if (targetField is JointField && targetField.pentaColor == move.playerPiece.pentaColor) {
             // take piece off the board
             move.playerPiece.position = null
+
+            val colors = figures
+                .filterIsInstance<Piece.Player>()
+                .filter { it.playerId == move.playerPiece.playerId }
+                .filter { figurePositions[it.id] == null}
+                .map { it.pentaColor }
+            scoringColors[move.playerPiece.playerId] = colors
 
             // set gamestate to `MOVE_GREY`
             selectedGrayPiece = positions.filterValues { it == null }
@@ -630,7 +636,7 @@ open class BoardState() {
     var Piece.position: AbstractField?
         get() = positions[id]
         private set(value) {
-            logger.info { "move $id to ${value?.id}" }
+            logger.debug { "move $id to ${value?.id}" }
             positions[id] = value
         }
 
@@ -646,9 +652,6 @@ open class BoardState() {
         }
     }
 
-    @Deprecated("do not use")
-    protected open fun resetBoard() {}
-
     protected open fun resetPlayers() {}
 
     protected open fun updateAllPieces() {
@@ -658,16 +661,5 @@ open class BoardState() {
     }
     protected open fun updatePiecePos(piece: Piece) {}
     protected open fun updatePiecesAtPos(field: AbstractField?) {}
-    protected open fun updateBoard() {
-        updateLogPanel(
-            json.stringify(SerialNotation.serializer().list,
-                history.map {
-                    it.toSerializable()
-                }
-            ) + "\n" +
-                    history.joinToString("\n") {
-                        it.asNotation()
-                    }
-        )
-    }
+    protected open fun updateBoard() {}
 }

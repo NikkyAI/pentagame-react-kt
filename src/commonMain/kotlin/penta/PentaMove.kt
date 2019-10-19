@@ -139,6 +139,7 @@ sealed class PentaMove {
     object InitGame : PentaMove() {
         override fun asNotation(): String = ">>>"
         override fun toSerializable() = SerialNotation.InitGame
+        override fun toString() = "InitGame"
     }
 
     data class Win(val players: List<String>) : PentaMove() {

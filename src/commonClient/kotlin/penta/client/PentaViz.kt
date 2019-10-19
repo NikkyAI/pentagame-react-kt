@@ -17,6 +17,7 @@ import io.data2viz.viz.Viz
 import io.data2viz.viz.viz
 import mu.KotlinLogging
 import penta.ClientGameState
+import penta.MultiplayerState
 import penta.PentaColor
 import penta.client.PlayerCorner
 import penta.logic.Piece
@@ -38,6 +39,7 @@ object PentaViz {
     val turnDisplay: StandardObservableProperty<String> = StandardObservableProperty("")
     val gameStateProperty = StandardObservableProperty(ClientGameState(0))
     val gameState: ClientGameState get() = gameStateProperty.value
+    val multiplayerState = StandardObservableProperty<MultiplayerState>(MultiplayerState.Disconnected())
 //    lateinit var centerDisplay: Pair<CircleNode, TextNode>
 
 
@@ -353,77 +355,6 @@ object PentaViz {
         }
     }
 
-    @Deprecated("replace gameState instead of resetting board")
-    fun resetBoard() {
-        logger.info { "resetting" }
-        gameState.updatePiece = ::updatePiece
-
-        viz.apply {
-            playerCorners.forEach { corner ->
-                corner.face.remove()
-                corner.graySlot.remove()
-            }
-            // clear old pieces
-            pieces.values.forEach { (circle, path) ->
-                circle.remove()
-                path?.remove()
-            }
-            pieces.clear()
-
-            playerCorners = gameState.players.map {
-                logger.debug { ("init face $it") }
-                PlayerCorner(
-                    it,
-                    path {},
-                    circle {
-                        visible = false
-                        fill = Colors.Web.lightgrey.brighten(0.5)
-                        stroke = 0.col
-                        strokeWidth = 1.0
-                    }
-                )
-            }
-            if (::currentPlayerMarker.isInitialized) {
-                currentPlayerMarker.remove()
-            }
-            currentPlayerMarker = circle {
-                stroke = 0.col
-                strokeWidth = 3.0
-            }
-
-            // init pieces
-            gameState.figures.forEach { piece ->
-                logger.debug { ("initialzing piece: $piece") }
-                val c = circle {
-                    strokeWidth = 4.0
-                    stroke = piece.color
-                }
-
-                val p =
-                    if (piece is Piece.Player) {
-                        path {
-                            vAlign = TextVAlign.MIDDLE
-                            hAlign = TextHAlign.MIDDLE
-
-                            strokeWidth = 2.0
-                            stroke = Colors.Web.black
-                        }
-                    } else null
-
-                pieces[piece.id] = Pair(c, p)
-
-                updatePiece(piece)
-            }
-            updateBoard()
-
-            // trigger a resize event
-//            val scale = kotlin.math.min(width, height)
-//            resize(scale, scale)
-        }
-
-        logger.info { "reset complete" }
-    }
-
     fun recolor() {
         val highlightedPiece = highlightedPieceAt(mousePos)
         val highlightedField = if (highlightedPiece == null) PentaBoard.findFieldAtPos(mousePos) else null
@@ -654,6 +585,13 @@ object PentaViz {
 
             gameState.findPiecesAtPos(mousePos).firstOrNull()
                 ?.let { piece ->
+                    when(val state = multiplayerState.value) {
+                        is MultiplayerState.HasGameSession -> {
+                            if(gameState.currentPlayer.id != state.userId) {
+                                return@let null
+                            }
+                        }
+                    }
                     if (
                         (piece !is Piece.Player)
                         || (piece.playerId != gameState.currentPlayer.id)
@@ -696,8 +634,6 @@ object PentaViz {
                         hoveredField = it
                         hoveredPiece = null
 
-                        // TODO: refactor - instead of resize create `recolor()`
-//                        viz.resize(viz.width, viz.height)
                         recolor()
                         viz.render()
                     }

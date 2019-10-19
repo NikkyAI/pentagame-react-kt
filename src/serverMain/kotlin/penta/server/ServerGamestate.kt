@@ -8,6 +8,7 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.launch
 import kotlinx.io.IOException
+import kotlinx.serialization.list
 import mu.KotlinLogging
 import penta.BoardState
 import penta.PentaMove
@@ -44,6 +45,7 @@ class ServerGamestate(
     val info: GameSessionInfo get() {
         return GameSessionInfo(
             id = id,
+            owner = owner.userId,
             running = running,
             turn = turn,
             players = players.map { it.id },
@@ -58,10 +60,12 @@ class ServerGamestate(
         try {
 
             // play back history
-            history.forEach { move ->
-                logger.info { "transmitting move $move" }
-                outgoing.send(Frame.Text(json.stringify(serializer, move.toSerializable())))
-            }
+            logger.info { "play back history" }
+            outgoing.send(Frame.Text(json.stringify(serializer.list, history.map { it.toSerializable() })))
+//            history.forEach { move ->
+//                logger.info { "transmitting move $move" }
+//                outgoing.send(Frame.Text(json.stringify(serializer, move.toSerializable())))
+//            }
 
             // new move added
             history.onListAdd.add { move, index ->
