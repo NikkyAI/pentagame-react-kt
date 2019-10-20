@@ -45,6 +45,8 @@ repositories {
 //    }
 }
 
+val genServerResource = project.rootDir.resolve("build/gen-src/serverMain/resources").apply{mkdirs()}
+
 group = "moe.nikky.penta"
 
 kotlin {
@@ -135,7 +137,7 @@ kotlin {
                     implementation("com.lightningkite:reacktive-jvm:${Reacktive.version}")
                 }
 
-                resources.srcDirs(project.rootDir.resolve("build/html/").path)
+                resources.srcDirs(genServerResource.path)
             }
 //            compilations["main"].allKotlinSourceSets.forEach {
 //                logger.lifecycle("sourceSet: $it")
@@ -241,7 +243,7 @@ kotlin {
                     kotlinOptions {
                         sourceMap = true
                         metaInfo = true
-                        moduleKind = "umd"
+                        moduleKind = "amd"
                         sourceMapEmbedSources = "always"
                     }
                 }
@@ -327,6 +329,10 @@ kotlin {
                         }
                     from(getDependencies().flatMap { it.jarFileToJsFiles() })
                 }
+                copy {
+                    from("src/client-jsMain/web")
+                    into(file("build/html/"))
+                }
             }
         }
         val terseTask = tasks.create("${target.name}TerseJs") {
@@ -347,6 +353,10 @@ kotlin {
                         )
                         logger.lifecycle(commandLine.joinToString(" "))
                     }
+                }
+                copy {
+                    from("src/client-jsMain/web")
+                    into(file("build/html/"))
                 }
             }
 
@@ -391,39 +401,38 @@ kotlin.targets.forEach { target: KotlinTarget ->
 
 // JAVASCRIPT
 
-val runDce = tasks.getByName("runDceClient-jsKotlin")
-
-val packageJs = tasks.create("packageJs") {
-    group = "build"
-    dependsOn(runDce)
-
-    doLast {
-        val jsInput = buildDir
-            .resolve("kotlin-js-min")
-            .resolve("client-js")
-            .resolve("main")
-
-        val htmlDir = buildDir
-            .resolve("html")
-            .resolve("pentagame")
-
-        htmlDir.deleteRecursively()
-        htmlDir.mkdir()
-        val jsOutput = htmlDir.resolve("js").apply {
-            mkdir()
-        }
-
-        logger.lifecycle("input directory: $jsInput")
-
-        jsInput.listFiles().forEach { file ->
-            file.copyTo(jsOutput.resolve(file.name))
-        }
-        copy {
-            from("src/client-jsMain/web")
-            into(htmlDir)
-        }
-    }
-}
+//val runDce = tasks.getByName("runDceClient-jsKotlin")
+//
+//val packageJs = tasks.create("packageJs") {
+//    group = "build"
+//    dependsOn(runDce)
+//
+//    doLast {
+//        val jsInput = buildDir
+//            .resolve("kotlin-js-min")
+//            .resolve("client-js")
+//            .resolve("main")
+//
+//        val htmlDir = buildDir
+//            .resolve("html")
+//
+//        htmlDir.deleteRecursively()
+//        htmlDir.mkdir()
+//        val jsOutput = htmlDir.resolve("js").apply {
+//            mkdir()
+//        }
+//
+//        logger.lifecycle("input directory: $jsInput")
+//
+//        jsInput.listFiles().forEach { file ->
+//            file.copyTo(jsOutput.resolve(file.name))
+//        }
+//        copy {
+//            from("src/client-jsMain/web")
+//            into(htmlDir)
+//        }
+//    }
+//}
 
 // JVM
 
@@ -446,10 +455,25 @@ val shadowJar = tasks.getByName<ShadowJar>("shadowJar") {
 
 }
 
+val packageStaticForServer = tasks.create<Copy>("packageStaticForServer") {
+    group = "build"
+    dependsOn("client-jsTerseJs")
+    val staticFolder = genServerResource.resolve("static").apply{mkdirs()}
+
+    from(project.buildDir.resolve("html"))
+    into(staticFolder)
+    doLast {
+        copy {
+            from("src/client-jsMain/web")
+            into(staticFolder)
+        }
+    }
+}
+
 val shadowJarServer = tasks.create<ShadowJar>("shadowJarServer") {
     archiveClassifier.set("server")
 
-    dependsOn(packageJs)
+    dependsOn(packageStaticForServer)
 //    include(project.rootDir.resolve("build/html").path)
 //    include("*.jar")
 

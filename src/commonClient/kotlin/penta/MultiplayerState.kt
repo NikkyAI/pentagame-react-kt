@@ -17,7 +17,7 @@ sealed class MultiplayerState {
     abstract val userId: String
     interface NotLoggedIn
     data class Disconnected(
-        override val baseUrl: Url = Url("http://127.0.0.1:8080"),
+        override val baseUrl: Url = Url("http://nikky.moe:55555"),
         override val userId: String = ""
     ): MultiplayerState(), NotLoggedIn
     data class UserIDRejected(

@@ -96,7 +96,7 @@ class ClientGameState(localPlayerCount: Int = 0) : BoardState() {
                     throw IllegalStateException("black piece: $piece cannot be off the board")
                 }
                 is Piece.Player -> PentaMath.inner_r * -0.5
-                else -> throw NotImplementedError("unhandled piece type: ${piece::class}")
+//                else -> throw NotImplementedError("unhandled piece type: ${piece::class}")
             }
             val angle = (piece.pentaColor.ordinal * -72.0).deg
 
