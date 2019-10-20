@@ -2,25 +2,30 @@
 
 github: [htps://github.com/NikkyAi/pentagame](htps://github.com/NikkyAi/pentagame)
 
-online: [demo](https://nikky.crew.c-base.org/pentagame)
-
-2 player: https://nikky.crew.c-base.org/pentagame/#2  
-3 player: https://nikky.crew.c-base.org/pentagame/#3  
-4 player: https://nikky.crew.c-base.org/pentagame/#4  
+online: [demo](https://pentagame.herokuapp.com/)
 
 ## Building
 
-### JVM
+### JFX-Client
 
 running: `./gradlew run` or `./gradlew runShadow`
-
 
 package: `./gradlew shadowJar`
 find runnable jar in `build/libs/`
 
+### JVM-Server
+
+build: `./gradlew shadowJarServer`
+execute: `heroku local:start`
+
+find runnable jar in `build/libs/`, 
+  you may need to set some environment manually
+
 ### JS
 
-`./gradlew packageJs`
+js is bundled in the server
+
+`./gradlew client-jsTerseJs`
 upload `build/html`
 
 ## Notation

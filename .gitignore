@@ -6,9 +6,13 @@ build/
 # idea
 
 .idea/
+!.idea/runConfigurations/*
+
 out/
 *.iml
 *.ipr
 *.iws
+
+node_modules/
 
 run/

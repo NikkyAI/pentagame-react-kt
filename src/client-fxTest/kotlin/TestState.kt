@@ -1,9 +1,11 @@
+import mu.KotlinLogging
 import penta.BoardState
 
-class TestState() : BoardState(
-    { t ->
-        println(t)
+class TestState() : BoardState() {
+    companion object {
+        private val logger = KotlinLogging.logger {}
     }
-) {
+    init {
+    }
 
 }

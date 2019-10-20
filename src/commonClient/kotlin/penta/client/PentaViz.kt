@@ -1,3 +1,5 @@
+import com.lightningkite.reacktive.property.StandardObservableProperty
+import com.lightningkite.reacktive.property.addAndInvoke
 import io.data2viz.color.Colors
 import io.data2viz.color.col
 import io.data2viz.geom.Point
@@ -13,26 +15,34 @@ import io.data2viz.viz.TextNode
 import io.data2viz.viz.TextVAlign
 import io.data2viz.viz.Viz
 import io.data2viz.viz.viz
+import mu.KotlinLogging
 import penta.ClientGameState
+import penta.MultiplayerState
 import penta.PentaColor
 import penta.client.PlayerCorner
+import penta.logic.Piece
 import penta.logic.field.AbstractField
 import penta.logic.field.ConnectionField
-import penta.logic.Piece
 import penta.logic.field.CornerField
 import kotlin.math.pow
 import kotlin.math.sqrt
 
 object PentaViz {
+    private val logger = KotlinLogging.logger {}
+
     private val pieces: MutableMap<String, Pair<CircleNode, PathNode?>> = mutableMapOf()
-    val elements = mutableMapOf<AbstractField, Triple<CircleNode, TextNode, TextNode?>>()
+    private val fieldElements = mutableMapOf<AbstractField, Triple<CircleNode, TextNode, TextNode?>>()
     private var playerCorners: List<PlayerCorner> = listOf()
     private lateinit var currentPlayerMarker: CircleNode
     private var scale: Double = 100.0
     private var mousePos: Point = Point(0.0, 0.0)
-    lateinit var turnDisplay: TextNode
-    val gameState = ClientGameState()
+    val turnDisplay: StandardObservableProperty<String> = StandardObservableProperty("")
+    val gameStateProperty = StandardObservableProperty(ClientGameState(0))
+    val gameState: ClientGameState get() = gameStateProperty.value
+    val multiplayerState = StandardObservableProperty<MultiplayerState>(MultiplayerState.Disconnected())
 //    lateinit var centerDisplay: Pair<CircleNode, TextNode>
+
+
 
     fun highlightedPieceAt(mousePos: Point): Piece? = gameState.findPiecesAtPos(mousePos).firstOrNull()?.let {
         // do not highlight pieces that are off the board
@@ -51,17 +61,17 @@ object PentaViz {
     }
 
     val viz = viz {
-        println("height: $height")
-        println("width: $width")
+        logger.info { ("height: $height") }
+        logger.info { ("width: $width") }
         val scaleHCL = ScalesChromatic.Continuous.linearHCL {
             domain = PentaColor.values().map { it.ordinal * 72.0 * 3 }
             range = PentaColor.values().map { it.color }
         }
-        turnDisplay = text {
-            vAlign = TextVAlign.HANGING
-            hAlign = TextHAlign.LEFT
-            fontSize += 4
-        }
+//        turnDisplay = StandardObservableProperty("") {
+//            vAlign = TextVAlign.HANGING
+//            hAlign = TextHAlign.LEFT
+//            fontSize += 4
+//        }
         val backgroundCircle = circle {
             stroke = Colors.Web.black
             fill = 0x28292b.col
@@ -73,9 +83,9 @@ object PentaViz {
 //            this.fill = Colors.Web.white
         }
         PentaBoard.fields.forEach { field ->
-            println("adding: $field")
+            logger.debug { ("adding: $field") }
             val c = circle {
-                if(field is CornerField) {
+                if (field is CornerField) {
                     strokeWidth = 5.0
                     stroke = field.color
                     fill = Colors.Web.lightgrey
@@ -103,38 +113,15 @@ object PentaViz {
                     visible = false
                 }
             } else null
-            elements[field] = Triple(c, t1, t2)
+            fieldElements[field] = Triple(c, t1, t2)
         }
 
         onResize { newWidth, newHeight ->
-            //            println("resize")
-//            println("height: $height > $newHeight")
-//            println("width: $width > $newWidth")
             scale = kotlin.math.min(newWidth, newHeight)
-//            println("scale: $scale")
 
             gameState.findPiecesAtPos(mousePos).firstOrNull()
-                ?.also {
-                    //                    println("hovered: $it")
-                }
-                ?: PentaBoard.findFieldAtPos(mousePos)?.also {
-                    //                    println("hovered: $it")
-                }
-                ?: run {
-                    //                    println("Mouse Move:: $mousePos")
-                }
+                ?: PentaBoard.findFieldAtPos(mousePos)
 
-            val halfCircleWidth = (0.25 / PentaMath.R_) * scale / 2
-//            outerCircle.forEachIndexed { index, lineNode ->
-//                val angle = index.deg / 3
-//
-//                with(lineNode) {
-//                    x1 = (PentaMath.r / PentaMath.R_ * scale / 2 - halfCircleWidth) * angle.cos + scale / 2
-//                    x2 = (PentaMath.r / PentaMath.R_ * scale / 2 + halfCircleWidth) * angle.cos + scale / 2
-//                    y1 = (PentaMath.r / PentaMath.R_ * scale / 2 - halfCircleWidth) * angle.sin + scale / 2
-//                    y2 = (PentaMath.r / PentaMath.R_ * scale / 2 + halfCircleWidth) * angle.sin + scale / 2
-//                }
-//            }
             backgroundCircle.apply {
                 x = 0.5 * scale
                 y = 0.5 * scale
@@ -154,7 +141,7 @@ object PentaViz {
 //            val highlightedPiece = highlightedPieceAt(mousePos)
 //            val highlightedField = if (highlightedPiece == null) PentaBoard.findFieldAtPos(mousePos) else null
 
-            elements.forEach { (field, triple) ->
+            fieldElements.forEach { (field, triple) ->
                 val (circle, text1, text2) = triple
                 with(circle) {
                     x = ((field.pos.x / PentaMath.R_)) * scale
@@ -171,7 +158,7 @@ object PentaViz {
                 }
             }
 
-            if(gameState.initialized) {
+            if (gameState.initialized) {
                 gameState.figures.forEach {
                     updatePiece(it)
                 }
@@ -179,28 +166,99 @@ object PentaViz {
         }
     }
 
-    fun updateCorners() {
-        println("gameState.currentPlayer: ${gameState.currentPlayer}")
-        playerCorners.forEachIndexed { index, corner  ->
-            val angle = (-45 + (index)*90).deg
+    init {
+        gameStateProperty.addAndInvoke { gameState ->
+            logger.info { "setting gameState" }
+            logger.info { "resetting" }
+            gameState.updatePiece = ::updatePiece
 
-            val radius = (PentaMath.R_ + (3*PentaMath.s)) / PentaMath.R_ * scale / 2
+            viz.apply {
+                playerCorners.forEach { corner ->
+                    corner.face.remove()
+                    corner.graySlot.remove()
+                }
+                // clear old pieces
+                pieces.values.forEach { (circle, path) ->
+                    circle.remove()
+                    path?.remove()
+                }
+                pieces.clear()
+
+                playerCorners = gameState.players.map {
+                    logger.debug { ("init face $it") }
+                    PlayerCorner(
+                        it,
+                        path {
+                            //                        drawPlayer(it.figureId, Point(0.0,0.0), PentaMath.s)
+                        },
+                        circle {
+                            visible = false
+                            fill = Colors.Web.lightgrey.brighten(0.5)
+                            stroke = 0.col
+                            strokeWidth = 1.0
+                        }
+                    )
+                }
+                if (::currentPlayerMarker.isInitialized) {
+                    currentPlayerMarker.remove()
+                }
+                currentPlayerMarker = circle {
+                    stroke = 0.col
+                    strokeWidth = 3.0
+                }
+
+                // init pieces
+                gameState.figures.forEach { piece ->
+                    logger.debug { ("initialzing piece: $piece") }
+                    val c = circle {
+                        strokeWidth = 4.0
+                        stroke = piece.color
+                    }
+
+                    val p =
+                        if (piece is Piece.Player) {
+                            path {
+                                vAlign = TextVAlign.MIDDLE
+                                hAlign = TextHAlign.MIDDLE
+
+                                strokeWidth = 2.0
+                                stroke = Colors.Web.black
+                            }
+                        } else null
+
+                    pieces[piece.id] = Pair(c, p)
+
+                    updatePiece(piece)
+                }
+                updateBoard(render = false)
+            }
+
+            logger.info { "reset complete" }
+        }
+    }
+
+    fun updateCorners() {
+        logger.trace { ("gameState.currentPlayer: ${gameState.currentPlayer}") }
+        playerCorners.forEachIndexed { index, corner ->
+            val angle = (-45 + (index) * 90).deg
+
+            val radius = (PentaMath.R_ + (3 * PentaMath.s)) / PentaMath.R_ * scale / 2
 
             val facePos = Point(
                 angle.cos * radius,
                 angle.sin * radius
-            ) + Point(0.5*scale, 0.5*scale)
+            ) + Point(0.5 * scale, 0.5 * scale)
 
             val pieceRadius = (PentaMath.s / PentaMath.R_ * scale) / 2
-            println("face position: $facePos")
+            logger.trace { ("face position: $facePos") }
 
             corner.graySlot.apply {
                 visible = gameState.selectingGrayPiece && gameState.currentPlayer.id == corner.player.id
-                if(visible) {
+                if (visible) {
                     val pos = Point(
                         (angle + 10.deg).cos * radius,
                         (angle + 10.deg).sin * radius
-                    ) + Point(0.5*scale, 0.5*scale)
+                    ) + Point(0.5 * scale, 0.5 * scale)
 
                     x = pos.x
                     y = pos.y
@@ -213,8 +271,8 @@ object PentaViz {
                     this.radius = (PentaMath.s / 2.5) / PentaMath.R_ * scale
                 }
             }
-            println("player[$index]: ${corner.player}")
-            if(gameState.currentPlayer.id == corner.player.id) {
+            logger.trace { ("player[$index]: ${corner.player}") }
+            if (gameState.currentPlayer.id == corner.player.id) {
                 currentPlayerMarker.apply {
                     x = facePos.x
                     y = facePos.y
@@ -226,31 +284,35 @@ object PentaViz {
                 stroke = 0.col
                 fill = Colors.Web.black
 
-                drawPlayer(figureId = corner.player.figureId, center = facePos, maxRadius = pieceRadius)
+                drawPlayer(figureId = corner.player.figureId, center = facePos, radius = pieceRadius)
             }
 
             // TODO: update place of nodes
         }
     }
 
-    fun resetBoard() {
-        gameState.updatePiece = ::updatePiece
-
+    fun updatePlayers() {
+        logger.info { "updating player render" }
         viz.apply {
-            // clear old pieces
-            pieces.values.forEach { (circle, path) ->
+            playerCorners.forEach { corner ->
+                corner.face.remove()
+                corner.graySlot.remove()
+            }
+            // get all player pieces
+            logger.info { gameStateProperty }
+            val playerFigures = gameStateProperty.value.figures.filterIsInstance<Piece.Player>()
+            playerFigures.forEach { figure ->
+                val (circle, path) = pieces[figure.id] ?: return@forEach
                 circle.remove()
                 path?.remove()
+                pieces.remove(figure.id)
             }
-            pieces.clear()
 
             playerCorners = gameState.players.map {
-                println("init face $it")
+                logger.debug { ("init face $it") }
                 PlayerCorner(
                     it,
-                    path{
-//                        drawPlayer(it.figureId, Point(0.0,0.0), PentaMath.s)
-                    },
+                    path {},
                     circle {
                         visible = false
                         fill = Colors.Web.lightgrey.brighten(0.5)
@@ -259,46 +321,44 @@ object PentaViz {
                     }
                 )
             }
+
+            if (::currentPlayerMarker.isInitialized) {
+                currentPlayerMarker.remove()
+            }
             currentPlayerMarker = circle {
                 stroke = 0.col
                 strokeWidth = 3.0
             }
 
             // init pieces
-            gameState.figures.forEach { piece ->
-                println("initialzing piece: $piece")
+            playerFigures.forEach { piece ->
+                logger.debug { ("initialzing piece: $piece") }
                 val c = circle {
                     strokeWidth = 4.0
                     stroke = piece.color
                 }
 
-                val p =
-                    if (piece is Piece.Player) {
-                        path {
-                            vAlign = TextVAlign.MIDDLE
-                            hAlign = TextHAlign.MIDDLE
+                val p = path {
+                    vAlign = TextVAlign.MIDDLE
+                    hAlign = TextHAlign.MIDDLE
 
-                            strokeWidth = 2.0
-                            stroke = Colors.Web.black
-                        }
-                    } else null
+                    strokeWidth = 2.0
+                    stroke = Colors.Web.black
+                }
+
 
                 pieces[piece.id] = Pair(c, p)
 
                 updatePiece(piece)
             }
             updateBoard()
-
-            // trigger a resize event
-//            val scale = kotlin.math.min(width, height)
-//            resize(scale, scale)
         }
     }
 
     fun recolor() {
         val highlightedPiece = highlightedPieceAt(mousePos)
         val highlightedField = if (highlightedPiece == null) PentaBoard.findFieldAtPos(mousePos) else null
-        elements.forEach { (field, triple) ->
+        fieldElements.forEach { (field, triple) ->
             val (circle, text1, text2) = triple
             with(circle) {
                 val c = if (field == highlightedField && gameState.canClickField(field))
@@ -306,25 +366,24 @@ object PentaViz {
                 else
                     field.color
 
-                if(field is CornerField) {
+                if (field is CornerField) {
                     stroke = c
                 } else {
                     fill = c
                 }
             }
         }
-        if(gameState.initialized) {
+        if (gameState.initialized) {
             gameState.figures.forEach {
                 updatePiece(it)
             }
         }
-
     }
 
-    private fun PathNode.drawPlayer(figureId: String, center: Point, maxRadius: Double) {
+    fun PathNode.drawPlayer(figureId: String, center: Point, radius: Double) {
         clearPath()
 
-        fun point(angle: Angle, radius: Double, center: Point = Point(0.0,0.0)): Point {
+        fun point(angle: Angle, radius: Double, center: Point = Point(0.0, 0.0)): Point {
             return Point(angle.cos * radius, angle.sin * radius) + center
         }
 
@@ -336,62 +395,77 @@ object PentaViz {
             }
         }
 
-        when(figureId) {
+        when (figureId) {
             "square" -> {
-                angles(4, 0.deg).map {  angle ->
-                    val point = point(angle, maxRadius, center)
-                    lineTo(point.x, point.y)
+                val points = angles(4, 0.deg).map { angle ->
+                    point(angle, radius, center)
+                }
+                points.forEachIndexed { index, it ->
+                    if (index == 0) {
+                        moveTo(it.x, it.y)
+                    } else {
+                        lineTo(it.x, it.y)
+                    }
                 }
             }
             "triangle" -> {
-                angles(3, -90.deg).map {  angle ->
-                    val point = point(angle, maxRadius, center)
-                    lineTo(point.x, point.y)
+                val points = angles(3, -90.deg).map { angle ->
+                    point(angle, radius, center)
+                }
+                points.forEachIndexed { index, it ->
+                    if (index == 0) {
+                        moveTo(it.x, it.y)
+                    } else {
+                        lineTo(it.x, it.y)
+                    }
                 }
             }
             "cross" -> {
 
                 val width = 15
 
-                val p1 = point((45-width).deg, maxRadius, center)
-                val p2 = point((45+width).deg, maxRadius, center)
+                val p1 = point((45 - width).deg, radius, center)
+                val p2 = point((45 + width).deg, radius, center)
 
-                val c = sqrt((p2.x-p1.x).pow(2) + (p2.y-p1.y).pow(2))
+                val c = sqrt((p2.x - p1.x).pow(2) + (p2.y - p1.y).pow(2))
 
                 val a = c / sqrt(2.0)
 
                 val points = listOf(
-                    point((45-width).deg, maxRadius, center),
-                    point((45+width).deg, maxRadius, center),
+                    point((45 - width).deg, radius, center),
+                    point((45 + width).deg, radius, center),
                     point((90).deg, a, center),
-                    point((135-width).deg, maxRadius, center),
-                    point((135+width).deg, maxRadius, center),
+                    point((135 - width).deg, radius, center),
+                    point((135 + width).deg, radius, center),
                     point((180).deg, a, center),
-                    point((45 + 180 - width).deg, maxRadius, center),
-                    point((45 + 180 + width).deg, maxRadius, center),
+                    point((45 + 180 - width).deg, radius, center),
+                    point((45 + 180 + width).deg, radius, center),
                     point((270).deg, a, center),
-                    point((135 + 180 - width).deg, maxRadius, center),
-                    point((135 + 180 + width).deg, maxRadius, center),
+                    point((135 + 180 - width).deg, radius, center),
+                    point((135 + 180 + width).deg, radius, center),
                     point((360).deg, a, center)
                 )
-                points.forEach {
-                    lineTo(it.x, it.y)
+                points.forEachIndexed { index, it ->
+                    if (index == 0) {
+                        moveTo(it.x, it.y)
+                    } else {
+                        lineTo(it.x, it.y)
+                    }
                 }
             }
             "circle" -> {
-                arc(center.x, center.y, maxRadius, 0.0, 180.0, false)
+                arc(center.x, center.y, radius, 0.0, 180.0, false)
             }
+            else -> throw IllegalStateException("illegal figureId: ''")
         }
-
         closePath()
     }
 
     fun updateBoard(render: Boolean = true) {
         // TODO: background: #28292b
         turnDisplay.apply {
-            val player = gameState.currentPlayer
             val turn = gameState.turn
-            textContent = "Turn: $turn" +
+            value = "Turn: $turn" +
                 if (gameState.winner != null) ", winner: ${gameState.winner}" else ""
 //                    + when {
 //                        gameState.selectedPlayerPiece != null -> "move PlayerPiece (${gameState.selectedPlayerPiece!!.id})"
@@ -435,7 +509,7 @@ object PentaViz {
             x = ((pos.x / PentaMath.R_)) * scale
             y = ((pos.y / PentaMath.R_)) * scale
 
-            if(piece is Piece.Player && path != null) {
+            if (piece is Piece.Player && path != null) {
                 visible = false
             }
 
@@ -447,8 +521,6 @@ object PentaViz {
                         it.brighten(2.0)
                     }
                     gameState.selectedBlackPiece -> {
-//                        println("selectedBlackPiece x: $x")
-//                        println("selectedBlackPiece y: $y")
                         strokeWidth = 3.0
                         it //.brighten(2.0)
                     }
@@ -481,7 +553,7 @@ object PentaViz {
             val x = ((pos.x / PentaMath.R_)) * scale
             val y = ((pos.y / PentaMath.R_)) * scale
             val maxRadius = (playerPiece.radius / PentaMath.R_ * scale)
-            drawPlayer(figureId = playerPiece.figureId, center = Point(x = x, y = y), maxRadius = maxRadius)
+            drawPlayer(figureId = playerPiece.figureId, center = Point(x = x, y = y), radius = maxRadius)
             fill = fillColor
             stroke = circle.stroke
         }
@@ -492,15 +564,13 @@ object PentaViz {
 
     fun Viz.addEvents() {
         on(KPointerMove) { evt ->
-            // println("Mouse Move:: ${evt.pos}")
 
             // convert pos back
-//            mousePos = ((evt.pos / scale)- Point(0.5, 0.5)) * PentaMath.R_ * 2
             mousePos = (evt.pos / scale) * PentaMath.R_
 
             // show text on hovered fields
             PentaBoard.findFieldAtPos(mousePos).let { hoverField ->
-                elements.forEach { (field, triple) ->
+                fieldElements.forEach { (field, triple) ->
                     val (_, text1, text2) = triple
 
                     if (field == hoverField) {
@@ -514,22 +584,29 @@ object PentaViz {
             }
 
             gameState.findPiecesAtPos(mousePos).firstOrNull()
-                ?.let {
+                ?.let { piece ->
+                    when(val state = multiplayerState.value) {
+                        is MultiplayerState.HasGameSession -> {
+                            if(gameState.currentPlayer.id != state.userId) {
+                                return@let null
+                            }
+                        }
+                    }
                     if (
-                        (it !is Piece.Player)
-                        || (it.playerId != gameState.currentPlayer.id)
+                        (piece !is Piece.Player)
+                        || (piece.playerId != gameState.currentPlayer.id)
                     ) {
                         hoveredPiece = null
 //                        recolor()
 //                        viz.render()
                         return@let null
                     }
-                    if (hoveredPiece != it) {
+                    if (hoveredPiece != piece) {
                         // TODO: canClick for highlighting
                         // can only highlight player piece
-//                        println("hover piece: $it")
+                        logger.trace { ("hover piece: $piece") }
 
-                        hoveredPiece = it
+                        hoveredPiece = piece
                         hoveredField = null
 
                         // TODO: refactor - instead of resize create `recolor()`
@@ -537,7 +614,7 @@ object PentaViz {
                         recolor()
                         viz.render()
                     }
-                    it
+                    piece
                 }
                 ?: PentaBoard.findFieldAtPos(mousePos)?.let {
                     if (
@@ -552,39 +629,35 @@ object PentaViz {
                         return@let null
                     }
                     if (hoveredField != it) {
-//                        println("hover field: $it")
+//                        logger.trace { "hover field: $it" }
 
                         hoveredField = it
                         hoveredPiece = null
 
-                        // TODO: refactor - instead of resize create `recolor()`
-//                        viz.resize(viz.width, viz.height)
                         recolor()
                         viz.render()
                     }
                     it
                 }
                 ?: run {
-                    //                    println("Mouse Move:: ${mousePos}")
-//                    if (hoveredField != null || hoveredPiece != null) {
+                    //  logger.trace { "Mouse Move:: ${mousePos}" }
                     hoveredField = null
                     hoveredPiece = null
                     recolor()
                     viz.render()
-//                    }
                 }
         }
         on(KPointerClick) { evt ->
-            println("MouseClick:: $evt")
-//            println("shiftKey:: ${evt.shiftKey}")
-//            println("ctrlKey:: ${evt.ctrlKey}")
-//            println("metaKey:: ${evt.metaKey}")
-//            println("ctrlKey:: ${evt.ctrlKey}")
+            logger.trace { ("MouseClick:: $evt") }
+//            logger.trace { ("shiftKey:: ${evt.shiftKey}") }
+//            logger.trace { ("ctrlKey:: ${evt.ctrlKey}") }
+//            logger.trace { ("metaKey:: ${evt.metaKey}") }
+//            logger.trace { ("ctrlKey:: ${evt.ctrlKey}") }
             mousePos = (evt.pos / scale) * PentaMath.R_
 
             val piece = gameState.findPiecesAtPos(mousePos).firstOrNull()
             if (piece != null) {
-                println("clickPiece($piece)")
+                logger.debug { ("clickPiece($piece)") }
                 gameState.clickPiece(piece)
             } else {
                 val field = PentaBoard.findFieldAtPos(mousePos)

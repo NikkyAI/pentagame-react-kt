@@ -1,8 +1,8 @@
 pluginManagement {
     repositories {
         gradlePluginPortal()
-        maven { setUrl("https://jcenter.bintray.com/") }
-        maven { setUrl("https://dl.bintray.com/kotlin/kotlin-eap") }
+        maven(url = "https://jcenter.bintray.com/")
+        maven(url = "https://dl.bintray.com/kotlin/kotlin-eap")
     }
 
     resolutionStrategy {
@@ -28,6 +28,6 @@ pluginManagement {
     }
 }
 
-enableFeaturePreview("GRADLE_METADATA")
+//enableFeaturePreview("GRADLE_METADATA")
 
 rootProject.name = "penta"

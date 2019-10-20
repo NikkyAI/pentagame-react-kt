@@ -1,5 +1,6 @@
 plugins {
-    `kotlin-dsl`// version "1.3.30"
+    `kotlin-dsl`
+    idea
 }
 
 repositories {
@@ -11,5 +12,5 @@ repositories {
 }
 
 dependencies {
-    api("org.jetbrains.kotlinx:kotlinx-html-jvm:0.6.12")
+    api(group = "com.squareup", name = "kotlinpoet", version = "1.4.1")
 }

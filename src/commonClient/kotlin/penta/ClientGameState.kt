@@ -5,17 +5,25 @@ import PentaViz
 import io.data2viz.geom.Point
 import io.data2viz.math.Angle
 import io.data2viz.math.deg
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import mu.KotlinLogging
 import penta.logic.Piece
 import penta.logic.field.AbstractField
 import penta.logic.field.CornerField
 import penta.util.length
 
-class ClientGameState: BoardState() {
-    override var updateLogPanel: (String) -> Unit = {}
+class ClientGameState(localPlayerCount: Int = 0) : BoardState() {
+    companion object {
+        private val logger = KotlinLogging.logger {}
+    }
+
+    //    override var updateLogPanel: (String) -> Unit = {}
     var updatePiece: (Piece) -> Unit = { piece -> }
 
     fun cornerPoint(index: Int, angleDelta: Angle = 0.deg, radius: Double = PentaMath.R_): Point {
-        val angle = (-45 + (index)*90).deg + angleDelta
+        val angle = (-45 + (index) * 90).deg + angleDelta
 
         return Point(
             radius * angle.cos,
@@ -23,19 +31,44 @@ class ClientGameState: BoardState() {
         ) / 2 + (Point(0.5, 0.5) * PentaMath.R_)
     }
 
+    fun initialize(players: List<PlayerState>) {
+        logger.info { "initializing with $players" }
+        players.forEach {
+            processMove(PentaMove.PlayerJoin(it))
+        }
+        processMove(PentaMove.InitGame)
+    }
+
     init {
+        val localSymbols = listOf("triangle", "square", "cross", "circle")
+        if (localPlayerCount > 0) {
+            initialize(localSymbols.subList(0, localPlayerCount).map { PlayerState("local+"+it, it) })
+        }
+
         figures.forEach(::updatePiecePos)
     }
 
-    fun initialize(players: List<String>) {
-        println("initializing with $players")
-        processMove(PentaMove.InitGame(players))
+    fun preProcessMove(move: PentaMove) {
+        logger.info { "preProcess $move" }
+        when (val state = PentaViz.multiplayerState.value) {
+            is MultiplayerState.Observing -> {
+                GlobalScope.launch(Dispatchers.Default) {
+                    state.sendMove(move)
+                }
+            }
+            else -> {
+                processMove(move) { illegalMove ->
+                    logger.error { "TODO: add popup about $illegalMove" }
+                }
+            }
+        }
+        // TODO: if playing online.. send move
+        // only process received moves
     }
-
 
     // TODO: move to client
     // TODO: not common code
-    override fun updatePiecePos(piece: Piece/*, override: Boolean, fieldOverride: AbstractField?*/) {
+    override fun updatePiecePos(piece: Piece) {
         val field: AbstractField? = figurePositions[piece.id]
         updatePiecePos(piece, field)
     }
@@ -44,30 +77,30 @@ class ClientGameState: BoardState() {
         var pos: Point = field?.pos ?: run {
             val radius = when (piece) {
                 is Piece.GrayBlocker -> {
-                    println("piece: ${piece.id}")
-                    println("selected: ${selectedGrayPiece?.id}")
-                    if(selectedGrayPiece == piece) {
+                    logger.debug { "piece: ${piece.id}" }
+                    logger.debug { "selected: ${selectedGrayPiece?.id}" }
+                    if (selectedGrayPiece == piece) {
                         val index = players.indexOf(currentPlayer)
-                        val pos = cornerPoint(index, 10.deg, radius = (PentaMath.R_ + (3*PentaMath.s)))
+                        val pos = cornerPoint(index, 10.deg, radius = (PentaMath.R_ + (3 * PentaMath.s)))
                         return@run pos
                     }
                     PentaMath.inner_r * -0.2
                 }
                 is Piece.BlackBlocker -> {
-                    if(selectedBlackPiece == piece) {
+                    if (selectedBlackPiece == piece) {
                         val index = players.indexOf(currentPlayer)
-                        val pos = cornerPoint(index, (-10).deg, radius = (PentaMath.R_ + (3*PentaMath.s)))
-                        println("cornerPos: $pos")
+                        val pos = cornerPoint(index, (-10).deg, radius = (PentaMath.R_ + (3 * PentaMath.s)))
+                        logger.info { "cornerPos: $pos" }
                         return@run pos
                     }
                     throw IllegalStateException("black piece: $piece cannot be off the board")
                 }
                 is Piece.Player -> PentaMath.inner_r * -0.5
-                else -> throw NotImplementedError("unhandled piece type: ${piece::class}")
+//                else -> throw NotImplementedError("unhandled piece type: ${piece::class}")
             }
             val angle = (piece.pentaColor.ordinal * -72.0).deg
 
-            println("pentaColor: ${piece.pentaColor.ordinal}")
+            logger.info { "pentaColor: ${piece.pentaColor.ordinal}" }
 
             Point(
                 radius * angle.cos,
@@ -119,6 +152,13 @@ class ClientGameState: BoardState() {
         if (figurePositions[clickedPiece.id] == null) {
             return false
         }
+        when(val state = PentaViz.multiplayerState.value) {
+            is MultiplayerState.HasGameSession -> {
+                if(currentPlayer.id != state.userId) {
+                    return false
+                }
+            }
+        }
         if (
         // make sure you are not selecting black or gray
             selectedGrayPiece == null && selectedBlackPiece == null && !selectingGrayPiece
@@ -153,22 +193,20 @@ class ClientGameState: BoardState() {
         return false
     }
 
-    // TODO: clientside
     /**
      * click on a piece
      * @param clickedPiece game piece that was clicked on
      */
     fun clickPiece(clickedPiece: Piece) {
-        // TODO: check turn
-        println("currentPlayer: $currentPlayer")
-        println("selected player piece: $selectedPlayerPiece")
-        println("selected black piece: $selectedBlackPiece")
-        println("selected gray piece: $selectedGrayPiece")
-
         if (!canClickPiece(clickedPiece)) return
 
+        logger.info { "currentPlayer: $currentPlayer" }
+        logger.info { "selected player piece: $selectedPlayerPiece" }
+        logger.info { "selected black piece: $selectedBlackPiece" }
+        logger.info { "selected gray piece: $selectedGrayPiece" }
+
         if (figurePositions[clickedPiece.id] == null) {
-            println("cannot click piece off the board")
+            logger.error { "cannot click piece off the board" }
             return
         }
         if (
@@ -177,13 +215,13 @@ class ClientGameState: BoardState() {
             && clickedPiece is Piece.Player && currentPlayer.id == clickedPiece.playerId
         ) {
             if (selectedPlayerPiece == null) {
-                println("selecting: $clickedPiece")
+                logger.info { "selecting: $clickedPiece" }
                 selectedPlayerPiece = clickedPiece
                 PentaViz.updateBoard()
                 return
             }
             if (selectedPlayerPiece == clickedPiece) {
-                println("deselecting: $clickedPiece")
+                logger.info { "deselecting: $clickedPiece" }
                 selectedPlayerPiece = null
                 PentaViz.updateBoard()
                 return
@@ -194,7 +232,7 @@ class ClientGameState: BoardState() {
             && selectedPlayerPiece == null
             && clickedPiece is Piece.GrayBlocker
         ) {
-            println("selecting: $clickedPiece")
+            logger.info { "selecting: $clickedPiece" }
             selectedGrayPiece = clickedPiece
             selectingGrayPiece = false
 //            clickedPiece.position = null
@@ -205,26 +243,26 @@ class ClientGameState: BoardState() {
         if (selectedPlayerPiece != null && currentPlayer.id == selectedPlayerPiece!!.playerId) {
             val playerPiece = selectedPlayerPiece!!
             val sourceField = figurePositions[playerPiece.id] ?: run {
-                println("piece if off the board already")
+                logger.error { "piece if off the board already" }
                 return
             }
             val targetField = figurePositions[clickedPiece.id]
             if (targetField == null) {
-                println("$clickedPiece is not on the board")
+                logger.error { ("$clickedPiece is not on the board") }
 //                selectedPlayerPiece = null
                 return
             }
             if (sourceField == targetField) {
-                println("cannot move piece onto the same field as before")
+                logger.error { ("cannot move piece onto the same field as before") }
                 return
             }
 
             if (!canMove(sourceField, targetField)) {
-                println("can not find path")
+                logger.error { ("can not find path") }
                 return
             }
 
-            println("moving: ${playerPiece.id} -> $targetField")
+            logger.info { ("moving: ${playerPiece.id} -> $targetField") }
 
             val move: PentaMove = when (clickedPiece) {
                 is Piece.Player -> {
@@ -252,11 +290,11 @@ class ClientGameState: BoardState() {
                     )
                 }
             }
-            processMove(move)
+            preProcessMove(move)
 
             return
         }
-        println("no action on click")
+        logger.info { ("no action on click") }
     }
 
     override fun updateBoard() {
@@ -264,7 +302,6 @@ class ClientGameState: BoardState() {
         PentaViz.updateBoard()
     }
 
-    // TODO: clientside
     fun canClickField(targetField: AbstractField): Boolean {
         if (winner != null) {
             return false
@@ -274,6 +311,13 @@ class ClientGameState: BoardState() {
             && figurePositions.none { (k, v) -> v == targetField }
         ) {
             return false
+        }
+        when(val state = PentaViz.multiplayerState.value) {
+            is MultiplayerState.HasGameSession -> {
+                if(currentPlayer.id != state.userId) {
+                    return false
+                }
+            }
         }
         when {
             selectedPlayerPiece != null && currentPlayer.id == selectedPlayerPiece!!.playerId -> {
@@ -296,13 +340,13 @@ class ClientGameState: BoardState() {
             }
             selectedBlackPiece != null -> {
                 if (figurePositions.values.any { it == targetField }) {
-//                    println("target position not empty")
+                    logger.trace { ("target position not empty") }
                     return false
                 }
             }
             selectedGrayPiece != null -> {
                 if (figurePositions.values.any { it == targetField }) {
-//                    println("target position not empty")
+                    logger.trace { ("target position not empty") }
                     return false
                 }
             }
@@ -314,26 +358,25 @@ class ClientGameState: BoardState() {
         return true
     }
 
-    // TODO: clientside
     fun clickField(targetField: AbstractField) {
-        println("currentPlayer: $currentPlayer")
-        println("selected player piece: $selectedPlayerPiece")
-        println("selected black piece: $selectedBlackPiece")
-        println("selected gray piece: $selectedGrayPiece")
         if (!canClickField(targetField)) return
+        logger.info { ("currentPlayer: $currentPlayer") }
+        logger.info { ("selected player piece: $selectedPlayerPiece") }
+        logger.info { ("selected black piece: $selectedBlackPiece") }
+        logger.info { ("selected gray piece: $selectedGrayPiece") }
         val move = when {
             selectedPlayerPiece != null && currentPlayer.id == selectedPlayerPiece!!.playerId -> {
                 val playerPiece = selectedPlayerPiece!!
 
                 val sourceField = figurePositions[playerPiece.id]!!
                 if (sourceField == targetField) {
-                    println("cannot move piece onto the same field as before")
+                    logger.error { ("cannot move piece onto the same field as before") }
                     return
                 }
 
                 // check if targetField is empty
                 if (figurePositions.values.any { it == targetField }) {
-                    println("target position not empty")
+                    logger.info { ("target position not empty") }
                     // TODO: if there is only one piece on the field, click that piece instead ?
                     val pieces = figurePositions.filterValues { it == targetField }.keys
                         .map { id ->
@@ -347,11 +390,11 @@ class ClientGameState: BoardState() {
                 }
 
                 if (!canMove(sourceField, targetField)) {
-                    println("can not find path")
+                    logger.error { ("can not find path") }
                     return
                 }
 
-                println("moving: ${playerPiece.id} -> $targetField")
+                logger.info { ("moving: ${playerPiece.id} -> $targetField") }
 
                 PentaMove.MovePlayer(
                     playerPiece = playerPiece, from = sourceField, to = targetField
@@ -361,12 +404,13 @@ class ClientGameState: BoardState() {
                 val blackPiece = selectedBlackPiece!!
 
                 if (figurePositions.values.any { it == targetField }) {
-                    println("target position not empty")
+                    logger.error { ("target position not empty") }
                     return
                 }
+                logger.info { "history last: ${history.last()}" }
                 val lastMove = history.last() as PentaMove.Move
                 if (lastMove !is PentaMove.CanSetBlack) {
-                    println("last move cannot set black")
+                    logger.error { ("last move cannot set black") }
                     return
                 }
 
@@ -378,7 +422,7 @@ class ClientGameState: BoardState() {
                 val grayPiece = selectedGrayPiece!!
 
                 if (figurePositions.values.any { it == targetField }) {
-                    println("target position not empty")
+                    logger.error { ("target position not empty") }
                     return
                 }
                 val originPos = figurePositions[grayPiece.id]
@@ -391,12 +435,12 @@ class ClientGameState: BoardState() {
                 TODO("handle else case")
             }
         }
-        processMove(move)
+        preProcessMove(move)
     }
 
-    override fun resetBoard() {
-//        PentaViz.gameState = this
-        PentaViz.resetBoard()
+    override fun resetPlayers() {
+        super.resetPlayers()
+        PentaViz.updatePlayers()
     }
 
     // TODO: clientside
@@ -409,7 +453,8 @@ class ClientGameState: BoardState() {
     // TODO: clientside
     override fun updatePiecesAtPos(field: AbstractField?) {
         figurePositions.filterValues { it == field }.keys.map { id ->
-            figures.find { it.id == id }!!
+            figures.find { it.id == id }
+                ?: throw IllegalStateException("cannot find figure with id: $id in ${figures.map { it.id }}")
         }.forEach { piece ->
             updatePiecePos(piece)
         }
