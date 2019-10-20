@@ -54,6 +54,10 @@ val genServerResource = project.rootDir.resolve("build/gen-src/serverMain/resour
 //version = "0.0.1"
 group = "moe.nikky.penta"
 
+System.getenv().forEach { (key, value) ->
+    logger.lifecycle("$key : $value")
+}
+
 val gitCommitHash = System.getenv("SOURCE_VERSION") ?: "local"//captureExec("git", "rev-parse", "HEAD").trim()
 generateConstants(genCommonSrcKt, "penta", "Constants") {
     field("VERSION") value "0.0.1"
