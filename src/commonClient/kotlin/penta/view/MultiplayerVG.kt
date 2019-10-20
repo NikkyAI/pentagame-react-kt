@@ -18,6 +18,7 @@ import com.lightningkite.reacktive.property.CombineObservableProperty2
 import com.lightningkite.reacktive.property.StandardObservableProperty
 import com.lightningkite.reacktive.property.transform
 import io.ktor.client.features.websocket.webSocket
+import io.ktor.client.features.websocket.wss
 import io.ktor.client.request.post
 import io.ktor.client.request.request
 import io.ktor.client.response.HttpResponse
@@ -25,6 +26,7 @@ import io.ktor.client.response.readText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpMethod
 import io.ktor.http.URLBuilder
+import io.ktor.http.URLProtocol
 import io.ktor.http.Url
 import io.ktor.http.cio.websocket.Frame
 import io.ktor.http.cio.websocket.readText
@@ -169,6 +171,8 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
             port = wsUrl.port, path = wsUrl.fullPath,
             request = {
                 authenticateWith(state)
+                if(wsUrl.protocol == URLProtocol.HTTPS)
+                    url.protocol = URLProtocol.WSS
             }
         ) {
             logger.info { "connection opened" }

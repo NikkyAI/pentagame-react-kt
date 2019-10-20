@@ -1,0 +1,12 @@
+{
+  "name": "Pentagame",
+  "description": "The Pentagram Shaped Board Game, deployed to Heroku.",
+  "addons": [ ],
+  "buildpacks": [
+    {
+      "url": "heroku/gradle"
+    }
+  ],
+  "success_url": "/",
+  "website": "http://pentagame.org/"
+}

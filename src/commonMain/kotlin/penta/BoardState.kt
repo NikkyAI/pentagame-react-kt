@@ -515,6 +515,7 @@ open class BoardState {
 
             if (selectedBlackPiece == null && selectedGrayPiece == null && !selectingGrayPiece
                 && move !is PentaMove.InitGame
+                && move !is PentaMove.PlayerJoin
                 && move !is PentaMove.Win
                 && winner == null
             ) {

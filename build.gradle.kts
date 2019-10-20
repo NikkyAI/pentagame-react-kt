@@ -24,7 +24,10 @@ plugins {
 }
 
 repositories {
-    mavenLocal()
+    maven(url = uri("${projectDir}/mvn")) {
+        name = "bundled local"
+    }
+//    mavenLocal()
     mavenCentral()
     jcenter()
     maven(url = "https://dl.bintray.com/kotlin/kotlinx") {
@@ -45,9 +48,17 @@ repositories {
 //    }
 }
 
+val genCommonSrcKt = project.rootDir.resolve("build/gen-src/commonMain/kotlin").apply{mkdirs()}
 val genServerResource = project.rootDir.resolve("build/gen-src/serverMain/resources").apply{mkdirs()}
 
+//version = "0.0.1"
 group = "moe.nikky.penta"
+
+val gitCommitHash = System.getenv("HEROKU_SLUG_COMMIT") ?: "local"//captureExec("git", "rev-parse", "HEAD").trim()
+generateConstants(genCommonSrcKt, "penta", "Constants") {
+    field("VERSION") value "0.0.1"
+    field("GIT_HASH") value gitCommitHash
+}
 
 kotlin {
     val server = jvm("server") // Creates a JVM target for the server
@@ -71,6 +82,8 @@ kotlin {
                 api("com.lightningkite:kommon-metadata:${Kommon.version}")
                 api("com.lightningkite:reacktive-metadata:${Reacktive.version}")
             }
+
+            kotlin.srcDirs(genCommonSrcKt.path)
         }
 //        val commonLogic by creating {
 //            dependsOn(commonMain)
@@ -92,7 +105,7 @@ kotlin {
                 api("com.lightningkite:kommon-metadata:${Kommon.version}")
                 api("com.lightningkite:reacktive-metadata:${Reacktive.version}")
                 api("com.lightningkite:recktangle-metadata:${Recktangle.version}")
-                api("com.lightningkite:lokalize-metadata:${Lokalize.version}")
+//                api("com.lightningkite:lokalize-metadata:${Lokalize.version}")
                 api("com.lightningkite:koolui-metadata:${KoolUI.version}")
 
 //                api(ktor("client-websocket"))
@@ -184,7 +197,7 @@ kotlin {
                     implementation("com.lightningkite:kommon-jvm:${Kommon.version}")
                     implementation("com.lightningkite:reacktive-jvm:${Reacktive.version}")
                     implementation("com.lightningkite:recktangle-jvm:${Recktangle.version}")
-                    implementation("com.lightningkite:lokalize-jvm:${Lokalize.version}")
+//                    implementation("com.lightningkite:lokalize-jvm:${Lokalize.version}")
                     implementation("com.lightningkite:koolui-javafx:${KoolUI.version}")
 
                 }
@@ -233,7 +246,7 @@ kotlin {
                     implementation("com.lightningkite:kommon-js:${Kommon.version}")
                     implementation("com.lightningkite:reacktive-js:${Reacktive.version}")
                     implementation("com.lightningkite:recktangle-js:${Recktangle.version}")
-                    implementation("com.lightningkite:lokalize-js:${Lokalize.version}")
+//                    implementation("com.lightningkite:lokalize-js:${Lokalize.version}")
                     implementation("com.lightningkite:koolui-js:${KoolUI.version}")
                 }
                 compilations["test"].defaultSourceSet {
@@ -335,7 +348,11 @@ kotlin {
                 }
             }
         }
+        val installTerser = tasks.create<Exec>("installTerser") {
+            commandLine("npm", "install", "-g", "terser")
+        }
         val terseTask = tasks.create("${target.name}TerseJs") {
+            dependsOn(installTerser)
             dependsOn(copyJsTask)
             group = "build"
             val outputDir = file("build/html/js")
@@ -457,7 +474,8 @@ val shadowJar = tasks.getByName<ShadowJar>("shadowJar") {
 
 val packageStaticForServer = tasks.create<Copy>("packageStaticForServer") {
     group = "build"
-    dependsOn("client-jsTerseJs")
+//    dependsOn("client-jsTerseJs")
+    dependsOn("client-jsCopyJsDev")
     val staticFolder = genServerResource.resolve("static").apply{mkdirs()}
 
     from(project.buildDir.resolve("html"))
@@ -469,6 +487,7 @@ val packageStaticForServer = tasks.create<Copy>("packageStaticForServer") {
         }
     }
 }
+
 
 val shadowJarServer = tasks.create<ShadowJar>("shadowJarServer") {
     archiveClassifier.set("server")
@@ -599,4 +618,40 @@ val runServer = tasks.create<JavaExec>("runServer") {
 
 tasks.withType(JavaExec::class.java).all {
 
+}
+
+val bundleLocalDependencies = tasks.create("bundleLocalDependencies") {
+    val mavenLocal = File(System.getProperty("user.home")).resolve(".m2").resolve("repository")
+    val dependencies = listOf(
+        File("com/lightningkite/")
+    )
+    val mvnFolder = project.rootDir.resolve("mvn")
+
+    doLast {
+        logger.lifecycle("mavenLocal: $mavenLocal")
+        mvnFolder.deleteRecursively()
+        mvnFolder.mkdirs()
+
+        dependencies.forEach { relative ->
+            mavenLocal.resolve(relative).copyRecursively(
+                mvnFolder.resolve(relative)
+            )
+        }
+
+    }
+}
+//val buildLocalDependencies = tasks.create("buildLocalDependencies") {
+//    group = "build setup"
+//
+//    doLast {
+//
+//
+//    }
+//}
+
+val stage = tasks.create("stage") {
+    dependsOn(shadowJarServer)
+    doLast {
+        logger.lifecycle("jar was compiled")
+    }
 }

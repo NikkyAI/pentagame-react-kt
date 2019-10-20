@@ -13,4 +13,6 @@ out/
 *.ipr
 *.iws
 
+node_modules/
+
 run/

@@ -1,7 +1,6 @@
 package penta.view
 
 import PentaViz
-import com.lightningkite.koolui.async.suspendingTransform
 import com.lightningkite.koolui.color.Color
 import com.lightningkite.koolui.concepts.Animation
 import com.lightningkite.koolui.concepts.Importance
@@ -25,11 +24,8 @@ import io.data2viz.viz.PathNode
 import mu.KotlinLogging
 import penta.ClientGameState
 import penta.PlayerState
-import penta.logic.Piece
 import penta.util.asKoolUIColor
 import penta.util.fromSvgString
-//import penta.util.fromSvgString
-import penta.view.test.CanvasTestVG
 
 class MainPentaVG<VIEW>() : MyViewGenerator<VIEW> {
     companion object {
@@ -40,8 +36,8 @@ class MainPentaVG<VIEW>() : MyViewGenerator<VIEW> {
     val views = mutableObservableListOf<Triple<String, MaterialIcon, MyViewGenerator<VIEW>>>(
         Triple("Rules", MaterialIcon.help, RulesVG()),
         Triple("Notation", MaterialIcon.history, HistoryVG()),
-        Triple("Multiplayer", MaterialIcon._public, MultiplayerVG<VIEW>()),
-        Triple("Canvas Test", MaterialIcon.lineStyle, CanvasTestVG<VIEW>())
+        Triple("Multiplayer", MaterialIcon._public, MultiplayerVG()),
+        Triple("About", MaterialIcon.info, AboutVG())
     )
     val selectedIconIndex = StandardObservableProperty(0)
 
