@@ -3,6 +3,9 @@ import org.jetbrains.kotlin.gradle.plugin.KotlinTarget
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinJvmCompilation
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinOnlyTarget
 import proguard.ClassSpecification
+import java.time.LocalDateTime
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
 
 buildscript {
     dependencies {
@@ -48,8 +51,8 @@ repositories {
 //    }
 }
 
-val genCommonSrcKt = project.rootDir.resolve("build/gen-src/commonMain/kotlin").apply{mkdirs()}
-val genServerResource = project.rootDir.resolve("build/gen-src/serverMain/resources").apply{mkdirs()}
+val genCommonSrcKt = project.rootDir.resolve("build/gen-src/commonMain/kotlin").apply { mkdirs() }
+val genServerResource = project.rootDir.resolve("build/gen-src/serverMain/resources").apply { mkdirs() }
 
 //version = "0.0.1"
 group = "moe.nikky.penta"
@@ -58,10 +61,16 @@ System.getenv().forEach { (key, value) ->
     logger.lifecycle("$key : $value")
 }
 
-val gitCommitHash = System.getenv("SOURCE_VERSION") ?: "local"//captureExec("git", "rev-parse", "HEAD").trim()
+val releaseTime = System.getenv("HEROKU_RELEASE_CREATED_AT") ?:run {
+    val now = LocalDateTime.now(ZoneOffset.UTC)
+    DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(now)
+}
+
+val gitCommitHash = System.getenv("SOURCE_VERSION") ?: captureExec("git", "rev-parse", "HEAD").trim()
 generateConstants(genCommonSrcKt, "penta", "Constants") {
     field("VERSION") value "0.0.1"
     field("GIT_HASH") value gitCommitHash
+    field("RELEASE_TIME") value releaseTime
 }
 
 kotlin {
@@ -335,7 +344,7 @@ kotlin {
             val targetFolder = file("build/html/js/")
             dependsOn(jarTask)
             doLast {
-//                targetFolder.deleteRecursively()
+                //                targetFolder.deleteRecursively()
                 copy {
                     into(targetFolder)
                     jarTask.outputs.files
@@ -352,9 +361,22 @@ kotlin {
                 }
             }
         }
-        val installTerser = tasks.create<Exec>("installTerser") {
-            commandLine("npm", "install", "-g", "terser")
+        val installTerser = tasks.create("installTerser") {
+            doLast {
+                val result = exec {
+                    commandLine("terser", "-V")
+                    isIgnoreExitValue = true
+                }
+                if (result.exitValue == 0) {
+                    logger.lifecycle("Has Terser")
+                } else {
+                    exec {
+                        commandLine("npm", "install", "-g", "terser")
+                    }
+                }
+            }
         }
+
         val terseTask = tasks.create("${target.name}TerseJs") {
             dependsOn(installTerser)
             dependsOn(copyJsTask)
@@ -370,7 +392,12 @@ kotlin {
                     exec {
                         val f = file.name
                         commandLine(
-                            "terser", "$file", "--source-map", "content='$file.map',url='$f.map'", "-o", outputDir.resolve(f).path
+                            "terser",
+                            "$file",
+                            "--source-map",
+                            "content='$file.map',url='$f.map'",
+                            "-o",
+                            outputDir.resolve(f).path
                         )
                         logger.lifecycle(commandLine.joinToString(" "))
                     }
@@ -480,7 +507,7 @@ val packageStaticForServer = tasks.create<Copy>("packageStaticForServer") {
     group = "build"
     dependsOn("client-jsTerseJs")
 //    dependsOn("client-jsCopyJsDev")
-    val staticFolder = genServerResource.resolve("static").apply{mkdirs()}
+    val staticFolder = genServerResource.resolve("static").apply { mkdirs() }
 
     from(project.buildDir.resolve("html"))
     into(staticFolder)
@@ -491,7 +518,6 @@ val packageStaticForServer = tasks.create<Copy>("packageStaticForServer") {
         }
     }
 }
-
 
 val shadowJarServer = tasks.create<ShadowJar>("shadowJarServer") {
     archiveClassifier.set("server")
