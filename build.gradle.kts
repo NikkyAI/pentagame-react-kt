@@ -474,8 +474,8 @@ val shadowJar = tasks.getByName<ShadowJar>("shadowJar") {
 
 val packageStaticForServer = tasks.create<Copy>("packageStaticForServer") {
     group = "build"
-//    dependsOn("client-jsTerseJs")
-    dependsOn("client-jsCopyJsDev")
+    dependsOn("client-jsTerseJs")
+//    dependsOn("client-jsCopyJsDev")
     val staticFolder = genServerResource.resolve("static").apply{mkdirs()}
 
     from(project.buildDir.resolve("html"))
