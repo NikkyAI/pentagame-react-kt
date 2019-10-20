@@ -363,16 +363,9 @@ kotlin {
         }
         val installTerser = tasks.create("installTerser") {
             doLast {
-                val result = exec {
-                    commandLine("terser", "-V")
+                exec {
+                    commandLine("npm", "install", "-g", "terser")
                     isIgnoreExitValue = true
-                }
-                if (result.exitValue == 0) {
-                    logger.lifecycle("Has Terser")
-                } else {
-                    exec {
-                        commandLine("npm", "install", "-g", "terser")
-                    }
                 }
             }
         }
