@@ -54,7 +54,7 @@ val genServerResource = project.rootDir.resolve("build/gen-src/serverMain/resour
 //version = "0.0.1"
 group = "moe.nikky.penta"
 
-val gitCommitHash = System.getenv("HEROKU_SLUG_COMMIT") ?: "local"//captureExec("git", "rev-parse", "HEAD").trim()
+val gitCommitHash = System.getenv("SOURCE_VERSION") ?: "local"//captureExec("git", "rev-parse", "HEAD").trim()
 generateConstants(genCommonSrcKt, "penta", "Constants") {
     field("VERSION") value "0.0.1"
     field("GIT_HASH") value gitCommitHash
