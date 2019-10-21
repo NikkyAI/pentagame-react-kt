@@ -40,8 +40,8 @@ fun Application.main() {
 //        exposeHeader("Set-Cookie")
         maxAge = Duration.ofMinutes(20)
     }
-    install(EncryptionEnforcementFeature)
     install(XForwardedHeaderSupport)
+    install(EncryptionEnforcementFeature)
 //    install(Metrics) {
 //        val reporter = Slf4jReporter.forRegistry(registry)
 //                .outputTo(log)
