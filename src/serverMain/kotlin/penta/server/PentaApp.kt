@@ -41,6 +41,7 @@ fun Application.main() {
         maxAge = Duration.ofMinutes(20)
     }
     install(EncryptionEnforcementFeature)
+    install(XForwardedHeaderSupport)
 //    install(Metrics) {
 //        val reporter = Slf4jReporter.forRegistry(registry)
 //                .outputTo(log)
