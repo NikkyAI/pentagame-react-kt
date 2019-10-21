@@ -8,6 +8,8 @@ import com.lightningkite.koolui.image.fromUrl
 import com.lightningkite.koolui.image.withOptions
 import com.lightningkite.koolui.views.basic.text
 import com.lightningkite.koolui.views.layout.vertical
+import com.lightningkite.lokalize.time.Date
+import com.lightningkite.lokalize.time.DateTime
 import com.lightningkite.reacktive.property.ConstantObservableProperty
 import com.lightningkite.reacktive.property.transform
 import com.lightningkite.recktangle.Point
@@ -37,8 +39,10 @@ class AboutVG<VIEW>() : MyViewGenerator<VIEW> {
 
     override fun generate(dependency: MyViewFactory<VIEW>): VIEW = with(dependency) {
         vertical {
+            val dateTime = DateTime.iso8601(Constants.RELEASE_TIME)
             -text("version: ${Constants.VERSION}")
             -text("commit: ${Constants.GIT_HASH}")
+            -text("released: $dateTime")
             -urlButton(githubUrl, "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png", Point(48f, 48f))
 //            button(
 //                label = ConstantObservableProperty(githubUrl),

@@ -4,11 +4,8 @@ import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import io.ktor.application.Application
 import io.ktor.application.install
-import io.ktor.features.CORS
-import io.ktor.features.CallLogging
-import io.ktor.features.DefaultHeaders
+import io.ktor.features.*
 import io.ktor.sessions.SessionStorageMemory
-import io.ktor.features.ContentNegotiation
 import io.ktor.http.HttpMethod
 import io.ktor.jackson.jackson
 import io.ktor.sessions.Sessions
@@ -43,6 +40,8 @@ fun Application.main() {
 //        exposeHeader("Set-Cookie")
         maxAge = Duration.ofMinutes(20)
     }
+    install(XForwardedHeaderSupport)
+    install(EncryptionEnforcementFeature)
 //    install(Metrics) {
 //        val reporter = Slf4jReporter.forRegistry(registry)
 //                .outputTo(log)
