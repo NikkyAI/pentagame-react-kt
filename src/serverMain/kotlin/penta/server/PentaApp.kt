@@ -40,12 +40,7 @@ fun Application.main() {
 //        exposeHeader("Set-Cookie")
         maxAge = Duration.ofMinutes(20)
     }
-    install(HttpsRedirect) {
-        // The port to redirect to. By default 443, the default HTTPS port.
-        sslPort = 443
-        // 301 Moved Permanently, or 302 Found redirect.
-        permanentRedirect = false
-    }
+    install(EncryptionEnforcementFeature)
 //    install(Metrics) {
 //        val reporter = Slf4jReporter.forRegistry(registry)
 //                .outputTo(log)
