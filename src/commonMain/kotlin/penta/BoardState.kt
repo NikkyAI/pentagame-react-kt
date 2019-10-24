@@ -340,6 +340,16 @@ open class BoardState {
                         ))
                         return
                     }
+                    val lastMove = history.findLast {
+                        it is PentaMove.Move && it.playerPiece.playerId == move.playerPiece.playerId
+                    }
+                    requires(lastMove != move) {
+                        handleIllegalMove(PentaMove.IllegalMove(
+                            "repeating move ${move.asNotation()} is illegal",
+                            move
+                        ))
+                        return
+                    }
 
                     move.playerPiece.position = move.to
                     move.otherPlayerPiece.position = move.from
