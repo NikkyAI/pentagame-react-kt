@@ -10,7 +10,6 @@ import io.ktor.http.HttpMethod
 import io.ktor.jackson.jackson
 import io.ktor.sessions.Sessions
 import io.ktor.sessions.cookie
-import io.ktor.sessions.header
 import io.ktor.websocket.WebSockets
 import mu.KotlinLogging
 import org.slf4j.event.Level
@@ -24,7 +23,10 @@ fun Application.main() {
         level = Level.INFO
     }
 
-    install(WebSockets)
+    install(WebSockets){
+        pingPeriod = Duration.ofMillis(1000)
+        timeout = Duration.ofMillis(2000)
+    }
 
 //    install(HttpsRedirect)
 //    install(HSTS)
@@ -41,7 +43,8 @@ fun Application.main() {
         maxAge = Duration.ofMinutes(20)
     }
     install(XForwardedHeaderSupport)
-    install(EncryptionEnforcementFeature)
+//    install(EncryptionEnforcementFeature)
+
 //    install(Metrics) {
 //        val reporter = Slf4jReporter.forRegistry(registry)
 //                .outputTo(log)

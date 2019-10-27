@@ -1,1 +1,1 @@
-web:    java -jar build/libs/penta-server.jar
+web:    java -jar build/libs/server.jar

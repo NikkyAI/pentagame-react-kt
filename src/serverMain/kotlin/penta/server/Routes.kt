@@ -9,12 +9,9 @@ import io.ktor.http.cio.websocket.Frame
 import io.ktor.http.cio.websocket.close
 import io.ktor.http.cio.websocket.readText
 import io.ktor.http.content.defaultResource
-import io.ktor.http.content.resource
 import io.ktor.http.content.resources
 import io.ktor.http.content.static
-import io.ktor.http.content.staticBasePackage
 import io.ktor.request.receive
-import io.ktor.response.respondRedirect
 import io.ktor.response.respondText
 import io.ktor.routing.get
 import io.ktor.routing.post
@@ -37,6 +34,7 @@ fun Application.routes() = routing {
     }
 
     webSocket("/ws/game/{gameId}") {
+
         logger.info { "websocket connection opened" }
         val sessionId = (incoming.receive() as Frame.Text).readText()
         val session = SessionController.get(sessionId)
@@ -79,6 +77,8 @@ fun Application.routes() = routing {
     post("/api/login") {
         val loginRequest = call.receive<LoginRequest>()
         // find registered user
+        // val dbuser = DBUser.getByUserId(loginRequest.userId)
+        // val response: LoginResponse = if (dbuser == null) {
         val user: String? = listOf("alice", "bob").find { it == loginRequest.userId }
         val response: LoginResponse = if (user == null) {
             when {
@@ -118,6 +118,12 @@ fun Application.routes() = routing {
 
             // create temporary session
         } else {
+//            // TODO: covert User
+//            val registeredUser = User.RegisteredUser(
+//                userId = dbuser.userId,
+//                passwordHash = dbuser.passwordHash,
+//                displayNameField = dbuser.displayNameField
+//            )
             // TODO: retrieve User
             val registeredUser = User.RegisteredUser(loginRequest.userId, passwordHash = "password")
             if (loginRequest.password != registeredUser.passwordHash) {

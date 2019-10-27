@@ -2,10 +2,12 @@ import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import org.jetbrains.kotlin.gradle.plugin.KotlinTarget
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinJvmCompilation
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinOnlyTarget
+import org.jetbrains.kotlin.gradle.tasks.AbstractKotlinCompile
 import proguard.ClassSpecification
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
+import org.gradle.kotlin.dsl.withType
 
 buildscript {
     dependencies {
@@ -67,11 +69,18 @@ val releaseTime = System.getenv("HEROKU_RELEASE_CREATED_AT") ?:run {
 }
 
 val gitCommitHash = System.getenv("SOURCE_VERSION") ?: captureExec("git", "rev-parse", "HEAD").trim()
-generateConstants(genCommonSrcKt, "penta", "Constants") {
-    field("VERSION") value "0.0.1"
-    field("GIT_HASH") value gitCommitHash
-    field("RELEASE_TIME") value releaseTime
+tasks.withType(AbstractKotlinCompile::class.java).all {
+    logger.info("registered generating constants to $this")
+    doFirst {
+        logger.lifecycle("generating constants")
+        generateConstants(genCommonSrcKt, "penta", "Constants") {
+            field("VERSION") value "0.0.1"
+            field("GIT_HASH") value gitCommitHash
+            field("RELEASE_TIME") value releaseTime
+        }
+    }
 }
+
 
 kotlin {
     val server = jvm("server") // Creates a JVM target for the server
@@ -161,6 +170,11 @@ kotlin {
                     // krosslin
                     implementation("com.lightningkite:kommon-jvm:${Kommon.version}")
                     implementation("com.lightningkite:reacktive-jvm:${Reacktive.version}")
+
+                    // mongodb
+//                    implementation("org.litote.kmongo:kmongo-serialization:3.11.1")
+                    implementation("org.litote.kmongo:kmongo-coroutine-serialization:3.11.1")
+                    implementation("org.litote.kmongo:kmongo-id:3.11.1")
                 }
 
                 resources.srcDirs(genServerResource.path)
@@ -271,6 +285,7 @@ kotlin {
                         metaInfo = true
                         moduleKind = "amd"
                         sourceMapEmbedSources = "always"
+                        outputFile = "penta.js"
                     }
                 }
             }
@@ -436,44 +451,13 @@ kotlin.targets.forEach { target: KotlinTarget ->
     }
 }
 
-//base {
-//    archivesBaseName = ""
+//sourceSets.all {
+//    logger.lifecycle("sourceSet: $this")
 //}
 
-// JAVASCRIPT
-
-//val runDce = tasks.getByName("runDceClient-jsKotlin")
-//
-//val packageJs = tasks.create("packageJs") {
-//    group = "build"
-//    dependsOn(runDce)
-//
-//    doLast {
-//        val jsInput = buildDir
-//            .resolve("kotlin-js-min")
-//            .resolve("client-js")
-//            .resolve("main")
-//
-//        val htmlDir = buildDir
-//            .resolve("html")
-//
-//        htmlDir.deleteRecursively()
-//        htmlDir.mkdir()
-//        val jsOutput = htmlDir.resolve("js").apply {
-//            mkdir()
-//        }
-//
-//        logger.lifecycle("input directory: $jsInput")
-//
-//        jsInput.listFiles().forEach { file ->
-//            file.copyTo(jsOutput.resolve(file.name))
-//        }
-//        copy {
-//            from("src/client-jsMain/web")
-//            into(htmlDir)
-//        }
-//    }
-//}
+base {
+    archivesBaseName = ""
+}
 
 // JVM
 
@@ -673,6 +657,7 @@ val bundleLocalDependencies = tasks.create("bundleLocalDependencies") {
 //}
 
 val stage = tasks.create("stage") {
+    dependsOn("clean")
     dependsOn(shadowJarServer)
     doLast {
         logger.lifecycle("jar was compiled")

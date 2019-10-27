@@ -18,7 +18,6 @@ import com.lightningkite.reacktive.property.CombineObservableProperty2
 import com.lightningkite.reacktive.property.StandardObservableProperty
 import com.lightningkite.reacktive.property.transform
 import io.ktor.client.features.websocket.webSocket
-import io.ktor.client.features.websocket.wss
 import io.ktor.client.request.post
 import io.ktor.client.request.request
 import io.ktor.client.response.HttpResponse
@@ -50,12 +49,28 @@ import penta.network.LoginResponse
 import penta.network.ServerStatus
 import penta.util.authenticateWith
 import penta.util.authenticatedRequest
+import penta.util.exhaustive
 import penta.util.parse
 import penta.util.suspendInfo
 
 class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
     companion object {
         private val logger = KotlinLogging.logger {}
+    }
+
+    suspend fun status(
+        baseURL: Url
+    ): ServerStatus? {
+        val url = URLBuilder(baseURL).apply {
+            path("api", "status")
+        }.build()
+        logger.info { "url: $url" }
+        return try {
+            client.request<ServerStatus>(url) {}
+        } catch (exception: Exception) {
+            logger.error(exception) { "request failed" }
+            null
+        }
     }
 
     suspend fun login(
@@ -74,16 +89,7 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
         passwordInput: String?,
         onSuccess: () -> Unit = {}
     ) {
-        val url = URLBuilder(baseURL).apply {
-            path("api", "status")
-        }.build()
-        logger.info { "url: $url" }
-        val status = try {
-            client.request<ServerStatus>(url) {}
-        } catch (exception: Exception) {
-            logger.error(exception) { "request failed" }
-            null
-        }
+        val status = status(baseURL)
 
         logger.info { "status: $status" }
         if (status != null) {
@@ -121,7 +127,7 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
                 is LoginResponse.Success -> MultiplayerState.Connected(
                     baseUrl = baseURL,
                     userId = userIdInput,
-                    session = sessionId ?:  throw IllegalStateException("missing SESSION header")
+                    session = sessionId ?: throw IllegalStateException("missing SESSION header")
                 ).also { state ->
                     onSuccess()
 
@@ -147,8 +153,17 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
             .path("api", "games")
             .build()
 
-        val receivedList =
-            client.authenticatedRequest(listGamesUrl, state, HttpMethod.Get, GameSessionInfo.serializer().list)
+        val receivedList = try {
+                client.authenticatedRequest(listGamesUrl, state, HttpMethod.Get, GameSessionInfo.serializer().list)
+        } catch (exception: Exception) {
+            logger.error(exception) { "request failed" }
+            // TODO: add state: connection lost
+            PentaViz.multiplayerState.value = MultiplayerState.Disconnected(
+                baseUrl = state.baseUrl, userId = state.userId
+            )
+            return
+        }
+
         gamesList.replace(receivedList)
         onSuccess()
     }
@@ -162,73 +177,108 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
         connectToGame(state, gameSessionInfo)
     }
 
+    @UseExperimental(ExperimentalStdlibApi::class)
     suspend fun connectToGame(state: MultiplayerState.Connected, game: GameSessionInfo) {
         val wsUrl = URLBuilder(state.baseUrl)
             .path("ws", "game", game.id)
             .build()
-        client.webSocket(
-            host = wsUrl.host,
-            port = wsUrl.port, path = wsUrl.fullPath,
-            request = {
-                authenticateWith(state)
-                if(wsUrl.protocol == URLProtocol.HTTPS)
-                    url.protocol = URLProtocol.WSS
-            }
-        ) {
-            logger.info { "connection opened" }
-            PentaViz.gameStateProperty.value = ClientGameState()
-            PentaViz.updateBoard()
+        try {
+            client.webSocket(
+                host = wsUrl.host,
+                port = wsUrl.port, path = wsUrl.fullPath,
+                request = {
+                    authenticateWith(state)
+                    if (wsUrl.protocol == URLProtocol.HTTPS)
+                        url.protocol = URLProtocol.WSS
+                }
+            ) {
+                logger.info { "connection opened" }
+                PentaViz.gameStateProperty.value = ClientGameState()
+                PentaViz.updateBoard()
 
-            outgoing.send(Frame.Text(state.session))
+                outgoing.send(Frame.Text(state.session))
 
-            logger.info { "setting multiplayerStatus to Playing" }
-            PentaViz.multiplayerState.value = MultiplayerState.Observing(
-                baseUrl = state.baseUrl,
-                userId = state.userId,
-                session = state.session,
-                game = game,
-                websocketSession = this@webSocket
-            ).also {
-                logger.info { "setting multiplayerStatus to $it" }
-            }
-
-            try {
-                val notationListJson = (incoming.receive() as Frame.Text).readText()
-                logger.info { "receiving notation $notationListJson" }
-                val history = json.parse(SerialNotation.serializer().list, notationListJson)
-                withContext(Dispatchers.UI) {
-                    history.forEach { notation ->
-                        notation.asMove(PentaViz.gameState).also {
-                            PentaViz.gameState.processMove(it)
-                        }
-                    }
+                logger.info { "setting multiplayerStatus to Playing" }
+                val observingState = MultiplayerState.Observing(
+                    baseUrl = state.baseUrl,
+                    userId = state.userId,
+                    session = state.session,
+                    game = game,
+                    websocketSession = this@webSocket,
+                    running = true
+                )
+                PentaViz.multiplayerState.value = observingState.also {
+                    logger.info { "setting multiplayerStatus to $it" }
                 }
 
-                while (true) {
-                    val notationJson = (incoming.receive() as Frame.Text).readText()
+                try {
+                    val notationListJson = (incoming.receive() as Frame.Text).readText()
+                    logger.info { "receiving notation $notationListJson" }
+                    val history = json.parse(SerialNotation.serializer().list, notationListJson)
+                    withContext(Dispatchers.UI) {
+                        history.forEach { notation ->
+                            notation.asMove(PentaViz.gameState).also {
+                                PentaViz.gameState.processMove(it)
+                            }
+                        }
+                    }
 
-                    logger.info { "receiving notation $notationJson" }
-                    val notation = json.parse(SerialNotation.serializer(), notationJson)
-                    notation.asMove(PentaViz.gameState).also {
-                        // apply move
-                        withContext(Dispatchers.UI) {
-                            PentaViz.gameState.processMove(it)
+                    send(Frame.Ping("hello".encodeToByteArray()))
+                    loop@ while (true) {
+                        logger.info { "awaiting frame" }
+                        val frame = try {
+//                                withTimeout(1000) {
+                            incoming.receive()
+//                                }
+                            /*} catch(e: TimeoutCancellationException) {
+                                logger.error { "timeout" }
+                                break */
+                        } catch (e: Exception) {
+                            logger.error(e) { "exception onClose ${e.message}" }
+                            throw e
+                            // TODO transition to state `ConnectionLost`
+                        } finally {
+
+                        }
+                        logger.info { "received frame: $frame" }
+                        when(frame) {
+//                            is Frame.Binary -> TODO("")
+                            is Frame.Text -> {
+                                val notationJson = frame.readText()
+                                logger.info { "receiving notation $notationJson" }
+                                val notation = json.parse(SerialNotation.serializer(), notationJson)
+                                notation.asMove(PentaViz.gameState).also {
+                                    // apply move
+                                    withContext(Dispatchers.UI) {
+                                        PentaViz.gameState.processMove(it)
+                                    }
+
+                                }
+                            }
                         }
 
-                    }
+
 //                    outgoing.send(Frame.Text("received"))
+                    }
+                } catch (e: ClosedReceiveChannelException) {
+                    val reason = closeReason.await()
+                    logger.debug(e) { "onClose $reason" }
+                    // TODO transition to state `ConnectionLost`
+                } catch (e: Exception) {
+                    logger.error(e) { "exception onClose ${e.message}" }
+                    // TODO transition to state `ConnectionLost`
+                } finally {
+                    logger.info { "connection closing" }
                 }
-            } catch (e: ClosedReceiveChannelException) {
-                val reason = closeReason.await()
-                logger.debug(e) { "onClose $reason" }
-                // TODO transition to state `ConnectionLost`
-            } catch (e: Throwable) {
-                val reason = closeReason.await()
-                logger.error(e) { "onClose $reason" }
-                // TODO transition to state `ConnectionLost`
-            } finally {
-                logger.info { "connection closing" }
             }
+        } catch (e: ClosedReceiveChannelException) {
+            logger.debug(e) { "ws onClose ${e.message}" }
+            // TODO transition to state `ConnectionLost`
+        } catch (e: Throwable) {
+            logger.debug(e) { "ws onClose ${e.message}" }
+            // TODO transition to state `ConnectionLost`
+        } finally {
+            logger.info { "ws connection closing" }
         }
 
 //        PentaViz.gameState.players.replace(listOf(PlayerState("triangle", "triangle"), PlayerState("square", "square")))
@@ -434,7 +484,7 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
                                         gameState.initializedProperty,
                                         gameState.players.onListUpdate
                                     ) { initialized, players ->
-                                        if(!initialized && players.none { it.id == state.userId }) {
+                                        if (!initialized && players.none { it.id == state.userId }) {
                                             button(
                                                 label = "Join",
                                                 onClick = {

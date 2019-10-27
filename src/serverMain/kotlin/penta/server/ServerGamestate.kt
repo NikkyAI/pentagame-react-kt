@@ -1,11 +1,16 @@
 package penta.server
 
+import io.ktor.http.cio.websocket.CloseReason
 import io.ktor.http.cio.websocket.Frame
+import io.ktor.http.cio.websocket.close
+import io.ktor.http.cio.websocket.pingInterval
 import io.ktor.http.cio.websocket.readText
+import io.ktor.http.cio.websocket.timeout
 import io.ktor.websocket.DefaultWebSocketServerSession
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
+import kotlinx.coroutines.channels.ClosedSendChannelException
 import kotlinx.coroutines.launch
 import kotlinx.io.IOException
 import kotlinx.serialization.list
@@ -18,6 +23,7 @@ import penta.json
 import penta.network.GameSessionInfo
 import penta.util.suspendDebug
 import penta.util.suspendError
+import java.time.Duration
 
 /***
  * represents a pentagame match
@@ -28,16 +34,6 @@ class ServerGamestate(
 ): BoardState() {
     companion object {
         private val logger = KotlinLogging.logger {}
-    }
-    init {
-        // TODO: init game later
-//        logger.info { "players: ${players.joinToString()}"}
-//        players.addAll(listOf(PlayerState(ownerId, "triangle"), PlayerState("other", "square")))
-//        players.removeAt(0)
-//        logger.info { "initializing with ${players.joinToString()}" }
-//        currentPlayerProperty.value = players.first()
-//        processMove(PentaMove.InitGame(players.toList()))
-//        logger.info { "after init: " + figures.joinToString { it.id } }
     }
     var running: Boolean = false
     val observers = mutableMapOf<UserSession, DefaultWebSocketServerSession>()
@@ -56,8 +52,8 @@ class ServerGamestate(
     val serializer = SerialNotation.serializer()
 
     suspend fun handle(websocketSession: DefaultWebSocketServerSession, session: UserSession) = with(websocketSession) {
-        observers[session] = this
         try {
+            observers[session] = this
 
             // play back history
             logger.info { "play back history" }
@@ -94,13 +90,19 @@ class ServerGamestate(
             }
         } catch (e: IOException) {
             observers.remove(session)
-            logger.suspendDebug(e) { "onClose ${closeReason.await()}" }
+            val reason = closeReason.await()
+            logger.debug(e) { "onClose $reason" }
         } catch (e: ClosedReceiveChannelException) {
             observers.remove(session)
-            logger.suspendDebug(e) { "onClose ${closeReason.await()}" }
-        } catch (e: Throwable) {
+            val reason = closeReason.await()
+            logger.error { "onClose $reason" }
+        } catch (e: ClosedSendChannelException) {
             observers.remove(session)
-            logger.suspendError(e) { "onClose ${closeReason.await()}" }
+            val reason = closeReason.await()
+            logger.error { "onClose $reason" }
+        } catch (e: Exception) {
+            observers.remove(session)
+            logger.error(e) { "exception onClose ${e.message}" }
         }
 
     }

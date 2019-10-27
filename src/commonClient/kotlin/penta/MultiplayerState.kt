@@ -48,7 +48,8 @@ sealed class MultiplayerState {
         override val userId: String,
         override var session: String,
         override val game: GameSessionInfo,
-        private val websocketSession: DefaultClientWebSocketSession
+        private val websocketSession: DefaultClientWebSocketSession,
+        var running: Boolean
     ): MultiplayerState(), HasSession, HasGameSession {
         suspend fun sendMove(move: PentaMove) {
             websocketSession.outgoing.send(
@@ -57,8 +58,12 @@ sealed class MultiplayerState {
         }
         suspend fun leave() {
             logger.info { "leaving game" }
+//            logger.info { "sending close request" }
+//            running = false
+//            websocketSession.outgoing.send(Frame.Text("close"))
+            logger.info { "sending close frame" }
             websocketSession.close(CloseReason(CloseReason.Codes.NORMAL, "leaving game"))
-            logger.info { "finished leaving game" }
+//            logger.info { "finished leaving game" }
         }
     }
 }
