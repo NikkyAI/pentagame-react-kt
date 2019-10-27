@@ -8,16 +8,25 @@ import com.lightningkite.koolui.canvas.HtmlCanvas
 import com.lightningkite.koolui.color.Color
 import com.lightningkite.koolui.color.ColorSet
 import com.lightningkite.koolui.color.Theme
-import com.lightningkite.koolui.concepts.*
+import com.lightningkite.koolui.concepts.Animation
+import com.lightningkite.koolui.concepts.Importance
+import com.lightningkite.koolui.concepts.TextInputType
+import com.lightningkite.koolui.concepts.TextSize
 import com.lightningkite.koolui.geometry.Align
 import com.lightningkite.koolui.geometry.AlignPair
-import com.lightningkite.koolui.geometry.Direction
 import com.lightningkite.koolui.geometry.LinearPlacement
-import com.lightningkite.koolui.image.*
 import com.lightningkite.koolui.image.Image
-import com.lightningkite.koolui.implementationhelpers.*
+import com.lightningkite.koolui.image.ImageScaleType
+import com.lightningkite.koolui.image.ImageWithOptions
+import com.lightningkite.koolui.image.MaterialIcon
+import com.lightningkite.koolui.image.color
+import com.lightningkite.koolui.image.withOptions
+import com.lightningkite.koolui.implementationhelpers.AnyLifecycles
+import com.lightningkite.koolui.implementationhelpers.TreeObservableProperty
 import com.lightningkite.koolui.removeLifecycled
 import com.lightningkite.koolui.toWeb
+import com.lightningkite.koolui.views.Themed
+import com.lightningkite.koolui.views.Touch
 import com.lightningkite.koolui.views.ViewFactory
 import com.lightningkite.koolui.views.basic.image
 import com.lightningkite.koolui.views.basic.text
@@ -26,21 +35,33 @@ import com.lightningkite.koolui.views.interactive.KeyboardType
 import com.lightningkite.koolui.views.interactive.ViewFactoryInteractiveDefault
 import com.lightningkite.koolui.views.interactive.button
 import com.lightningkite.koolui.views.interactive.imageButton
-import com.lightningkite.koolui.views.layout.horizontal
 import com.lightningkite.koolui.views.layout.vertical
 import com.lightningkite.koolui.views.navigation.ViewFactoryNavigationDefault
+import com.lightningkite.koolui.views.onNewTouch
 import com.lightningkite.lokalize.time.Date
 import com.lightningkite.lokalize.time.DateTime
 import com.lightningkite.lokalize.time.Time
-import com.lightningkite.reacktive.list.MutableObservableList
 import com.lightningkite.reacktive.list.ObservableList
-import com.lightningkite.reacktive.property.*
+import com.lightningkite.reacktive.property.MutableObservableProperty
+import com.lightningkite.reacktive.property.ObservableProperty
 import com.lightningkite.reacktive.property.lifecycle.bind
+import com.lightningkite.reacktive.property.transform
 import com.lightningkite.recktangle.Point
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import org.w3c.dom.*
+import org.w3c.dom.HTMLButtonElement
+import org.w3c.dom.HTMLCanvasElement
+import org.w3c.dom.HTMLDivElement
+import org.w3c.dom.HTMLElement
+import org.w3c.dom.HTMLHeadingElement
+import org.w3c.dom.HTMLImageElement
+import org.w3c.dom.HTMLInputElement
+import org.w3c.dom.HTMLOptionElement
+import org.w3c.dom.HTMLParagraphElement
+import org.w3c.dom.HTMLSelectElement
+import org.w3c.dom.HTMLStyleElement
+import org.w3c.dom.HTMLTextAreaElement
 import org.w3c.dom.events.Event
 import org.w3c.dom.events.MouseEvent
 import org.w3c.dom.url.URL
@@ -48,8 +69,6 @@ import org.w3c.files.Blob
 import kotlin.browser.document
 import kotlin.collections.set
 import kotlin.dom.addClass
-import com.lightningkite.koolui.views.*
-import com.lightningkite.koolui.views.Touch
 
 /**
  * Generates views using HTML.
@@ -57,14 +76,17 @@ import com.lightningkite.koolui.views.Touch
  * If you don't have external CSS, you can have it auto inserted using TODO.
  */
 open class OpenHtmlViewFactory(
-        theme: Theme,
-        colorSet: ColorSet = theme.main
+    theme: Theme,
+    colorSet: ColorSet = theme.main
 ) : ViewFactory<HTMLElement>,
-        ViewFactoryNavigationDefault<HTMLElement>,
-        ViewFactoryInteractiveDefault<HTMLElement>,
-        Themed by Themed.impl(theme, colorSet) {
+    ViewFactoryNavigationDefault<HTMLElement>,
+    ViewFactoryInteractiveDefault<HTMLElement>,
+    Themed by Themed.impl(theme, colorSet) {
 
-    override fun HTMLElement.acceptCharacterInput(onCharacter: (Char) -> Unit, keyboardType: KeyboardType): HTMLElement {
+    override fun HTMLElement.acceptCharacterInput(
+        onCharacter: (Char) -> Unit,
+        keyboardType: KeyboardType
+    ): HTMLElement {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
@@ -126,30 +148,30 @@ open class OpenHtmlViewFactory(
     */
 
     fun defaultCss() = DEFAULT_CSS_TEMPLATE
-            .replace("!!mfn", theme.main.foreground.toWeb())
-            .replace("!!mfh", theme.main.foregroundHighlighted.toWeb())
-            .replace("!!mfd", theme.main.foregroundDisabled.toWeb())
-            .replace("!!mbn", theme.main.background.toWeb())
-            .replace("!!mbh", theme.main.backgroundHighlighted.toWeb())
-            .replace("!!mbd", theme.main.backgroundDisabled.toWeb())
-            .replace("!!bfn", theme.bar.foreground.toWeb())
-            .replace("!!bfh", theme.bar.foregroundHighlighted.toWeb())
-            .replace("!!bfd", theme.bar.foregroundDisabled.toWeb())
-            .replace("!!bbn", theme.bar.background.toWeb())
-            .replace("!!bbh", theme.bar.backgroundHighlighted.toWeb())
-            .replace("!!bbd", theme.bar.backgroundDisabled.toWeb())
-            .replace("!!afn", theme.accent.foreground.toWeb())
-            .replace("!!afh", theme.accent.foregroundHighlighted.toWeb())
-            .replace("!!afd", theme.accent.foregroundDisabled.toWeb())
-            .replace("!!abn", theme.accent.background.toWeb())
-            .replace("!!abh", theme.accent.backgroundHighlighted.toWeb())
-            .replace("!!abd", theme.accent.backgroundDisabled.toWeb())
-            .replace("!!dfn", ColorSet.destructive.foreground.toWeb())
-            .replace("!!dfh", ColorSet.destructive.foregroundHighlighted.toWeb())
-            .replace("!!dfd", ColorSet.destructive.foregroundDisabled.toWeb())
-            .replace("!!dbn", ColorSet.destructive.background.toWeb())
-            .replace("!!dbh", ColorSet.destructive.backgroundHighlighted.toWeb())
-            .replace("!!dbd", ColorSet.destructive.backgroundDisabled.toWeb())
+        .replace("!!mfn", theme.main.foreground.toWeb())
+        .replace("!!mfh", theme.main.foregroundHighlighted.toWeb())
+        .replace("!!mfd", theme.main.foregroundDisabled.toWeb())
+        .replace("!!mbn", theme.main.background.toWeb())
+        .replace("!!mbh", theme.main.backgroundHighlighted.toWeb())
+        .replace("!!mbd", theme.main.backgroundDisabled.toWeb())
+        .replace("!!bfn", theme.bar.foreground.toWeb())
+        .replace("!!bfh", theme.bar.foregroundHighlighted.toWeb())
+        .replace("!!bfd", theme.bar.foregroundDisabled.toWeb())
+        .replace("!!bbn", theme.bar.background.toWeb())
+        .replace("!!bbh", theme.bar.backgroundHighlighted.toWeb())
+        .replace("!!bbd", theme.bar.backgroundDisabled.toWeb())
+        .replace("!!afn", theme.accent.foreground.toWeb())
+        .replace("!!afh", theme.accent.foregroundHighlighted.toWeb())
+        .replace("!!afd", theme.accent.foregroundDisabled.toWeb())
+        .replace("!!abn", theme.accent.background.toWeb())
+        .replace("!!abh", theme.accent.backgroundHighlighted.toWeb())
+        .replace("!!abd", theme.accent.backgroundDisabled.toWeb())
+        .replace("!!dfn", ColorSet.destructive.foreground.toWeb())
+        .replace("!!dfh", ColorSet.destructive.foregroundHighlighted.toWeb())
+        .replace("!!dfd", ColorSet.destructive.foregroundDisabled.toWeb())
+        .replace("!!dbn", ColorSet.destructive.background.toWeb())
+        .replace("!!dbh", ColorSet.destructive.backgroundHighlighted.toWeb())
+        .replace("!!dbd", ColorSet.destructive.backgroundDisabled.toWeb())
 
     fun applyDefaultCss() {
         val cssElement = document.createElement("style") as HTMLStyleElement
@@ -199,13 +221,12 @@ open class OpenHtmlViewFactory(
         this.lifecycle.alwaysOn = true
     }
 
-
     override fun text(
-            text: ObservableProperty<String>,
-            importance: Importance,
-            size: TextSize,
-            align: AlignPair,
-            maxLines: Int
+        text: ObservableProperty<String>,
+        importance: Importance,
+        size: TextSize,
+        align: AlignPair,
+        maxLines: Int
     ): HTMLElement = when (size) {
         TextSize.Tiny -> makeElement<HTMLParagraphElement>("p") {
             addClass("TinyText")
@@ -268,29 +289,30 @@ open class OpenHtmlViewFactory(
         }
     }
 
-    override fun image(imageWithOptions: ObservableProperty<ImageWithOptions>): HTMLImageElement = makeElement<HTMLImageElement>("img") {
-        lifecycle.bind(imageWithOptions) {
-            it.image.url?.let { url ->
-                src = url
-            } ?: it.image.data?.let { data ->
-                val url = URL.createObjectURL(Blob(arrayOf(data.asInt8Array().buffer)))
-                src = url
-                onload?.invoke(Event("")) //Stops memory leaks when switching images rapidly
-                onload = {
-                    URL.revokeObjectURL(url)
+    override fun image(imageWithOptions: ObservableProperty<ImageWithOptions>): HTMLImageElement =
+        makeElement<HTMLImageElement>("img") {
+            lifecycle.bind(imageWithOptions) {
+                it.image.url?.let { url ->
+                    src = url
+                } ?: it.image.data?.let { data ->
+                    val url = URL.createObjectURL(Blob(arrayOf(data.asInt8Array().buffer)))
+                    src = url
+                    onload?.invoke(Event("")) //Stops memory leaks when switching images rapidly
+                    onload = {
+                        URL.revokeObjectURL(url)
+                    }
+                }
+                style.objectFit = when (it.scaleType) {
+                    ImageScaleType.Crop -> "cover"
+                    ImageScaleType.Fill -> "scale-down"
+                    ImageScaleType.Center -> "none"
+                }
+                it.defaultSize?.let { pt ->
+                    style.width = pt.x.toString() + "px"
+                    style.height = pt.y.toString() + "px"
                 }
             }
-            style.objectFit = when (it.scaleType) {
-                ImageScaleType.Crop -> "cover"
-                ImageScaleType.Fill -> "scale-down"
-                ImageScaleType.Center -> "none"
-            }
-            it.defaultSize?.let { pt ->
-                style.width = pt.x.toString() + "px"
-                style.height = pt.y.toString() + "px"
-            }
         }
-    }
 
     override fun space(size: Point): HTMLElement = makeElement<HTMLDivElement>("div") {
         style.width = size.x.toString() + "px"
@@ -298,16 +320,16 @@ open class OpenHtmlViewFactory(
     }
 
     override fun button(
-            label: ObservableProperty<String>,
-            imageWithOptions: ObservableProperty<ImageWithOptions?>,
-            importance: Importance,
-            onClick: () -> Unit
+        label: ObservableProperty<String>,
+        imageWithOptions: ObservableProperty<ImageWithOptions?>,
+        importance: Importance,
+        onClick: () -> Unit
     ): HTMLButtonElement = makeElement<HTMLButtonElement>("button") {
 
         addClass(importance.toCssClass())
         type = "button"
 
-        val textNode: HTMLElement = usingColorSet(theme.importance(importance)){
+        val textNode: HTMLElement = usingColorSet(theme.importance(importance)) {
             text(label, importance, align = AlignPair.CenterCenter)
         }
         appendLifecycled(textNode)
@@ -337,10 +359,10 @@ open class OpenHtmlViewFactory(
     }
 
     override fun imageButton(
-            imageWithOptions: ObservableProperty<ImageWithOptions>,
-            label: ObservableProperty<String?>,
-            importance: Importance,
-            onClick: () -> Unit
+        imageWithOptions: ObservableProperty<ImageWithOptions>,
+        label: ObservableProperty<String?>,
+        importance: Importance,
+        onClick: () -> Unit
     ): HTMLButtonElement = makeElement<HTMLButtonElement>("button") {
         addClass(importance.toCssClass(), "ImageFocused")
         type = "button"
@@ -376,9 +398,9 @@ open class OpenHtmlViewFactory(
     }
 
     override fun <T> picker(
-            options: ObservableList<T>,
-            selected: MutableObservableProperty<T>,
-            toString: (T) -> String
+        options: ObservableList<T>,
+        selected: MutableObservableProperty<T>,
+        toString: (T) -> String
     ): HTMLElement = makeElement<HTMLSelectElement>("select") {
         lifecycle.bind(options.onListUpdate) {
             it.forEachIndexed { index, option ->
@@ -399,9 +421,9 @@ open class OpenHtmlViewFactory(
     }
 
     override fun textField(
-            text: MutableObservableProperty<String>,
-            placeholder: String,
-            type: TextInputType
+        text: MutableObservableProperty<String>,
+        placeholder: String,
+        type: TextInputType
     ): HTMLElement = makeElement<HTMLInputElement>("input") {
         when (type) {
             TextInputType.Paragraph -> {
@@ -446,9 +468,9 @@ open class OpenHtmlViewFactory(
     }
 
     override fun textArea(
-            text: MutableObservableProperty<String>,
-            placeholder: String,
-            type: TextInputType
+        text: MutableObservableProperty<String>,
+        placeholder: String,
+        type: TextInputType
     ): HTMLElement = makeElement<HTMLTextAreaElement>("textarea") {
         this.placeholder = placeholder
         this.oninput = { _ ->
@@ -464,10 +486,10 @@ open class OpenHtmlViewFactory(
     }
 
     override fun numberField(
-            value: MutableObservableProperty<Double?>,
-            placeholder: String,
-            allowNegatives: Boolean,
-            decimalPlaces: Int
+        value: MutableObservableProperty<Double?>,
+        placeholder: String,
+        allowNegatives: Boolean,
+        decimalPlaces: Int
     ): HTMLElement = makeElement<HTMLInputElement>("input") {
         this.placeholder = placeholder
         this.type = "number"
@@ -486,9 +508,9 @@ open class OpenHtmlViewFactory(
     }
 
     override fun integerField(
-            value: MutableObservableProperty<Long?>,
-            placeholder: String,
-            allowNegatives: Boolean
+        value: MutableObservableProperty<Long?>,
+        placeholder: String,
+        allowNegatives: Boolean
     ): HTMLElement = makeElement<HTMLInputElement>("input") {
         this.placeholder = placeholder
         this.type = "number"
@@ -507,129 +529,129 @@ open class OpenHtmlViewFactory(
     }
 
     override fun datePicker(observable: MutableObservableProperty<Date>): HTMLElement =
-            makeElement<HTMLInputElement>("input") {
-                this.placeholder = placeholder
+        makeElement<HTMLInputElement>("input") {
+            this.placeholder = placeholder
 
-                fun parse(text: String): Date {
-                    return Date.iso8601(text)
-                }
-
-                this.type = "date"
-                this.oninput = { _ ->
-                    val parsed = parse(this.value)
-                    if (parsed != observable.value) {
-                        observable.value = parsed
-                    }
-                }
-                lifecycle.bind(observable) {
-                    val value = observable.value
-                    val parsed = parse(this.value)
-                    if (parsed != value) {
-                        this.value = value.iso8601()
-                    }
-                }
+            fun parse(text: String): Date {
+                return Date.iso8601(text)
             }
 
+            this.type = "date"
+            this.oninput = { _ ->
+                val parsed = parse(this.value)
+                if (parsed != observable.value) {
+                    observable.value = parsed
+                }
+            }
+            lifecycle.bind(observable) {
+                val value = observable.value
+                val parsed = parse(this.value)
+                if (parsed != value) {
+                    this.value = value.iso8601()
+                }
+            }
+        }
+
     override fun dateTimePicker(observable: MutableObservableProperty<DateTime>): HTMLElement = horizontal(
-            LinearPlacement.fillFill to datePicker(observable = observable.transform(
-                    mapper = { it.date },
-                    reverseMapper = { observable.value.copy(date = it) }
-            )),
-            LinearPlacement.wrapCenter to space(Point(8f, 8f)),
-            LinearPlacement.fillFill to timePicker(observable = observable.transform(
-                    mapper = { it.time },
-                    reverseMapper = { observable.value.copy(time = it) }
-            ))
+        LinearPlacement.fillFill to datePicker(observable = observable.transform(
+            mapper = { it.date },
+            reverseMapper = { observable.value.copy(date = it) }
+        )),
+        LinearPlacement.wrapCenter to space(Point(8f, 8f)),
+        LinearPlacement.fillFill to timePicker(observable = observable.transform(
+            mapper = { it.time },
+            reverseMapper = { observable.value.copy(time = it) }
+        ))
     )
 
     override fun timePicker(observable: MutableObservableProperty<Time>): HTMLElement =
-            makeElement<HTMLInputElement>("input") {
-                this.placeholder = placeholder
+        makeElement<HTMLInputElement>("input") {
+            this.placeholder = placeholder
 
-                fun parse(text: String): Time {
-                    return try {
-                        Time(text.substringBefore(':').toInt(), text.substringAfter(':').substringBefore(':').toInt())
-                    } catch (e: dynamic) {
-                        Time(0)
-                    }
-                }
-
-                this.type = "time"
-                this.oninput = { _ ->
-                    val parsed = parse(this.value)
-                    if (parsed != observable.value) {
-                        observable.value = parsed
-                    }
-                }
-                lifecycle.bind(observable) {
-                    val value = observable.value
-                    val parsed = parse(this.value)
-                    if (parsed != value) {
-                        this.value = value.run { "$hours:$minutes:$seconds" }
-                    }
+            fun parse(text: String): Time {
+                return try {
+                    Time(text.substringBefore(':').toInt(), text.substringAfter(':').substringBefore(':').toInt())
+                } catch (e: dynamic) {
+                    Time(0)
                 }
             }
+
+            this.type = "time"
+            this.oninput = { _ ->
+                val parsed = parse(this.value)
+                if (parsed != observable.value) {
+                    observable.value = parsed
+                }
+            }
+            lifecycle.bind(observable) {
+                val value = observable.value
+                val parsed = parse(this.value)
+                if (parsed != value) {
+                    this.value = value.run { "$hours:$minutes:$seconds" }
+                }
+            }
+        }
 
     override fun slider(range: IntRange, observable: MutableObservableProperty<Int>): HTMLElement =
-            makeElement<HTMLInputElement>("input") {
-                this.placeholder = placeholder
+        makeElement<HTMLInputElement>("input") {
+            this.placeholder = placeholder
 
-                this.type = "range"
-                this.min = range.start.toString()
-                this.max = range.endInclusive.toString()
-                this.oninput = { _ ->
-                    if (this.valueAsNumber.toInt() != observable.value) {
-                        observable.value = (this.valueAsNumber.toInt())
-                    }
-                }
-                lifecycle.bind(observable) {
-                    val value = observable.value
-                    if (this.valueAsNumber.toInt() != value) {
-                        this.valueAsNumber = value.toDouble()
-                    }
+            this.type = "range"
+            this.min = range.start.toString()
+            this.max = range.endInclusive.toString()
+            this.oninput = { _ ->
+                if (this.valueAsNumber.toInt() != observable.value) {
+                    observable.value = (this.valueAsNumber.toInt())
                 }
             }
+            lifecycle.bind(observable) {
+                val value = observable.value
+                if (this.valueAsNumber.toInt() != value) {
+                    this.valueAsNumber = value.toDouble()
+                }
+            }
+        }
 
     override fun toggle(observable: MutableObservableProperty<Boolean>): HTMLElement =
-            makeElement<HTMLInputElement>("input") {
-                this.type = "checkbox"
-                this.oninput = { _ ->
-                    if (this.checked != observable.value) {
-                        observable.value = (this.checked)
-                    }
-                }
-                lifecycle.bind(observable) {
-                    val value = observable.value
-                    if (this.checked != value) {
-                        this.checked = value
-                    }
+        makeElement<HTMLInputElement>("input") {
+            this.type = "checkbox"
+            this.oninput = { _ ->
+                if (this.checked != observable.value) {
+                    observable.value = (this.checked)
                 }
             }
+            lifecycle.bind(observable) {
+                val value = observable.value
+                if (this.checked != value) {
+                    this.checked = value
+                }
+            }
+        }
 
     override fun refresh(
-            contains: HTMLElement,
-            working: ObservableProperty<Boolean>,
-            onRefresh: () -> Unit
+        contains: HTMLElement,
+        working: ObservableProperty<Boolean>,
+        onRefresh: () -> Unit
     ): HTMLElement = align(
-            AlignPair.FillFill to contains,
-            AlignPair.TopRight to work(
-                    imageButton(
-                            imageWithOptions = MaterialIcon.refresh.color(theme.main.foreground).withOptions(
-                                    Point(
-                                            24f,
-                                            24f
-                                    )
-                            )
-                    ) {
-                        onRefresh.invoke()
-                    }, working
-            )
+        AlignPair.FillFill to contains,
+        AlignPair.TopRight to work(
+            imageButton(
+                imageWithOptions = MaterialIcon.refresh.color(theme.main.foreground).withOptions(
+                    Point(
+                        24f,
+                        24f
+                    )
+                )
+            ) {
+                onRefresh.invoke()
+            }, working
+        )
     )
 
     override fun work(): HTMLElement = image(
-            Image.fromSvgString(
-                    //<!-- By Sam Herbert (@sherb), for everyone. More @ http://goo.gl/7AJzbL -->
-                    """
+        Image.fromSvgString(
+            //<!-- By Sam Herbert (@sherb), for everyone. More @ http://goo.gl/7AJzbL -->
+            """
 <svg width="38" height="38" viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg" stroke="${colorSet.foreground.toWeb()}">
     <g fill="none" fill-rule="evenodd">
         <g transform="translate(1 1)" stroke-width="2">
@@ -646,57 +668,57 @@ open class OpenHtmlViewFactory(
         </g>
     </g>
 </svg>"""
-            ).withOptions(defaultSize = Point(24f, 24f))
+        ).withOptions(defaultSize = Point(24f, 24f))
     )
 
     override fun scrollVertical(view: HTMLElement, amount: MutableObservableProperty<Float>): HTMLElement =
-            makeElement("div") {
-                appendLifecycled(view.apply {
-                    style.maxHeight = ""
-                })
-                style.overflowY = "auto"
+        makeElement("div") {
+            appendLifecycled(view.apply {
+                style.maxHeight = ""
+            })
+            style.overflowY = "auto"
 
-                var suppressListener = false
-                lifecycle.bind(amount) {
-                    suppressListener = true
-                    scrollTop = it.toDouble()
-                }
-                onscroll = listener@{
-                    if (suppressListener) {
-                        suppressListener = false
-                        return@listener Unit
-                    }
-                    amount.value = scrollTop.toFloat()
-                    Unit
-                }
+            var suppressListener = false
+            lifecycle.bind(amount) {
+                suppressListener = true
+                scrollTop = it.toDouble()
             }
+            onscroll = listener@{
+                if (suppressListener) {
+                    suppressListener = false
+                    return@listener Unit
+                }
+                amount.value = scrollTop.toFloat()
+                Unit
+            }
+        }
 
     override fun scrollHorizontal(view: HTMLElement, amount: MutableObservableProperty<Float>): HTMLElement =
-            makeElement("div") {
-                appendLifecycled(view.apply {
-                    style.maxWidth = ""
-                })
-                style.overflowX = "auto"
+        makeElement("div") {
+            appendLifecycled(view.apply {
+                style.maxWidth = ""
+            })
+            style.overflowX = "auto"
 
-                var suppressListener = false
-                lifecycle.bind(amount) {
-                    suppressListener = true
-                    scrollLeft = it.toDouble()
-                }
-                onscroll = listener@{
-                    if (suppressListener) {
-                        suppressListener = false
-                        return@listener Unit
-                    }
-                    amount.value = scrollLeft.toFloat()
-                    Unit
-                }
+            var suppressListener = false
+            lifecycle.bind(amount) {
+                suppressListener = true
+                scrollLeft = it.toDouble()
             }
+            onscroll = listener@{
+                if (suppressListener) {
+                    suppressListener = false
+                    return@listener Unit
+                }
+                amount.value = scrollLeft.toFloat()
+                Unit
+            }
+        }
 
     override fun scrollBoth(
-            view: HTMLElement,
-            amountX: MutableObservableProperty<Float>,
-            amountY: MutableObservableProperty<Float>
+        view: HTMLElement,
+        amountX: MutableObservableProperty<Float>,
+        amountY: MutableObservableProperty<Float>
     ): HTMLElement = makeElement("div") {
         appendLifecycled(view.apply {
             style.maxWidth = ""
@@ -725,61 +747,64 @@ open class OpenHtmlViewFactory(
         }
     }
 
-    override fun swap(view: ObservableProperty<Pair<HTMLElement, Animation>>, staticViewForSizing: HTMLElement?): HTMLElement =
-            makeElement<HTMLDivElement>("div") {
-                style.maxWidth = "100%"
-                style.maxHeight = "100%"
-                style.position = "relative"
+    override fun swap(
+        view: ObservableProperty<Pair<HTMLElement, Animation>>,
+        staticViewForSizing: HTMLElement?
+    ): HTMLElement =
+        makeElement<HTMLDivElement>("div") {
+            style.maxWidth = "100%"
+            style.maxHeight = "100%"
+            style.position = "relative"
 
-                var currentView: HTMLElement? = null
-                lifecycle.bind(view) { (view, animation) ->
-                    GlobalScope.launch(Dispatchers.UI) {
-                        try {
-                            removeLifecycled(currentView!!)
-                        } catch (e: dynamic) {/*squish*/
-                        }
-                        appendLifecycled(view.apply {
-                            style.width = "100%"
-                            style.height = "100%"
-                        })
-                        currentView = view
+            var currentView: HTMLElement? = null
+            lifecycle.bind(view) { (view, animation) ->
+                GlobalScope.launch(Dispatchers.UI) {
+                    try {
+                        removeLifecycled(currentView!!)
+                    } catch (e: dynamic) {/*squish*/
                     }
+                    appendLifecycled(view.apply {
+                        style.width = "100%"
+                        style.height = "100%"
+                    })
+                    currentView = view
                 }
             }
+        }
 
     override fun horizontal(vararg views: Pair<LinearPlacement, HTMLElement>): HTMLElement =
-            makeElement<HTMLDivElement>("div") {
-                style.maxWidth = "100%"
-                style.maxHeight = "100%"
-                style.display = "flex"
-                style.flexDirection = "row"
-                for ((placement, view) in views) {
-                    view.style.alignSelf = placement.align.toWeb()
-                    view.style.flexGrow = placement.weight.toString()
-                    view.style.flexShrink = placement.weight.toString()
-                    if (placement.weight != 0f) {
-                        style.width = "100%"
-                    }
-                    appendLifecycled(view)
+        makeElement<HTMLDivElement>("div") {
+            style.maxWidth = "100%"
+            style.maxHeight = "100%"
+            style.display = "flex"
+            style.flexDirection = "row"
+            for ((placement, view) in views) {
+                view.style.alignSelf = placement.align.toWeb()
+                view.style.flexGrow = placement.weight.toString()
+                view.style.flexShrink = placement.weight.toString()
+                if (placement.weight != 0f) {
+                    style.width = "100%"
                 }
+                appendLifecycled(view)
             }
+        }
 
     override fun vertical(vararg views: Pair<LinearPlacement, HTMLElement>): HTMLElement =
-            makeElement<HTMLDivElement>("div") {
-                style.maxWidth = "100%"
-                style.maxHeight = "100%"
-                style.display = "flex"
-                style.flexDirection = "column"
-                for ((placement, view) in views) {
-                    view.style.alignSelf = placement.align.toWeb()
-                    view.style.flexGrow = placement.weight.toString()
-                    view.style.flexShrink = placement.weight.toString()
-                    if (placement.weight != 0f) {
-                        style.height = "100%"
-                    }
-                    appendLifecycled(view)
+        makeElement<HTMLDivElement>("div") {
+            style.maxWidth = "100%"
+            style.maxHeight = "100%"
+            style.display = "flex"
+            style.flexDirection = "column"
+            for ((placement, view) in views) {
+                view.style.alignSelf = placement.align.toWeb()
+                view.style.flexGrow = placement.weight.toString()
+                view.style.flexShrink = placement.weight.toString()
+                if (placement.weight != 0f) {
+                    style.height = "100%"
                 }
+                appendLifecycled(view)
             }
+        }
 
     fun measure(element: HTMLElement, out: Point = Point()): Point {
         element.style.position = "static"
@@ -883,28 +908,28 @@ open class OpenHtmlViewFactory(
     }
 
     override fun launchDialog(
-            dismissable: Boolean,
-            onDismiss: () -> Unit,
-            makeView: (dismissDialog: () -> Unit) -> HTMLElement
+        dismissable: Boolean,
+        onDismiss: () -> Unit,
+        makeView: (dismissDialog: () -> Unit) -> HTMLElement
     ) {
         document.getElementById("root")?.let { it as HTMLDivElement }?.apply {
             var dialogDismisser = {}
             val newView = align(AlignPair.CenterCenter to makeView { dialogDismisser.invoke() }.clickable { })
-                    .background(Color.black.copy(alpha = .5f))
-                    .clickable {
-                        println("Dialog dismissed")
-                        dialogDismisser()
-                    }
-                    .apply {
-                        //position:fixed;top:0;right:0;bottom:0;left:0;z-index:99999999;background-color:rgba(0,0,0,.2);overflow:auto
-                        style.position = "fixed"
-                        style.top = "0"
-                        style.right = "0"
-                        style.bottom = "0"
-                        style.left = "0"
-                        style.overflowWrap = "auto"
-                        style.zIndex = "99999999"
-                    }
+                .background(Color.black.copy(alpha = .5f))
+                .clickable {
+                    println("Dialog dismissed")
+                    dialogDismisser()
+                }
+                .apply {
+                    //position:fixed;top:0;right:0;bottom:0;left:0;z-index:99999999;background-color:rgba(0,0,0,.2);overflow:auto
+                    style.position = "fixed"
+                    style.top = "0"
+                    style.right = "0"
+                    style.bottom = "0"
+                    style.left = "0"
+                    style.overflowWrap = "auto"
+                    style.zIndex = "99999999"
+                }
             appendLifecycled(newView)
             var stillActive = true
             dialogDismisser = {
@@ -945,7 +970,7 @@ open class OpenHtmlViewFactory(
                 style.zIndex = "99999999"
                 appendLifecycled(innerView)
             }
-                    .clickable { dialogDismisser() }
+                .clickable { dialogDismisser() }
             appendLifecycled(newView)
             dialogDismisser = { removeLifecycled(newView) }
         }

@@ -1,11 +1,7 @@
 package penta.server
 
-import io.ktor.http.cio.websocket.CloseReason
 import io.ktor.http.cio.websocket.Frame
-import io.ktor.http.cio.websocket.close
-import io.ktor.http.cio.websocket.pingInterval
 import io.ktor.http.cio.websocket.readText
-import io.ktor.http.cio.websocket.timeout
 import io.ktor.websocket.DefaultWebSocketServerSession
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -21,9 +17,6 @@ import penta.PlayerState
 import penta.SerialNotation
 import penta.json
 import penta.network.GameSessionInfo
-import penta.util.suspendDebug
-import penta.util.suspendError
-import java.time.Duration
 
 /***
  * represents a pentagame match
@@ -31,23 +24,25 @@ import java.time.Duration
 class ServerGamestate(
     val id: String,
     var owner: User
-): BoardState() {
+) : BoardState() {
     companion object {
         private val logger = KotlinLogging.logger {}
     }
+
     var running: Boolean = false
     val observers = mutableMapOf<UserSession, DefaultWebSocketServerSession>()
 
-    val info: GameSessionInfo get() {
-        return GameSessionInfo(
-            id = id,
-            owner = owner.userId,
-            running = running,
-            turn = turn,
-            players = players.map { it.id },
-            observers = observers.keys.map { it.userId }
-        )
-    }
+    val info: GameSessionInfo
+        get() {
+            return GameSessionInfo(
+                id = id,
+                owner = owner.userId,
+                running = running,
+                turn = turn,
+                players = players.map { it.id },
+                observers = observers.keys.map { it.userId }
+            )
+        }
 
     val serializer = SerialNotation.serializer()
 
@@ -82,7 +77,14 @@ class ServerGamestate(
                             "handle illegal move: $illegalMove"
                         }
                         GlobalScope.launch(Dispatchers.Default) {
-                            outgoing.send(Frame.Text(json.stringify(SerialNotation.serializer(), illegalMove.toSerializable())))
+                            outgoing.send(
+                                Frame.Text(
+                                    json.stringify(
+                                        SerialNotation.serializer(),
+                                        illegalMove.toSerializable()
+                                    )
+                                )
+                            )
                         }
                     }
                 }
@@ -108,11 +110,11 @@ class ServerGamestate(
     }
 
     fun requestJoin(user: User) {
-        if(players.size > 3) {
+        if (players.size > 3) {
             logger.error { "max player limit reached" }
             return
         }
-        if(initialized) {
+        if (initialized) {
             logger.error { "game has already started" }
             return
         }
@@ -122,7 +124,7 @@ class ServerGamestate(
     }
 
     fun requestStart(user: User) {
-        if(user.userId == owner.userId) {
+        if (user.userId == owner.userId) {
             processMove(PentaMove.InitGame)
         }
     }

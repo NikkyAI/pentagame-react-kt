@@ -1,6 +1,5 @@
 package penta.server
 
-
 data class UserSession(
     val userId: String
 ) {

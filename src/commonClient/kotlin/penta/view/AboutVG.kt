@@ -8,7 +8,6 @@ import com.lightningkite.koolui.image.fromUrl
 import com.lightningkite.koolui.image.withOptions
 import com.lightningkite.koolui.views.basic.text
 import com.lightningkite.koolui.views.layout.vertical
-import com.lightningkite.lokalize.time.Date
 import com.lightningkite.lokalize.time.DateTime
 import com.lightningkite.reacktive.property.ConstantObservableProperty
 import com.lightningkite.reacktive.property.transform
@@ -29,7 +28,7 @@ class AboutVG<VIEW>() : MyViewGenerator<VIEW> {
         }
     ).transform { it.withOptions(size) }
 
-    fun MyViewFactory<VIEW>.urlButton(url: String, imageUrl: String, size: Point)= imageButton(
+    fun MyViewFactory<VIEW>.urlButton(url: String, imageUrl: String, size: Point) = imageButton(
         imageWithOptions = imagePropertyFromUrl(imageUrl, Point(48f, 48f)),
         label = ConstantObservableProperty(url),
         onClick = {
@@ -43,7 +42,11 @@ class AboutVG<VIEW>() : MyViewGenerator<VIEW> {
             -text("version: ${Constants.VERSION}")
             -text("commit: ${Constants.GIT_HASH}")
             -text("released: $dateTime")
-            -urlButton(githubUrl, "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png", Point(48f, 48f))
+            -urlButton(
+                githubUrl,
+                "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
+                Point(48f, 48f)
+            )
 //            button(
 //                label = ConstantObservableProperty(githubUrl),
 //                onClick = {

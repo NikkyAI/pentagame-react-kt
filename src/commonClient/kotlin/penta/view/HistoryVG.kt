@@ -1,9 +1,10 @@
 package penta.view
 
+import PentaViz
 import com.lightningkite.koolui.concepts.Animation
-import com.lightningkite.koolui.views.basic.*
-import com.lightningkite.reacktive.property.transform
+import com.lightningkite.koolui.views.basic.text
 import com.lightningkite.koolui.views.layout.vertical
+import com.lightningkite.reacktive.property.transform
 
 class HistoryVG<VIEW>() : MyViewGenerator<VIEW> {
     override val title: String = "History"

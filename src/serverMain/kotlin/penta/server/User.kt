@@ -8,16 +8,15 @@ sealed class User {
         override val userId: String,
         var displayNameProperty: String? = null,
         var passwordHash: String? = null
-    ): User() {
+    ) : User() {
         override val displayName: String
-            get() = displayNameProperty ?: userId
+            get() = displayNameField ?: userId
     }
 
     data class TemporaryUser(
         override val userId: String
-    ): User() {
+    ) : User() {
         override val displayName: String
             get() = "guest_$userId"
     }
-
 }

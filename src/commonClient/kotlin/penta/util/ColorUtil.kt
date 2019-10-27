@@ -2,7 +2,6 @@ package penta.util
 
 import com.lightningkite.koolui.color.Color
 import com.lightningkite.koolui.image.Image
-import com.lightningkite.koolui.image.MaterialIcon
 
 fun io.data2viz.color.Color.asKoolUIColor() =
     com.lightningkite.koolui.color.Color(

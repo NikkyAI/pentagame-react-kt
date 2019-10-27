@@ -16,6 +16,7 @@ abstract class AbstractField {
             it.connectedFields += this
         }
     }
+
     open val connected: List<AbstractField>
         get() = connectedFields
 }

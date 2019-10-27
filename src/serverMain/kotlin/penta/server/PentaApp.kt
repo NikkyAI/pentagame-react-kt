@@ -4,10 +4,14 @@ import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import io.ktor.application.Application
 import io.ktor.application.install
-import io.ktor.features.*
-import io.ktor.sessions.SessionStorageMemory
+import io.ktor.features.CORS
+import io.ktor.features.CallLogging
+import io.ktor.features.ContentNegotiation
+import io.ktor.features.DefaultHeaders
+import io.ktor.features.XForwardedHeaderSupport
 import io.ktor.http.HttpMethod
 import io.ktor.jackson.jackson
+import io.ktor.sessions.SessionStorageMemory
 import io.ktor.sessions.Sessions
 import io.ktor.sessions.cookie
 import io.ktor.websocket.WebSockets
@@ -23,7 +27,7 @@ fun Application.main() {
         level = Level.INFO
     }
 
-    install(WebSockets){
+    install(WebSockets) {
         pingPeriod = Duration.ofMillis(1000)
         timeout = Duration.ofMillis(2000)
     }
@@ -65,5 +69,4 @@ fun Application.main() {
             cookie.path = "/" // Specify cookie's path '/' so it can be used in the whole site
         }
     }
-
 }

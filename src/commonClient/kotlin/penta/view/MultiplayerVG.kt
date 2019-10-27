@@ -49,7 +49,6 @@ import penta.network.LoginResponse
 import penta.network.ServerStatus
 import penta.util.authenticateWith
 import penta.util.authenticatedRequest
-import penta.util.exhaustive
 import penta.util.parse
 import penta.util.suspendInfo
 
@@ -154,7 +153,7 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
             .build()
 
         val receivedList = try {
-                client.authenticatedRequest(listGamesUrl, state, HttpMethod.Get, GameSessionInfo.serializer().list)
+            client.authenticatedRequest(listGamesUrl, state, HttpMethod.Get, GameSessionInfo.serializer().list)
         } catch (exception: Exception) {
             logger.error(exception) { "request failed" }
             // TODO: add state: connection lost
@@ -241,7 +240,7 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
 
                         }
                         logger.info { "received frame: $frame" }
-                        when(frame) {
+                        when (frame) {
 //                            is Frame.Binary -> TODO("")
                             is Frame.Text -> {
                                 val notationJson = frame.readText()
@@ -256,7 +255,6 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
                                 }
                             }
                         }
-
 
 //                    outgoing.send(Frame.Text("received"))
                     }

@@ -10,6 +10,5 @@ data class PlayerCorner(
     val graySlot: CircleNode
 ) {
     fun update() {
-
     }
 }

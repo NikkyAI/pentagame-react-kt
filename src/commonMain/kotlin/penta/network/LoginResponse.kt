@@ -13,15 +13,15 @@ sealed class LoginResponse {
 
     @Serializable
     data class Success(
-       val message: String
+        val message: String
     ) : LoginResponse()
 
     @Serializable
     class UserIdRejected(
         val reason: String
-    ): LoginResponse(), Failure
+    ) : LoginResponse(), Failure
 
-    object IncorrectPassword: LoginResponse(), Failure
+    object IncorrectPassword : LoginResponse(), Failure
 
     companion object {
         fun install(builder: SerializersModuleBuilder) {

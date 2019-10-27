@@ -1,7 +1,5 @@
 package koolui
 
-import com.lightningkite.koolui.canvas.Canvas
-import com.lightningkite.reacktive.property.ConstantObservableProperty
 import com.lightningkite.reacktive.property.ObservableProperty
 import io.data2viz.viz.Viz
 

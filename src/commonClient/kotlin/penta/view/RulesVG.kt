@@ -1,14 +1,10 @@
 package penta.view
 
-import com.lightningkite.reacktive.property.ConstantObservableProperty
-import com.lightningkite.reacktive.property.StandardObservableProperty
 import com.lightningkite.koolui.concepts.TextSize
 import com.lightningkite.koolui.geometry.AlignPair
-import com.lightningkite.koolui.views.basic.*
-import com.lightningkite.koolui.image.MaterialIcon
+import com.lightningkite.koolui.views.basic.text
 import com.lightningkite.koolui.views.navigation.pagesEmbedded
-import penta.view.MyViewFactory
-import penta.view.MyViewGenerator
+import com.lightningkite.reacktive.property.StandardObservableProperty
 
 class RulesVG<VIEW>() : MyViewGenerator<VIEW> {
     override val title: String = "Rules"

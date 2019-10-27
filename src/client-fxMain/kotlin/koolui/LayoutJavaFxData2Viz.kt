@@ -12,12 +12,12 @@ import javafx.scene.canvas.Canvas
 import mu.KotlinLogging
 
 interface LayoutJavaFxData2Viz : ViewFactoryData2Viz<Layout<*, Node>>, /*HasScale,*/ LayoutViewWrapper<Node> {
-    companion object{
+    companion object {
         private val logger = KotlinLogging.logger {}
     }
 
-    class SquareCanvas: Canvas(600.0 ,600.0) {
-        var onResize: ()->Unit = {}
+    class SquareCanvas : Canvas(600.0, 600.0) {
+        var onResize: () -> Unit = {}
         override fun isResizable(): Boolean = true
         override fun resize(width: Double, height: Double) {
             val side = if (height > width) width else height
@@ -26,10 +26,11 @@ interface LayoutJavaFxData2Viz : ViewFactoryData2Viz<Layout<*, Node>>, /*HasScal
             onResize()
         }
     }
+
     override fun vizCanvas(viz: ObservableProperty<Viz>): Layout<*, Node> {
         return wrap(SquareCanvas()) { lifecycle ->
             // TODO: resize only in square ?
-            lifecycle.bind(viz){ viz ->
+            lifecycle.bind(viz) { viz ->
                 logger.info("initalizing viz")
                 JFxVizRenderer(
                     canvas = this,

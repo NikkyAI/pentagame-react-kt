@@ -14,6 +14,7 @@ object SessionController {
             sessions[it]
         }
     }
+
     fun get(sessionId: String): UserSession? {
         return sessions[sessionId]
     }
@@ -25,10 +26,9 @@ object SessionController {
     }
 
     private fun getUnusedSessionId(): String {
-            while(true) {
-                val sessionId: String = Random.nextInt().toString(16)
-                if(!sessions.containsKey(sessionId)) return sessionId
-            }
+        while (true) {
+            val sessionId: String = Random.nextInt().toString(16)
+            if (!sessions.containsKey(sessionId)) return sessionId
         }
-
+    }
 }

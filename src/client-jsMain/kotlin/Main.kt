@@ -1,4 +1,3 @@
-import com.lightningkite.kommon.native.ensureNeverFrozen
 import com.lightningkite.koolui.views.ViewFactory
 import com.lightningkite.koolui.views.root.contentRoot
 import io.data2viz.viz.bindRendererOn

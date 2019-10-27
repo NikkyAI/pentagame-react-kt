@@ -1,6 +1,5 @@
 package koolui
 
-
 import com.lightningkite.koolui.appendLifecycled
 import com.lightningkite.koolui.lifecycle
 import com.lightningkite.koolui.makeElement
@@ -19,6 +18,7 @@ interface LayoutHtmlData2Viz : ViewFactoryData2Viz<HTMLElement> {
     companion object {
         private val logger = KotlinLogging.logger {}
     }
+
     override fun vizCanvas(draw: ObservableProperty<Viz>): HTMLElement {
         return makeElement<HTMLDivElement>("div").apply {
             lifecycle.bind(draw) { viz ->

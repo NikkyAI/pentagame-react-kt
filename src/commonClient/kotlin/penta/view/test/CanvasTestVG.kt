@@ -4,11 +4,9 @@ import com.lightningkite.koolui.ApplicationAccess
 import com.lightningkite.koolui.canvas.Canvas
 import com.lightningkite.koolui.color.Color
 import com.lightningkite.koolui.geometry.Align
-import com.lightningkite.reacktive.property.ConstantObservableProperty
 import com.lightningkite.reacktive.property.StandardObservableProperty
 import com.lightningkite.reacktive.property.lifecycle.listen
 import com.lightningkite.reacktive.property.transform
-import com.lightningkite.recktangle.Point
 import penta.view.MyViewFactory
 import penta.view.MyViewGenerator
 
@@ -21,7 +19,7 @@ class CanvasTestVG<VIEW> : MyViewGenerator<VIEW> {
                 val w = size.x / 100
                 val h = size.y / 100
 
-                val xPos = (it % 120)-20
+                val xPos = (it % 120) - 20
                 beginPath()
                 move((xPos + 0) * w, 0 * h)
                 line((xPos + 20) * w, 20 * h)

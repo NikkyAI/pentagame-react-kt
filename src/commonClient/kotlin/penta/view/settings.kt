@@ -6,6 +6,7 @@ import com.lightningkite.koolui.views.ViewGenerator
 import koolui.ViewFactoryData2Viz
 
 val myTheme = Theme.light()
+
 interface MyViewFactory<VIEW> :
     ViewFactory<VIEW>,
     ViewFactoryData2Viz<VIEW>

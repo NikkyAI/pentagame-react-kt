@@ -42,7 +42,7 @@ class ClientGameState(localPlayerCount: Int = 0) : BoardState() {
     init {
         val localSymbols = listOf("triangle", "square", "cross", "circle")
         if (localPlayerCount > 0) {
-            initialize(localSymbols.subList(0, localPlayerCount).map { PlayerState("local+"+it, it) })
+            initialize(localSymbols.subList(0, localPlayerCount).map { PlayerState("local+" + it, it) })
         }
 
         figures.forEach(::updatePiecePos)
@@ -152,9 +152,9 @@ class ClientGameState(localPlayerCount: Int = 0) : BoardState() {
         if (figurePositions[clickedPiece.id] == null) {
             return false
         }
-        when(val state = PentaViz.multiplayerState.value) {
+        when (val state = PentaViz.multiplayerState.value) {
             is MultiplayerState.HasGameSession -> {
-                if(currentPlayer.id != state.userId) {
+                if (currentPlayer.id != state.userId) {
                     return false
                 }
             }
@@ -312,9 +312,9 @@ class ClientGameState(localPlayerCount: Int = 0) : BoardState() {
         ) {
             return false
         }
-        when(val state = PentaViz.multiplayerState.value) {
+        when (val state = PentaViz.multiplayerState.value) {
             is MultiplayerState.HasGameSession -> {
-                if(currentPlayer.id != state.userId) {
+                if (currentPlayer.id != state.userId) {
                     return false
                 }
             }

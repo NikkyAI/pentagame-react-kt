@@ -14,18 +14,12 @@ import com.lightningkite.koolui.image.color
 import com.lightningkite.koolui.image.withOptions
 import com.lightningkite.koolui.removeLifecycled
 import com.lightningkite.koolui.toWeb
-import com.lightningkite.koolui.views.HtmlViewFactory
-import com.lightningkite.koolui.views.Themed
-import com.lightningkite.koolui.views.ViewFactory
 import com.lightningkite.koolui.views.ViewGenerator
 import com.lightningkite.koolui.views.basic.work
-import com.lightningkite.koolui.views.interactive.ViewFactoryInteractiveDefault
 import com.lightningkite.koolui.views.interactive.imageButton
-import com.lightningkite.koolui.views.layout.align
+import com.lightningkite.koolui.views.layout.horizontal
 import com.lightningkite.koolui.views.layout.space
 import com.lightningkite.koolui.views.layout.vertical
-import com.lightningkite.koolui.views.layout.horizontal
-import com.lightningkite.koolui.views.navigation.ViewFactoryNavigationDefault
 import com.lightningkite.reacktive.property.ConstantObservableProperty
 import com.lightningkite.reacktive.property.MutableObservableProperty
 import com.lightningkite.reacktive.property.ObservableProperty
@@ -37,8 +31,6 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import org.w3c.dom.HTMLDivElement
 import org.w3c.dom.HTMLElement
-import org.w3c.dom.events.MouseEvent
-import penta.view.MyViewFactory
 
 open class HtmlViewFactoryOverrides(
     theme: Theme,
@@ -62,7 +54,9 @@ open class HtmlViewFactoryOverrides(
         -horizontal {
             -imageButton(
                 imageWithOptions = ConstantObservableProperty(
-                    com.lightningkite.koolui.image.MaterialIcon.chevronLeft.color(colorSet.foreground).withOptions(defaultSize = Point(24f, 24f))
+                    com.lightningkite.koolui.image.MaterialIcon.chevronLeft.color(colorSet.foreground).withOptions(
+                        defaultSize = Point(24f, 24f)
+                    )
                 ),
                 onClick = {
                     page.value = page.value.minus(1).coerceIn(pageGenerator.indices)
@@ -76,7 +70,9 @@ open class HtmlViewFactoryOverrides(
             +space()
             -imageButton(
                 imageWithOptions = ConstantObservableProperty(
-                    com.lightningkite.koolui.image.MaterialIcon.chevronRight.color(colorSet.foreground).withOptions(defaultSize = Point(24f, 24f))
+                    com.lightningkite.koolui.image.MaterialIcon.chevronRight.color(colorSet.foreground).withOptions(
+                        defaultSize = Point(24f, 24f)
+                    )
                 ),
                 onClick = {
                     page.value = page.value.plus(1).coerceIn(pageGenerator.indices)
@@ -89,7 +85,7 @@ open class HtmlViewFactoryOverrides(
         contains: HTMLElement,
         working: ObservableProperty<Boolean>,
         onRefresh: () -> Unit
-    ): HTMLElement = vertical{
+    ): HTMLElement = vertical {
         horizontal {
             -text(ConstantObservableProperty("custom"))
             +space()
@@ -148,7 +144,10 @@ open class HtmlViewFactoryOverrides(
         }
     }
 
-    override fun swap(view: ObservableProperty<Pair<HTMLElement, Animation>>, staticViewForSizing: HTMLElement?): HTMLElement =
+    override fun swap(
+        view: ObservableProperty<Pair<HTMLElement, Animation>>,
+        staticViewForSizing: HTMLElement?
+    ): HTMLElement =
         makeElement<HTMLDivElement>("div") {
             id = "swap"
             style.maxWidth = "100%"

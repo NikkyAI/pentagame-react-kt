@@ -579,9 +579,9 @@ object PentaViz {
 
             gameState.findPiecesAtPos(mousePos).firstOrNull()
                 ?.let { piece ->
-                    when(val state = multiplayerState.value) {
+                    when (val state = multiplayerState.value) {
                         is MultiplayerState.HasGameSession -> {
-                            if(gameState.currentPlayer.id != state.userId) {
+                            if (gameState.currentPlayer.id != state.userId) {
                                 return@let null
                             }
                         }

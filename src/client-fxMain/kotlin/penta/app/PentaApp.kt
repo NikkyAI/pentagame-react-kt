@@ -28,7 +28,6 @@ import penta.view.MainPentaVG
 import penta.view.MyViewFactory
 import kotlin.system.exitProcess
 
-
 class PentaApp : Application() {
     companion object {
         private val logger = KotlinLogging.logger {}
@@ -36,6 +35,7 @@ class PentaApp : Application() {
         fun main(args: Array<String>) {
             launch(PentaApp::class.java)
         }
+
         val mainVg = MainPentaVG<Layout<*, Node>>()
     }
 
@@ -44,16 +44,16 @@ class PentaApp : Application() {
         colorSet: ColorSet = theme.main,
         override val scale: Double = 1.0
     ) : MyViewFactory<Layout<*, Node>>,
-            HasScale,
-            Themed by Themed.impl(theme, colorSet),
-            LayoutJavaFxBasic /*ViewFactoryBasic*/,
-            LayoutJavaFxInteractive /*ViewFactoryInteractive*/,
-            LayoutJavaFxGraphics /*ViewFactoryGraphics*/,
-            LayoutJavaFxLayout /*ViewFactoryLayout*/,
-            ViewFactoryNavigationDefault<Layout<*, Node>> /*ViewFactoryNavigation*/,
-            LayoutVFRootAndDialogs<Node> /*ViewFactoryDialogs*/,
-            JavaFxLayoutWrapper /*ViewLayoutWrapper*/,
-            LayoutJavaFxData2Viz /*ViewFactoryData2Viz*/ {
+        HasScale,
+        Themed by Themed.impl(theme, colorSet),
+        LayoutJavaFxBasic /*ViewFactoryBasic*/,
+        LayoutJavaFxInteractive /*ViewFactoryInteractive*/,
+        LayoutJavaFxGraphics /*ViewFactoryGraphics*/,
+        LayoutJavaFxLayout /*ViewFactoryLayout*/,
+        ViewFactoryNavigationDefault<Layout<*, Node>> /*ViewFactoryNavigation*/,
+        LayoutVFRootAndDialogs<Node> /*ViewFactoryDialogs*/,
+        JavaFxLayoutWrapper /*ViewLayoutWrapper*/,
+        LayoutJavaFxData2Viz /*ViewFactoryData2Viz*/ {
         override var root: Layout<*, Node>? = null
     }
 

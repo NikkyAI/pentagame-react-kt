@@ -25,7 +25,6 @@ sealed class Notation {
     ) : Notation() {
         override val asNotation: String
             get() = "$player: $piece, $otherPiece ($from <-> $to) ${setGrey?.asNotation ?: ""}"
-
     }
 
     class SwapHostilePieces(
@@ -40,7 +39,6 @@ sealed class Notation {
         // TODO: figure out if `@otherPlayer` is correct
         override val asNotation: String
             get() = "$player: $piece, $otherPiece@$otherPlayer ($from <-/-> $to) ${setGrey?.asNotation ?: ""}"
-
     }
 
     class CooperativeSwap(
@@ -56,7 +54,7 @@ sealed class Notation {
             get() = "$player: $piece, $otherPiece@$otherPlayer ($from <=> $to) ${setGrey?.asNotation ?: ""}"
     }
 
-    class SetGrey(val from: String?, private val to: String): Notation() {
+    class SetGrey(val from: String?, private val to: String) : Notation() {
         // TODO: missing $from `${from?.let {"$it -> "} ?: ""}`
         override val asNotation: String
             get() = "& [$to]"
