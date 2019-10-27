@@ -69,9 +69,8 @@ val releaseTime = System.getenv("HEROKU_RELEASE_CREATED_AT") ?:run {
 }
 
 val gitCommitHash = System.getenv("SOURCE_VERSION") ?: captureExec("git", "rev-parse", "HEAD").trim()
-tasks.withType(AbstractKotlinCompile::class.java).all {
-    logger.info("registered generating constants to $this")
-    doFirst {
+val generateConstantsTask = tasks.create("generateConstants") {
+    doLast {
         logger.lifecycle("generating constants")
         generateConstants(genCommonSrcKt, "penta", "Constants") {
             field("VERSION") value "0.0.1"
@@ -79,6 +78,10 @@ tasks.withType(AbstractKotlinCompile::class.java).all {
             field("RELEASE_TIME") value releaseTime
         }
     }
+}
+tasks.withType(AbstractKotlinCompile::class.java).all {
+    logger.info("registered generating constants to $this")
+    dependsOn(generateConstantsTask)
 }
 
 
@@ -333,10 +336,18 @@ kotlin {
             if (dceTask != null) {
                 dependsOn(dceTask)
                 doLast {
+                    logger.lifecycle("dce task outputs: "+ dceTask.outputs.files.joinToString { it.name })
+
                     copy {
-                        this.exclude { !it.isDirectory && it.file.nameWithoutExtension.isEmpty() }
                         into(targetFolder)
                         from(dceTask.outputs.files)
+                    }
+                    // why do i get empty filenames from kotlinjs
+                    val emptyNameFiles = targetFolder.listFiles { dir, name ->
+                        name.substringBefore('.').isEmpty()
+                    }
+                    emptyNameFiles?.forEach {
+                        it.renameTo(it.parentFile.resolve("penta" + it.name))
                     }
                 }
             } else {
