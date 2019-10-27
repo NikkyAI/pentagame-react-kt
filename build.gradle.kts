@@ -285,7 +285,7 @@ kotlin {
                         metaInfo = true
                         moduleKind = "amd"
                         sourceMapEmbedSources = "always"
-                        outputFile = "penta.js"
+//                        outputFile = "penta.js"
                     }
                 }
             }
@@ -326,6 +326,7 @@ kotlin {
         val dceTask = tasks.findByName("runDce${target.name.capitalize()}Kotlin")
 
         val copyJsTask = tasks.create("${target.name}CopyJs") {
+            outputs.upToDateWhen { false }
             //, Copy::class.java) { task ->
             group = "build"
             val targetFolder = file("build/kotlin-js/${target.name}/")
@@ -333,6 +334,7 @@ kotlin {
                 dependsOn(dceTask)
                 doLast {
                     copy {
+                        this.exclude { !it.isDirectory && it.file.nameWithoutExtension.isEmpty() }
                         into(targetFolder)
                         from(dceTask.outputs.files)
                     }

@@ -6,7 +6,7 @@ sealed class User {
 
     data class RegisteredUser(
         override val userId: String,
-        var displayNameProperty: String? = null,
+        var displayNameField: String? = null,
         var passwordHash: String? = null
     ) : User() {
         override val displayName: String
