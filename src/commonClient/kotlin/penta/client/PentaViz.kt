@@ -42,8 +42,6 @@ object PentaViz {
     val multiplayerState = StandardObservableProperty<MultiplayerState>(MultiplayerState.Disconnected())
 //    lateinit var centerDisplay: Pair<CircleNode, TextNode>
 
-
-
     fun highlightedPieceAt(mousePos: Point): Piece? = gameState.findPiecesAtPos(mousePos).firstOrNull()?.let {
         // do not highlight pieces that are off the board
         if (gameState.figurePositions[it.id] == null) return@let null
@@ -158,10 +156,8 @@ object PentaViz {
                 }
             }
 
-            if (gameState.initialized) {
-                gameState.figures.forEach {
-                    updatePiece(it)
-                }
+            gameState.figures.forEach {
+                updatePiece(it)
             }
         }
     }
@@ -373,10 +369,8 @@ object PentaViz {
                 }
             }
         }
-        if (gameState.initialized) {
-            gameState.figures.forEach {
-                updatePiece(it)
-            }
+        gameState.figures.forEach {
+            updatePiece(it)
         }
     }
 
