@@ -68,6 +68,7 @@ sealed class MultiplayerState {
 //            websocketSession.outgoing.send(Frame.Text("close"))
             logger.info { "sending close frame" }
             websocketSession.close(CloseReason(CloseReason.Codes.NORMAL, "leaving game"))
+            websocketSession.terminate()
 //            logger.info { "finished leaving game" }
         }
     }

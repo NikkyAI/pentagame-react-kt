@@ -2,11 +2,13 @@ package penta.view
 
 import PentaViz
 import client
-import com.lightningkite.koolui.async.UI
+import com.lightningkite.koolui.ApplicationAccess
+import com.lightningkite.koolui.async.*
 import com.lightningkite.koolui.concepts.Animation
 import com.lightningkite.koolui.concepts.Importance
 import com.lightningkite.koolui.concepts.TextInputType
 import com.lightningkite.koolui.concepts.TextSize
+import com.lightningkite.koolui.notification.Notification
 import com.lightningkite.koolui.views.basic.text
 import com.lightningkite.koolui.views.interactive.button
 import com.lightningkite.koolui.views.layout.horizontal
@@ -49,6 +51,7 @@ import penta.network.LoginResponse
 import penta.network.ServerStatus
 import penta.util.authenticateWith
 import penta.util.authenticatedRequest
+import penta.util.handler
 import penta.util.parse
 import penta.util.suspendInfo
 
@@ -181,7 +184,7 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
         val wsUrl = URLBuilder(state.baseUrl)
             .path("ws", "game", game.id)
             .build()
-        try {
+//        try {
             client.webSocket(
                 host = wsUrl.host,
                 port = wsUrl.port, path = wsUrl.fullPath,
@@ -222,16 +225,11 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
                         }
                     }
 
-                    send(Frame.Ping("hello".encodeToByteArray()))
+//                    send(Frame.Ping("hello".encodeToByteArray()))
                     loop@ while (true) {
                         logger.info { "awaiting frame" }
                         val frame = try {
-//                                withTimeout(1000) {
                             incoming.receive()
-//                                }
-                            /*} catch(e: TimeoutCancellationException) {
-                                logger.error { "timeout" }
-                                break */
                         } catch (e: Exception) {
                             logger.error(e) { "exception onClose ${e.message}" }
                             throw e
@@ -263,21 +261,21 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
                     logger.debug(e) { "onClose $reason" }
                     // TODO transition to state `ConnectionLost`
                 } catch (e: Exception) {
-                    logger.error(e) { "exception onClose ${e.message}" }
+                    logger.error(e) { "exception onClose ${e::class.simpleName} ${e.message}" }
                     // TODO transition to state `ConnectionLost`
                 } finally {
                     logger.info { "connection closing" }
                 }
             }
-        } catch (e: ClosedReceiveChannelException) {
-            logger.debug(e) { "ws onClose ${e.message}" }
-            // TODO transition to state `ConnectionLost`
-        } catch (e: Throwable) {
-            logger.debug(e) { "ws onClose ${e.message}" }
-            // TODO transition to state `ConnectionLost`
-        } finally {
-            logger.info { "ws connection closing" }
-        }
+//        } catch (e: ClosedReceiveChannelException) {
+//            logger.debug(e) { "ws onClose ${e.message}" }
+//            // TODO transition to state `ConnectionLost`
+//        } catch (e: Throwable) {
+//            logger.debug(e) { "ws onClose ${e.message}" }
+//            // TODO transition to state `ConnectionLost`
+//        } finally {
+//            logger.info { "ws connection closing" }
+//        }
 
 //        PentaViz.gameState.players.replace(listOf(PlayerState("triangle", "triangle"), PlayerState("square", "square")))
 //        PentaViz.resetBoard()
@@ -344,7 +342,7 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
                                     -button(
                                         label = "Connect",
                                         onClick = {
-                                            GlobalScope.launch(Dispatchers.UI) {
+                                            GlobalScope.launch(Dispatchers.UI + handler) {
                                                 login(urlInput.value, userIdInput.value, null)
                                             }
                                         }
@@ -367,7 +365,7 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
                                     -button(
                                         label = "Login",
                                         onClick = {
-                                            GlobalScope.launch(Dispatchers.UI) {
+                                            GlobalScope.launch(Dispatchers.UI + handler) {
                                                 login(state.baseUrl, state.userId, passwordInput.value)
                                             }
                                         }
@@ -392,7 +390,7 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
                             games.onListUpdate.add {
                                 logger.info { "list updated: ${it.joinToString()}" }
                             }
-                            GlobalScope.launch(Dispatchers.UI) {
+                            GlobalScope.launch(Dispatchers.UI + handler) {
                                 listGames(state, games)
                             }
                             val refreshing = StandardObservableProperty(false)
@@ -417,7 +415,7 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
                                         -button(
                                             label = "Create Game",
                                             onClick = {
-                                                GlobalScope.launch(/*Dispatchers.UI*/) {
+                                                GlobalScope.launch(Dispatchers.UI  + handler) {
                                                     createGameAndConnect(state)
                                                 }
                                             }
@@ -447,7 +445,7 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
                                                     -button(
                                                         label = "Join",
                                                         onClick = {
-                                                            GlobalScope.launch(Dispatchers.UI) {
+                                                            GlobalScope.launch(Dispatchers.UI + handler) {
                                                                 connectToGame(state, game)
                                                             }
                                                         }
@@ -463,7 +461,7 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
                                     refreshing.value = true
 
                                     // TODO: receive fresh game list from server
-                                    GlobalScope.launch(Dispatchers.UI) {
+                                    GlobalScope.launch(Dispatchers.UI + handler) {
                                         listGames(state, games) {
                                             refreshing.value = false
                                         }
@@ -472,6 +470,23 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
                             ).setWidth(200f) to Animation.Fade
                         }
                         is MultiplayerState.Observing -> {
+                            gameState.currentPlayerProperty.add {
+                                if(it.id == state.userId) {
+                                    logger.info { "showing notification" }
+                                    ApplicationAccess.showNotification(Notification(
+                                        title = "Your Turn",
+                                        content = "Last Move: " + gameState.history.last().asNotation(),
+                                        priority = .5f,
+                                        action = "view",
+                                        actions = mapOf(
+                                            "Silence" to "silence",
+                                            "Yell" to "yell"
+                                        )
+                                    )
+                                    )
+                                }
+
+                            }
                             vertical {
                                 -text("gameId: ${state.game.id}")
                                 -text("owner: ${state.game.owner}")
@@ -486,7 +501,7 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
                                             button(
                                                 label = "Join",
                                                 onClick = {
-                                                    GlobalScope.launch(Dispatchers.UI) {
+                                                    GlobalScope.launch(Dispatchers.UI + handler) {
                                                         joinGame(state)
                                                     }
                                                 }
@@ -505,7 +520,7 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
                                             // TODO: hide once started
                                             label = "Start",
                                             onClick = {
-                                                GlobalScope.launch(Dispatchers.UI) {
+                                                GlobalScope.launch(Dispatchers.UI + handler) {
                                                     startGame(state)
                                                 }
                                             }
@@ -518,7 +533,7 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
                                 -button(
                                     label = "Leave Game",
                                     onClick = {
-                                        GlobalScope.launch(Dispatchers.UI) {
+                                        GlobalScope.launch(Dispatchers.UI + handler) {
                                             state.leave()
                                         }
                                     }

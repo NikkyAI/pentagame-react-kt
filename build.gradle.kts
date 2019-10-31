@@ -342,13 +342,6 @@ kotlin {
                         into(targetFolder)
                         from(dceTask.outputs.files)
                     }
-                    // why do i get empty filenames from kotlinjs
-                    val emptyNameFiles = targetFolder.listFiles { dir, name ->
-                        name.substringBefore('.').isEmpty()
-                    }
-                    emptyNameFiles?.forEach {
-                        it.renameTo(it.parentFile.resolve("penta" + it.name))
-                    }
                 }
             } else {
                 dependsOn(jarTask)
@@ -468,9 +461,9 @@ kotlin.targets.forEach { target: KotlinTarget ->
 //    logger.lifecycle("sourceSet: $this")
 //}
 
-base {
-    archivesBaseName = ""
-}
+//base {
+//    archivesBaseName = ""
+//}
 
 // JVM
 

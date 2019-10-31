@@ -1,6 +1,7 @@
 package penta.server
 
 import io.ktor.http.cio.websocket.Frame
+import io.ktor.http.cio.websocket.close
 import io.ktor.http.cio.websocket.readText
 import io.ktor.websocket.DefaultWebSocketServerSession
 import kotlinx.coroutines.Dispatchers
@@ -105,6 +106,8 @@ class ServerGamestate(
         } catch (e: Exception) {
             observers.remove(session)
             logger.error(e) { "exception onClose ${e.message}" }
+        } finally {
+
         }
 
     }
