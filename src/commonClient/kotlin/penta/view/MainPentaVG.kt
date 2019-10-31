@@ -37,7 +37,8 @@ class MainPentaVG<VIEW>() : MyViewGenerator<VIEW> {
         Triple("Rules", MaterialIcon.help, RulesVG()),
         Triple("Notation", MaterialIcon.history, HistoryVG()),
         Triple("Multiplayer", MaterialIcon._public, MultiplayerVG()),
-        Triple("About", MaterialIcon.info, AboutVG())
+        Triple("About", MaterialIcon.info, AboutVG()),
+        Triple("Tests", MaterialIcon.developerMode, ExperimentsVG())
     )
     val selectedIconIndex = StandardObservableProperty(0)
 

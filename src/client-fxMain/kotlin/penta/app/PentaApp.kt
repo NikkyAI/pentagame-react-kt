@@ -58,6 +58,8 @@ class PentaApp : Application() {
     }
 
     override fun start(primaryStage: Stage) {
+        TrayUtil
+
         val root = with(Factory()) { nativeViewAdapter(contentRoot(mainVg)) }
         logger.info { "UI constructed" }
 

@@ -8,7 +8,9 @@ import io.ktor.client.features.websocket.WebSockets
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.javafx.JavaFx
+import penta.app.TrayUtil
 import penta.json
+import java.awt.TrayIcon
 
 actual val client: HttpClient = HttpClient(CIO).config {
     install(WebSockets)
@@ -22,3 +24,7 @@ actual val client: HttpClient = HttpClient(CIO).config {
 }
 
 actual val clientDispatcher = Dispatchers.JavaFx as CoroutineDispatcher
+
+actual fun showNotification(title: String, body: String) {
+    TrayUtil.trayIcon.displayMessage(title, body, TrayIcon.MessageType.INFO)
+}

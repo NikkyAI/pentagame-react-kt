@@ -54,6 +54,7 @@ import penta.util.authenticatedRequest
 import penta.util.handler
 import penta.util.parse
 import penta.util.suspendInfo
+import showNotification
 
 class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
     companion object {
@@ -473,17 +474,21 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
                             gameState.currentPlayerProperty.add {
                                 if(it.id == state.userId) {
                                     logger.info { "showing notification" }
-                                    ApplicationAccess.showNotification(Notification(
-                                        title = "Your Turn",
-                                        content = "Last Move: " + gameState.history.last().asNotation(),
-                                        priority = .5f,
-                                        action = "view",
-                                        actions = mapOf(
-                                            "Silence" to "silence",
-                                            "Yell" to "yell"
-                                        )
+                                    showNotification(
+                                        "Your Turn",
+                                        "Last Move: " + gameState.history.last().asNotation()
                                     )
-                                    )
+//                                    ApplicationAccess.showNotification(Notification(
+//                                        title = "Your Turn",
+//                                        content = "Last Move: " + gameState.history.last().asNotation(),
+//                                        priority = .5f,
+//                                        action = "view",
+//                                        actions = mapOf(
+//                                            "Silence" to "silence",
+//                                            "Yell" to "yell"
+//                                        )
+//                                    )
+//                                    )
                                 }
 
                             }
