@@ -30,29 +30,23 @@ actual val client: HttpClient = HttpClient(Js).config {
 
 actual val clientDispatcher = Dispatchers.Default
 actual fun showNotification(title: String, body: String) {
-    when (Notification.permission) {
-        NotificationPermission.GRANTED -> {
-            Notification(
-                title,
-                NotificationOptions(
-//                    badge = "badge",
-                    body = body
-                )
-            )
-        }
-        NotificationPermission.DENIED -> {
-            Notification.requestPermission().then {
-                if (it == NotificationPermission.GRANTED) {
-                    Notification(
-                        "title",
-                        NotificationOptions(
-                            badge = "badge",
-                            body = "body"
-                        )
+    Notification.requestPermission().then {
+        when (it) {
+            NotificationPermission.GRANTED -> {
+                Notification(
+                    title,
+                    NotificationOptions(
+    //                    badge = "badge",
+                        body = body
                     )
-                }
+                )
             }
-            logger.error { "notification denied" }
+            NotificationPermission.DENIED -> {
+                logger.error { "notification denied" }
+            }
+            else -> {
+                logger.error { "notification denied/else" }
+            }
         }
     }
 }
