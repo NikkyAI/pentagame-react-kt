@@ -1,7 +1,7 @@
 package penta.server
 
+import com.lightningkite.reacktive.map.WrapperObservableMap
 import io.ktor.http.cio.websocket.Frame
-import io.ktor.http.cio.websocket.close
 import io.ktor.http.cio.websocket.readText
 import io.ktor.websocket.DefaultWebSocketServerSession
 import kotlinx.coroutines.Dispatchers
@@ -11,6 +11,7 @@ import kotlinx.coroutines.channels.ClosedSendChannelException
 import kotlinx.coroutines.launch
 import kotlinx.io.IOException
 import kotlinx.serialization.list
+import kotlinx.serialization.serializer
 import mu.KotlinLogging
 import penta.BoardState
 import penta.PentaMove
@@ -18,6 +19,7 @@ import penta.PlayerState
 import penta.SerialNotation
 import penta.json
 import penta.network.GameSessionInfo
+import penta.util.handler
 
 /***
  * represents a pentagame match
@@ -31,7 +33,32 @@ class ServerGamestate(
     }
 
     var running: Boolean = false
-    val observers = mutableMapOf<UserSession, DefaultWebSocketServerSession>()
+    val observeringSessions = WrapperObservableMap<UserSession, DefaultWebSocketServerSession>().apply {
+        onMapRemove.add { session, new_wss ->
+            GlobalScope.launch(handler) {
+                values.forEach { wss ->
+                    if(wss != new_wss) {
+                        wss.outgoing.send(Frame.Text(
+                            json.stringify(SerialNotation.serializer(), SerialNotation.ObserverLeave(session.userId))
+                        ))
+                    }
+                }
+            }
+        }
+        onMapPut.add { session, hadPrevious,_, new_wss ->
+            GlobalScope.launch(handler) {
+                values.forEach { wss ->
+                    if(wss != new_wss) {
+                        wss.outgoing.send(
+                            Frame.Text(
+                                json.stringify(SerialNotation.serializer(), SerialNotation.ObserverJoin(session.userId))
+                            )
+                        )
+                    }
+                }
+            }
+        }
+    }
 
     val info: GameSessionInfo
         get() {
@@ -41,7 +68,7 @@ class ServerGamestate(
                 running = running,
                 turn = turn,
                 players = players.map { it.id },
-                observers = observers.keys.map { it.userId }
+                observers = observeringSessions.keys.map { it.userId }
             )
         }
 
@@ -49,9 +76,12 @@ class ServerGamestate(
 
     suspend fun handle(websocketSession: DefaultWebSocketServerSession, session: UserSession) = with(websocketSession) {
         try {
-            observers[session] = this
-
+            observeringSessions[session] = this
             // play back history
+            logger.info { "sending observers" }
+            outgoing.send(Frame.Text(json.stringify(String.serializer().list, observeringSessions.keys.map { it.userId })))
+
+
             logger.info { "play back history" }
             outgoing.send(Frame.Text(json.stringify(serializer.list, history.map { it.toSerializable() })))
 //            history.forEach { move ->
@@ -63,7 +93,7 @@ class ServerGamestate(
             history.onListAdd.add { move, index ->
                 logger.info { "transmitting move $move" }
                 // send
-                GlobalScope.launch {
+                GlobalScope.launch(handler) {
                     outgoing.send(Frame.Text(json.stringify(serializer, move.toSerializable())))
                 }
             }
@@ -77,7 +107,7 @@ class ServerGamestate(
                         logger.error {
                             "handle illegal move: $illegalMove"
                         }
-                        GlobalScope.launch(Dispatchers.Default) {
+                        GlobalScope.launch(Dispatchers.Default + handler) {
                             outgoing.send(
                                 Frame.Text(
                                     json.stringify(
@@ -92,19 +122,19 @@ class ServerGamestate(
                 // apply move ?
             }
         } catch (e: IOException) {
-            observers.remove(session)
+            observeringSessions.remove(session)
             val reason = closeReason.await()
             logger.debug(e) { "onClose $reason" }
         } catch (e: ClosedReceiveChannelException) {
-            observers.remove(session)
+            observeringSessions.remove(session)
             val reason = closeReason.await()
             logger.error { "onClose $reason" }
         } catch (e: ClosedSendChannelException) {
-            observers.remove(session)
+            observeringSessions.remove(session)
             val reason = closeReason.await()
             logger.error { "onClose $reason" }
         } catch (e: Exception) {
-            observers.remove(session)
+            observeringSessions.remove(session)
             logger.error(e) { "exception onClose ${e.message}" }
         } finally {
 

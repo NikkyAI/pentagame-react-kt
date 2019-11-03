@@ -124,6 +124,24 @@ sealed class SerialNotation {
         )
     }
 
+    @Serializable
+    data class ObserverJoin(
+        val id: String
+    ) : SerialNotation() {
+        override fun asMove(boardState: BoardState) = PentaMove.ObserverJoin(
+            id = id
+        )
+    }
+
+    @Serializable
+    data class ObserverLeave(
+        val id: String
+    ) : SerialNotation() {
+        override fun asMove(boardState: BoardState) = PentaMove.ObserverLeave(
+            id = id
+        )
+    }
+
     object InitGame : SerialNotation() {
         override fun asMove(boardState: BoardState) = PentaMove.InitGame
     }
@@ -159,6 +177,8 @@ sealed class SerialNotation {
                 SetBlack::class with SetBlack.serializer()
                 SetGrey::class with SetGrey.serializer()
                 PlayerJoin::class with PlayerJoin.serializer()
+                ObserverJoin::class with ObserverJoin.serializer()
+                ObserverLeave::class with ObserverLeave.serializer()
                 InitGame::class with ObjectSerializer(InitGame)
                 Win::class with Win.serializer()
                 IllegalMove::class with IllegalMove.serializer()

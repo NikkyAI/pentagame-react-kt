@@ -137,6 +137,16 @@ sealed class PentaMove {
         override fun toSerializable() = SerialNotation.PlayerJoin(player)
     }
 
+    data class ObserverJoin(val id: String) : PentaMove() {
+        override fun asNotation(): String = "join [${id}]"
+        override fun toSerializable() = SerialNotation.ObserverJoin(id)
+    }
+
+    data class ObserverLeave(val id: String) : PentaMove() {
+        override fun asNotation(): String = "leave [${id}]"
+        override fun toSerializable() = SerialNotation.ObserverLeave(id)
+    }
+
     object InitGame : PentaMove() {
         override fun asNotation(): String = ">>>"
         override fun toSerializable() = SerialNotation.InitGame

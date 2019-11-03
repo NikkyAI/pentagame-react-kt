@@ -2,13 +2,11 @@ package penta.view
 
 import PentaViz
 import client
-import com.lightningkite.koolui.ApplicationAccess
 import com.lightningkite.koolui.async.*
 import com.lightningkite.koolui.concepts.Animation
 import com.lightningkite.koolui.concepts.Importance
 import com.lightningkite.koolui.concepts.TextInputType
 import com.lightningkite.koolui.concepts.TextSize
-import com.lightningkite.koolui.notification.Notification
 import com.lightningkite.koolui.views.basic.text
 import com.lightningkite.koolui.views.interactive.button
 import com.lightningkite.koolui.views.layout.horizontal
@@ -40,6 +38,7 @@ import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.list
+import kotlinx.serialization.serializer
 import mu.KotlinLogging
 import penta.ClientGameState
 import penta.MultiplayerState
@@ -215,9 +214,15 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
                 }
 
                 try {
+                    val observersJsonList = (incoming.receive() as Frame.Text).readText()
+                    logger.info { "receiving observers $observersJsonList" }
+                    val observers = json.parse(String.serializer().list, observersJsonList)
+                    PentaViz.gameState.observersProperty.replace(observers)
+
                     val notationListJson = (incoming.receive() as Frame.Text).readText()
                     logger.info { "receiving notation $notationListJson" }
                     val history = json.parse(SerialNotation.serializer().list, notationListJson)
+                    PentaViz.gameState.isPlayback = true
                     withContext(Dispatchers.UI) {
                         history.forEach { notation ->
                             notation.asMove(PentaViz.gameState).also {
@@ -225,8 +230,8 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
                             }
                         }
                     }
+                    PentaViz.gameState.isPlayback = false
 
-//                    send(Frame.Ping("hello".encodeToByteArray()))
                     loop@ while (true) {
                         logger.info { "awaiting frame" }
                         val frame = try {
@@ -474,10 +479,13 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
                             gameState.currentPlayerProperty.add {
                                 if(it.id == state.userId) {
                                     logger.info { "showing notification" }
-                                    showNotification(
-                                        "Your Turn",
-                                        "Last Move: " + gameState.history.last().asNotation()
-                                    )
+                                    if(!gameState.isPlayback) {
+                                        showNotification(
+                                            "Your Turn",
+                                            "Last Move: " + gameState.history.last().asNotation()
+                                        )
+                                    }
+
 //                                    ApplicationAccess.showNotification(Notification(
 //                                        title = "Your Turn",
 //                                        content = "Last Move: " + gameState.history.last().asNotation(),
@@ -495,7 +503,10 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
                             vertical {
                                 -text("gameId: ${state.game.id}")
                                 -text("owner: ${state.game.owner}")
-                                // TODO: list of connected observers
+                                -text( gameState.observersProperty.onListUpdate.transform {
+                                    "connected: ${it.joinToString()}"
+                                })
+                                // TODO: update list of connected observers
                                 // TODO: chat ?
                                 -swap(
                                     CombineObservableProperty2(

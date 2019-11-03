@@ -23,6 +23,8 @@ open class BoardState {
     val players: WrapperObservableList<PlayerState> = mutableObservableListOf()
     val scoringColors: WrapperObservableMap<String, List<PentaColor>> = WrapperObservableMap()
 
+    val observersProperty: WrapperObservableList<String> = mutableObservableListOf()
+
     // player id to team id
     lateinit var teams: Map<String, Int>
         private set
@@ -48,6 +50,8 @@ open class BoardState {
 
     val currentPlayerProperty = StandardObservableProperty(PlayerState("ghost", "circle"))
     val currentPlayer: PlayerState inline get() = currentPlayerProperty.value
+
+    var isPlayback = false
 
     val turnProperty: StandardObservableProperty<Int> = StandardObservableProperty(0).apply {
         add {
@@ -537,6 +541,12 @@ open class BoardState {
                     resetPlayers()
                     updateAllPieces()
                     mutableHistory += move
+                }
+                is PentaMove.ObserverJoin -> {
+                    observersProperty += move.id
+                }
+                is PentaMove.ObserverLeave -> {
+                    observersProperty -= move.id
                 }
                 is PentaMove.InitGame -> {
                     require(!initialized) {
