@@ -7,18 +7,22 @@ pluginManagement {
 
     resolutionStrategy {
         eachPlugin {
-            if(requested.id.id == "kotlin2js") {
-                useModule("org.jetbrains.kotlin:kotlin-gradle-plugin:${requested.version}")
+            val module = when(requested.id.id) {
+                "kotlin2js" -> "org.jetbrains.kotlin:kotlin-gradle-plugin:${requested.version}"
+                "kotlin-dce-js" ->"org.jetbrains.kotlin:kotlin-gradle-plugin:${requested.version}"
+                "kotlinx-serialization" -> "org.jetbrains.kotlin:kotlin-serialization:${requested.version}"
+                "proguard" -> "net.sf.proguard:proguard-gradle:${requested.version}"
+                "org.jetbrains.kotlin.frontend" -> "org.jetbrains.kotlin:kotlin-frontend-plugin:${requested.version}"
+                else -> null
             }
-            if(requested.id.id == "kotlin-dce-js") {
-                useModule("org.jetbrains.kotlin:kotlin-gradle-plugin:${requested.version}")
+            if(module != null) {
+                useModule(module)
             }
-            if(requested.id.id == "kotlinx-serialization") {
-                useModule("org.jetbrains.kotlin:kotlin-serialization:${requested.version}")
-            }
-            if(requested.id.id == "proguard") {
-                useModule("net.sf.proguard:proguard-gradle:${requested.version}")
-            }
+            //            when(requested.id.id) { }
+//                "kotlin2js" -> useModule("org.jetbrains.kotlin:kotlin-gradle-plugin:${requested.version}")
+//                "kotlin-dce-js" -> useModule("org.jetbrains.kotlin:kotlin-gradle-plugin:${requested.version}")
+//                "org.jetbrains.kotlin.frontend" -> useModule("org.jetbrains.kotlin:kotlin-frontend-plugin:${requested.version}")
+//            }
 //            when(requested.id.id) { }
 //                "kotlin2js" -> useModule("org.jetbrains.kotlin:kotlin-gradle-plugin:${requested.version}")
 //                "kotlin-dce-js" -> useModule("org.jetbrains.kotlin:kotlin-gradle-plugin:${requested.version}")

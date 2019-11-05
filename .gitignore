@@ -14,5 +14,6 @@ out/
 *.iws
 
 node_modules/
+package-lock.json
 
 run/

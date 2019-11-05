@@ -7,7 +7,6 @@ import proguard.ClassSpecification
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
-import org.gradle.kotlin.dsl.withType
 
 buildscript {
     dependencies {
@@ -29,10 +28,6 @@ plugins {
 }
 
 repositories {
-    maven(url = uri("${projectDir}/mvn")) {
-        name = "bundled local"
-    }
-//    mavenLocal()
     mavenCentral()
     jcenter()
     maven(url = "https://dl.bintray.com/kotlin/kotlinx") {
@@ -51,6 +46,13 @@ repositories {
 //    maven(url = "https://www.jitpack.io") {
 //        name = "jitpack"
 //    }
+    if (project.gradle.startParameter.taskNames.contains("bundleLocalDependencies")) {
+        mavenLocal()
+    } else {
+        maven(url = uri("${projectDir}/mvn")) {
+            name = "bundled local"
+        }
+    }
 }
 
 val genCommonSrcKt = project.rootDir.resolve("build/gen-src/commonMain/kotlin").apply { mkdirs() }
@@ -63,7 +65,7 @@ System.getenv().forEach { (key, value) ->
     logger.lifecycle("$key : $value")
 }
 
-val releaseTime = System.getenv("HEROKU_RELEASE_CREATED_AT") ?:run {
+val releaseTime = System.getenv("HEROKU_RELEASE_CREATED_AT") ?: run {
     val now = LocalDateTime.now(ZoneOffset.UTC)
     DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(now)
 }
@@ -87,8 +89,8 @@ tasks.withType(AbstractKotlinCompile::class.java).all {
 
 kotlin {
     val server = jvm("server") // Creates a JVM target for the server
-    val clientFX = jvm("client-fx") // Creates a JVM target for the client
-    val clientJS = js("client-js")  // JS target named "client-js"
+    val clientFX = jvm("clientFx") // Creates a JVM target for the client
+    val clientJS = js("clientJs")  // JS target named "client-js"
 
     sourceSets {
         val commonMain by getting {
@@ -336,7 +338,7 @@ kotlin {
             if (dceTask != null) {
                 dependsOn(dceTask)
                 doLast {
-                    logger.lifecycle("dce task outputs: "+ dceTask.outputs.files.joinToString { it.name })
+                    logger.lifecycle("dce task outputs: " + dceTask.outputs.files.joinToString { it.name })
 
                     copy {
                         into(targetFolder)
@@ -377,48 +379,79 @@ kotlin {
                     from(getDependencies().flatMap { it.jarFileToJsFiles() })
                 }
                 copy {
-                    from("src/client-jsMain/web")
+                    from("src/clientJsMain/web")
                     into(file("build/html/"))
                 }
             }
         }
-        val installTerser = tasks.create("installTerser") {
-            doLast {
-                exec {
-                    commandLine("npm", "install", "-g", "terser")
-                    isIgnoreExitValue = true
-                }
-            }
-        }
 
-        val terseTask = tasks.create("${target.name}TerseJs") {
-            dependsOn(installTerser)
+        fun localBin(binary: String) = rootDir.resolve("node_modules/.bin/$binary").path
+
+        val terserTask = tasks.create("${target.name}Terser") {
             dependsOn(copyJsTask)
             group = "build"
-            val outputDir = file("build/html/js")
-            outputs.dir(outputDir)
+            val dir = file("build/terser")
+            val outputDir = dir.resolve("out/js/")
+            outputs.dir(outputDir.parentFile)
             doLast {
+                val inputFolder = file("build/kotlin-js-min/${target.name}/main/")
+
                 outputDir.deleteRecursively()
                 outputDir.mkdirs()
-                file("build/kotlin-js/${target.name}/").listFiles { file, name ->
+                inputFolder.listFiles { file, name ->
                     !name.endsWith(".meta.js") && name.endsWith(".js")
                 }!!.forEach { file ->
                     exec {
                         val f = file.name
                         commandLine(
-                            "terser",
+                            localBin("terser"),
                             "$file",
                             "--source-map",
                             "content='$file.map',url='$f.map'",
-                            "-o",
-                            outputDir.resolve(f).path
+                            "-o", outputDir.resolve(f).path
                         )
                         logger.lifecycle(commandLine.joinToString(" "))
                     }
                 }
                 copy {
-                    from("src/client-jsMain/web")
-                    into(file("build/html/"))
+                    from(outputDir)
+                    from("src/clientJsMain/web")
+                    into(dir)
+                }
+            }
+        }
+
+        val bundleTask = tasks.create("${target.name}Bundle") {
+            dependsOn(copyJsTask)
+            group = "build"
+            val dir = file("build/bundle")
+            val outputDir = dir.resolve("out/js/")
+            outputs.dir(outputDir.parentFile)
+            doLast {
+                val inputFolder = dir.resolve("input/")
+                inputFolder.deleteRecursively()
+                file("build/kotlin-js-min/${target.name}/main/").copyRecursively(inputFolder)
+                file("node_modules/almond/almond.js").copyTo(inputFolder.resolve("almond.js"), true)
+
+                outputDir.deleteRecursively()
+                outputDir.mkdirs()
+                exec {
+                    workingDir(inputFolder)
+                    commandLine(
+                        localBin("r.js"),
+                        "-o", "baseUrl=.", "name=almond.js",
+                        "include=penta,almond",
+                        "insertRequire=penta",
+                        "out=${outputDir.resolve("bundle.js")}",
+                        "wrap=true"
+                    )
+                    logger.lifecycle(commandLine.joinToString(" "))
+                }
+
+                copy {
+                    from(outputDir)
+                    from("src/clientJsMain/web")
+                    into(dir)
                 }
             }
 
@@ -476,7 +509,11 @@ val shadowJar = tasks.getByName<ShadowJar>("shadowJar") {
 
     group = "shadow"
 
-    val target = kotlin.targets.getByName("client-fx") as KotlinOnlyTarget<KotlinJvmCompilation>
+    manifest {
+        attributes(mapOf("Main-Class" to "penta.app.PentaApp"))
+    }
+
+    val target = kotlin.targets.getByName("clientFx") as KotlinOnlyTarget<KotlinJvmCompilation>
     from(target.compilations.getByName("main").output)
     val runtimeClasspath = target.compilations.getByName("main").runtimeDependencyFiles as Configuration
     configurations = listOf(runtimeClasspath)
@@ -486,20 +523,27 @@ val shadowJar = tasks.getByName<ShadowJar>("shadowJar") {
 
 }
 
+val terserTask = tasks.getByName("clientJsTerser")
+val bundleTask = tasks.getByName("clientJsBundle")
+
 val packageStaticForServer = tasks.create<Copy>("packageStaticForServer") {
     group = "build"
-    dependsOn("client-jsTerseJs")
-//    dependsOn("client-jsCopyJsDev")
+    dependsOn(terserTask)
+    dependsOn(bundleTask)
+//    dependsOn("clientJsCopyJsDev")
     val staticFolder = genServerResource.resolve("static").apply { mkdirs() }
 
-    from(project.buildDir.resolve("html"))
+//    from(project.buildDir.resolve("html"))
+    from("src/clientJsMain/web")
+    from(terserTask)
+    from(bundleTask)
     into(staticFolder)
-    doLast {
-        copy {
-            from("src/client-jsMain/web")
-            into(staticFolder)
-        }
-    }
+//    doLast {
+//        copy {
+//            from("src/clientJsMain/web")
+//            into(staticFolder)
+//        }
+//    }
 }
 
 val shadowJarServer = tasks.create<ShadowJar>("shadowJarServer") {
@@ -618,7 +662,7 @@ val run = tasks.getByName<JavaExec>("run") {
 val runServer = tasks.create<JavaExec>("runServer") {
     group = "application"
 
-    this.main = "io.ktor.server.cio.EngineMain"
+    main = "io.ktor.server.cio.EngineMain"
 
     dependsOn(shadowJarServer)
 
@@ -635,32 +679,51 @@ tasks.withType(JavaExec::class.java).all {
 
 val bundleLocalDependencies = tasks.create("bundleLocalDependencies") {
     val mavenLocal = File(System.getProperty("user.home")).resolve(".m2").resolve("repository")
-    val dependencies = listOf(
-        File("com/lightningkite/")
-    )
     val mvnFolder = project.rootDir.resolve("mvn")
-
     doLast {
-        logger.lifecycle("mavenLocal: $mavenLocal")
         mvnFolder.deleteRecursively()
-        mvnFolder.mkdirs()
+        val configurations = kotlin.targets.flatMap { target: KotlinTarget ->
+            logger.lifecycle("target: $target")
+            target.compilations.flatMap { compilation ->
+                logger.lifecycle("  compilation: $compilation ${compilation::class}")
+                logger.lifecycle("   compileDependencyFiles: ${compilation.compileDependencyFiles}")
 
-        dependencies.forEach { relative ->
-            mavenLocal.resolve(relative).copyRecursively(
-                mvnFolder.resolve(relative)
-            )
+                compilation.relatedConfigurationNames.map { configurationName ->
+                    configurations.getByName(configurationName)
+                }
+            }
         }
+        configurations.forEach { configuration ->
+            try {
+                logger.lifecycle("configuration: $configuration")
+                configuration.resolvedConfiguration.resolvedArtifacts.filter { artifact ->
+                    // check if dependency is in mavenLocal()
+                    artifact.file.startsWith(mavenLocal)
+                }/*.filter { artifact ->
+                    // check if dependency is matching
+                    when(artifact.moduleVersion.id.group) {
+                        "com.lightningkite" -> true
+                        else -> false
+                    }
+                }*/.forEach { artifact ->
+                    logger.lifecycle("  artifact: $artifact")
+                    logger.lifecycle("    id ${artifact.id.componentIdentifier}")
+                    logger.lifecycle("    file ${artifact.file}")
+                    logger.lifecycle("    classifier ${artifact.classifier}")
+                    logger.lifecycle("    moduleVersion ${artifact.moduleVersion}")
+                    logger.lifecycle("    name ${artifact.name}")
+                    logger.lifecycle("    type ${artifact.type}")
 
+                    val groupFolder = artifact.file.parentFile.parentFile
+                    val relative = groupFolder.relativeTo(mavenLocal)
+                    mavenLocal.resolve(relative).copyRecursively(mvnFolder.resolve(relative), true)
+                }
+            } catch (e: IllegalStateException) {
+                logger.info(e.message)
+            }
+        }
     }
 }
-//val buildLocalDependencies = tasks.create("buildLocalDependencies") {
-//    group = "build setup"
-//
-//    doLast {
-//
-//
-//    }
-//}
 
 val stage = tasks.create("stage") {
     dependsOn("clean")

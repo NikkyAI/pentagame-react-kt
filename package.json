@@ -1,3 +1,7 @@
 {
-  
+  "devDependencies": {
+    "requirejs": "^2.3.6",
+    "almond": "^0.3.3",
+    "terser": "^4.3.9"
+  }
 }
