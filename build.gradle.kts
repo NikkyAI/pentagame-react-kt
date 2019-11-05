@@ -382,6 +382,10 @@ kotlin {
                     from("src/clientJsMain/web")
                     into(file("build/html/"))
                 }
+                copy {
+                    from(file("node_modules/requirejs/requirejs.js"))
+                    into(file("build/html/js/"))
+                }
             }
         }
 
@@ -417,6 +421,10 @@ kotlin {
                     from(outputDir)
                     from("src/clientJsMain/web")
                     into(dir)
+                }
+                copy {
+                    from(file("node_modules/requirejs/requirejs.js"))
+                    into(dir.resolve("js"))
                 }
             }
         }
@@ -533,25 +541,27 @@ val packageStaticForServer = tasks.create<Copy>("packageStaticForServer") {
 //    dependsOn("clientJsCopyJsDev")
     val staticFolder = genServerResource.resolve("static").apply { mkdirs() }
 
+    doFirst {
+        staticFolder.deleteRecursively()
+    }
+
 //    from(project.buildDir.resolve("html"))
     from("src/clientJsMain/web")
     from(terserTask)
     from(bundleTask)
     into(staticFolder)
-//    doLast {
-//        copy {
-//            from("src/clientJsMain/web")
-//            into(staticFolder)
-//        }
-//    }
+    doLast {
+        copy {
+            from(file("node_modules/requirejs/requirejs.js"))
+            into(staticFolder.resolve("js"))
+        }
+    }
 }
 
 val shadowJarServer = tasks.create<ShadowJar>("shadowJarServer") {
     archiveClassifier.set("server")
 
     dependsOn(packageStaticForServer)
-//    include(project.rootDir.resolve("build/html").path)
-//    include("*.jar")
 
     group = "shadow"
 
