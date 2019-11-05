@@ -418,13 +418,13 @@ kotlin {
                     }
                 }
                 copy {
+                    from(file("node_modules/requirejs/require.js"))
+                    into(outputDir.resolve("js"))
+                }
+                copy {
                     from(outputDir)
                     from("src/clientJsMain/web")
                     into(dir)
-                }
-                copy {
-                    from(file("node_modules/requirejs/requirejs.js"))
-                    into(dir.resolve("js"))
                 }
             }
         }
@@ -550,12 +550,6 @@ val packageStaticForServer = tasks.create<Copy>("packageStaticForServer") {
     from(terserTask)
     from(bundleTask)
     into(staticFolder)
-    doLast {
-        copy {
-            from(file("node_modules/requirejs/requirejs.js"))
-            into(staticFolder.resolve("js"))
-        }
-    }
 }
 
 val shadowJarServer = tasks.create<ShadowJar>("shadowJarServer") {
