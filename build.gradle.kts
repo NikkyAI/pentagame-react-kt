@@ -419,12 +419,12 @@ kotlin {
                 }
                 copy {
                     from(file("node_modules/requirejs/require.js"))
-                    into(outputDir.resolve("js"))
+                    into(outputDir)
                 }
                 copy {
-                    from(outputDir)
+                    from(outputDir.parentFile)
                     from("src/clientJsMain/web")
-                    into(dir)
+                    into(dir.resolve("html"))
                 }
             }
         }
@@ -462,7 +462,6 @@ kotlin {
                     into(dir)
                 }
             }
-
         }
     }
 }
