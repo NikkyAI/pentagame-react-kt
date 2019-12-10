@@ -6,47 +6,26 @@ online: [demo](https://pentagame.herokuapp.com/)
 
 ## Building
 
-### JFX-Client
+### Backend
 
-running: `./gradlew run` or `./gradlew runShadow`
-
-package: `./gradlew shadowJar`
-find runnable jar in `build/libs/`
-
-### JVM-Server
-
-build: `./gradlew shadowJarServer`
+build: `./gradlew :backend:shadowJar`
 execute: `heroku local:start`
 
-find runnable jar in `build/libs/`, 
+find runnable jar in `backend/build/libs/`, 
   you may need to set some environment manually
 
-### JS
+### Frontend
 
-js is bundled in the server
+js is bundled in the server automatically
 
-`./gradlew client-jsTerseJs`
-upload `build/html`
-
-## Notation
-
-### Fields
-
-- corner nodes
-`c0`-`c4`
-
-- target nodes (inner)  
-`j0`-`j4` or `1,3,5,7,9`
-
-- connections
-start, end, steps
-`c1j4/2`
-
-### Moves
-
-TODO
+for dev:
+`./gradlew :frontend:run -t`
 
 ### Recording a game
+
+The game is currently recorded by the getClient and server, but not serialized or stored
+
+There is currently more data recorded than strictly necessary too
 
 TODO
 
@@ -56,9 +35,8 @@ knowing the amount of players and which team they are in
 
 # TODO
 
-player has 4 ranked chosen symbols
-ranking depends on which symbol is taken 
-when conflicts arises in multiplayer
+players have 4 ranked chosen symbols
+the highest ranking player gets their preferred symbol in case of conflict of choice
 
 # UI
 

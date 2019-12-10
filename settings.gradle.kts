@@ -18,16 +18,6 @@ pluginManagement {
             if(module != null) {
                 useModule(module)
             }
-            //            when(requested.id.id) { }
-//                "kotlin2js" -> useModule("org.jetbrains.kotlin:kotlin-gradle-plugin:${requested.version}")
-//                "kotlin-dce-js" -> useModule("org.jetbrains.kotlin:kotlin-gradle-plugin:${requested.version}")
-//                "org.jetbrains.kotlin.frontend" -> useModule("org.jetbrains.kotlin:kotlin-frontend-plugin:${requested.version}")
-//            }
-//            when(requested.id.id) { }
-//                "kotlin2js" -> useModule("org.jetbrains.kotlin:kotlin-gradle-plugin:${requested.version}")
-//                "kotlin-dce-js" -> useModule("org.jetbrains.kotlin:kotlin-gradle-plugin:${requested.version}")
-//                "org.jetbrains.kotlin.frontend" -> useModule("org.jetbrains.kotlin:kotlin-frontend-plugin:${requested.version}")
-//            }
         }
     }
 }
@@ -35,3 +25,6 @@ pluginManagement {
 //enableFeaturePreview("GRADLE_METADATA")
 
 rootProject.name = "penta"
+include("backend")
+include("frontend")
+include("shared")

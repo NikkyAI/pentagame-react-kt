@@ -1,6 +1,6 @@
 object Jetbrains {
     object Kotlin {
-        val version = "1.3.50"
+        val version = "1.3.61"
     }
 }
 
@@ -19,7 +19,7 @@ object TornadoFX {
 }
 
 object Ktor {
-    const val version = "1.2.5"
+    const val version = "1.2.6"
 }
 
 object Logback {
@@ -27,7 +27,7 @@ object Logback {
 }
 
 object Serialization {
-    const val version = "0.13.0"
+    const val version = "0.14.0"
 }
 
 object Coroutines {
