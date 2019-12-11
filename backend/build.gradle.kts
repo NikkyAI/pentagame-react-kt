@@ -49,7 +49,7 @@ tasks {
     }
 }
 
-val packageStatic = tasks.create<Copy>("packageStatic") {
+val packageStatic = tasks.create("packageStatic") {
     group = "build"
     val frontend = project(":frontend")
     dependsOn(":frontend:processResources")
@@ -63,17 +63,25 @@ val packageStatic = tasks.create<Copy>("packageStatic") {
     doFirst {
         staticFolder.deleteRecursively()
         staticFolder.mkdirs()
-
-        from(frontend.tasks.get("processResources"))
     }
 
-    from(frontend.buildDir.resolve("processedResources/js/main"))
-    from(frontend.buildDir.resolve("distributions"))
+
 
     // TODO: readd terser and require.js for dev
 //    from(terserTask)
 //    from(bundleTask)
-    into(staticFolder)
+
+    doLast {
+        copy {
+            from(frontend.tasks.get("processResources"))
+            from(frontend.buildDir.resolve("processedResources/js/main"))
+            into(staticFolder)
+        }
+        copy {
+            from(frontend.buildDir.resolve("distributions"))
+            into(staticFolder.resolve("js"))
+        }
+    }
 }
 
 application {
