@@ -94,17 +94,17 @@ class MainPentaVG<VIEW>() : MyViewGenerator<VIEW> {
                 // TODO: show popup / dropdown for changing face
             }
         ).setHeight(48f).setWidth(48f)
-        fun scoreColor(i: Int) = gameState.scoringColors.onMapUpdate.transform {
-            val colors = it[player.id] ?: emptyList()
-            colors.getOrNull(i)?.color?.asKoolUIColor() ?: ConstantObservableProperty(Color.gray.toWhite(0.5f))
-        }.sub { it }
-        -horizontal {
-            repeat(3) { i ->
-                -space()
-                +space(20f, 10f).background(scoreColor(i))
-                -space()
-            }
-        }
+//        fun scoreColor(i: Int) = gameState.scoringColors.onMapUpdate.transform {
+//            val colors = it[player.id] ?: emptyList()
+//            colors.getOrNull(i)?.color?.asKoolUIColor() ?: ConstantObservableProperty(Color.gray.toWhite(0.5f))
+//        }.sub { it }
+//        -horizontal {
+//            repeat(3) { i ->
+//                -space()
+//                +space(20f, 10f).background(scoreColor(i))
+//                -space()
+//            }
+//        }
     }.setHeight(64f)
 
     fun MyViewFactory<VIEW>.generateTopBar() = swap(
@@ -112,28 +112,28 @@ class MainPentaVG<VIEW>() : MyViewGenerator<VIEW> {
             logger.info { "generating top bar" }
             horizontal {
                 +space()
-                -swap(
-                    view = CombineObservableProperty2(
-                        gameState.players.onListUpdate,
-                        gameState.currentPlayerProperty
-                    ) { players, currentPlayer ->
-                        horizontal {
-                            +space()
-                            players.forEach { player ->
-                                -drawPlayer(gameState, player, currentPlayer.id == player.id)
-//                                -entryContext(
-//                                    label = player.id,
-//                                    field = imageButon
-//                                ).setWidth(64f)
-                            }
-                        } to Animation.Fade
-                    }
-                ).setHeight(64f)
+//                -swap(
+//                    view = CombineObservableProperty2(
+//                        gameState.players.onListUpdate,
+//                        gameState.currentPlayerProperty
+//                    ) { players, currentPlayer ->
+//                        horizontal {
+//                            +space()
+//                            players.forEach { player ->
+//                                -drawPlayer(gameState, player, currentPlayer.id == player.id)
+////                                -entryContext(
+////                                    label = player.id,
+////                                    field = imageButon
+////                                ).setWidth(64f)
+//                            }
+//                        } to Animation.Fade
+//                    }
+//                ).setHeight(64f)
                 +space()
-                -text(
-                    text = gameState.turnProperty.transform { "Turn: $it" },
-                    size = TextSize.Body.bigger.bigger
-                )
+//                -text(
+//                    text = gameState.turnProperty.transform { "Turn: $it" },
+//                    size = TextSize.Body.bigger.bigger
+//                )
             }.setHeight(64f) to Animation.Fade
         }
     ).setHeight(64f)

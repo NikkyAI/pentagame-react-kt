@@ -17,13 +17,13 @@ import io.data2viz.viz.Viz
 import io.data2viz.viz.viz
 import mu.KotlinLogging
 import penta.ClientGameState
-import penta.MultiplayerState
+import penta.ConnectionState
 import penta.PentaColor
 import penta.client.PlayerCorner
 import penta.logic.Piece
 import penta.logic.field.AbstractField
 import penta.logic.field.ConnectionField
-import penta.logic.field.CornerField
+import penta.logic.field.StartField
 import kotlin.math.pow
 import kotlin.math.sqrt
 
@@ -39,19 +39,20 @@ object PentaViz {
     val turnDisplay: StandardObservableProperty<String> = StandardObservableProperty("")
     val gameStateProperty = StandardObservableProperty(ClientGameState(0))
     val gameState: ClientGameState get() = gameStateProperty.value
-    val multiplayerState = StandardObservableProperty<MultiplayerState>(MultiplayerState.Disconnected())
+    val multiplayerState = StandardObservableProperty<ConnectionState>(ConnectionState.Disconnected())
 //    lateinit var centerDisplay: Pair<CircleNode, TextNode>
 
     fun highlightedPieceAt(mousePos: Point): Piece? = gameState.findPiecesAtPos(mousePos).firstOrNull()?.let {
+        val boardState = gameState.boardStore.state
         // do not highlight pieces that are off the board
-        if (gameState.figurePositions[it.id] == null) return@let null
+        if (boardState.positions[it.id] == null) return@let null
         // allow highlighting blockers when a piece is selected
-        if (it !is Piece.Player && gameState.selectedPlayerPiece == null) return@let null
-        if (it is Piece.Player && gameState.currentPlayer.id != it.playerId) return@let null
+        if (it !is Piece.Player && boardState.selectedPlayerPiece == null) return@let null
+        if (it is Piece.Player && boardState.currentPlayer.id != it.playerId) return@let null
 
         // remove highlighting pieces when placing a blocker
         if (
-            (gameState.selectedGrayPiece != null || gameState.selectedBlackPiece != null || gameState.selectingGrayPiece)
+            (boardState.selectedGrayPiece != null || boardState.selectedBlackPiece != null || boardState.selectingGrayPiece)
             && it is Piece.Player
         ) return@let null
 
@@ -83,7 +84,7 @@ object PentaViz {
         PentaBoard.fields.forEach { field ->
             logger.debug { ("adding: $field") }
             val c = circle {
-                if (field is CornerField) {
+                if (field is StartField) {
                     strokeWidth = 5.0
                     stroke = field.color
                     fill = Colors.Web.lightgrey
@@ -156,7 +157,7 @@ object PentaViz {
                 }
             }
 
-            gameState.figures.forEach {
+            gameState.boardStore.state.figures.forEach {
                 updatePiece(it)
             }
         }
@@ -180,7 +181,7 @@ object PentaViz {
                 }
                 pieces.clear()
 
-                playerCorners = gameState.players.map {
+                playerCorners = gameState.boardStore.state.players.map {
                     logger.debug { ("init face $it") }
                     PlayerCorner(
                         it,
@@ -204,7 +205,7 @@ object PentaViz {
                 }
 
                 // init pieces
-                gameState.figures.forEach { piece ->
+                gameState.boardStore.state.figures.forEach { piece ->
                     logger.debug { ("initialzing piece: $piece") }
                     val c = circle {
                         strokeWidth = 4.0
@@ -234,7 +235,8 @@ object PentaViz {
     }
 
     fun updateCorners() {
-        logger.trace { ("gameState.currentPlayer: ${gameState.currentPlayer}") }
+        val boardState = gameState.boardStore.state
+        logger.trace { ("gameState.currentPlayer: ${boardState.currentPlayer}") }
         playerCorners.forEachIndexed { index, corner ->
             val angle = (-45 + (index) * 90).deg
 
@@ -249,7 +251,7 @@ object PentaViz {
             logger.trace { ("face position: $facePos") }
 
             corner.graySlot.apply {
-                visible = gameState.selectingGrayPiece && gameState.currentPlayer.id == corner.player.id
+                visible = boardState.selectingGrayPiece && boardState.currentPlayer.id == corner.player.id
                 if (visible) {
                     val pos = Point(
                         (angle + 10.deg).cos * radius,
@@ -268,7 +270,7 @@ object PentaViz {
                 }
             }
             logger.trace { ("player[$index]: ${corner.player}") }
-            if (gameState.currentPlayer.id == corner.player.id) {
+            if (boardState.currentPlayer.id == corner.player.id) {
                 currentPlayerMarker.apply {
                     x = facePos.x
                     y = facePos.y
@@ -288,6 +290,7 @@ object PentaViz {
     }
 
     fun updatePlayers() {
+        val boardState = gameState.boardStore.state
         logger.info { "updating player render" }
         viz.apply {
             playerCorners.forEach { corner ->
@@ -296,7 +299,7 @@ object PentaViz {
             }
             // get all player pieces
             logger.info { gameStateProperty }
-            val playerFigures = gameStateProperty.value.figures.filterIsInstance<Piece.Player>()
+            val playerFigures = boardState.figures.filterIsInstance<Piece.Player>()
             playerFigures.forEach { figure ->
                 val (circle, path) = pieces[figure.id] ?: return@forEach
                 circle.remove()
@@ -304,7 +307,7 @@ object PentaViz {
                 pieces.remove(figure.id)
             }
 
-            playerCorners = gameState.players.map {
+            playerCorners = boardState.players.map {
                 logger.debug { ("init face $it") }
                 PlayerCorner(
                     it,
@@ -362,14 +365,15 @@ object PentaViz {
                 else
                     field.color
 
-                if (field is CornerField) {
+                if (field is StartField) {
                     stroke = c
                 } else {
                     fill = c
                 }
             }
         }
-        gameState.figures.forEach {
+        val boardState = gameState.boardStore.state
+        boardState.figures.forEach {
             updatePiece(it)
         }
     }
@@ -456,11 +460,12 @@ object PentaViz {
     }
 
     fun updateBoard(render: Boolean = true) {
+        val boardState = gameState.boardStore.state
         // TODO: background: #28292b
         turnDisplay.apply {
-            val turn = gameState.turn
+            val turn = boardState.turn
             value = "Turn: $turn" +
-                if (gameState.winner != null) ", winner: ${gameState.winner}" else ""
+                if (boardState.winner != null) ", winner: ${boardState.winner}" else ""
 //                    + when {
 //                        gameState.selectedPlayerPiece != null -> "move PlayerPiece (${gameState.selectedPlayerPiece!!.id})"
 //                        gameState.selectedBlackPiece != null -> "set black (${gameState.selectedBlackPiece!!.id})"
@@ -477,6 +482,7 @@ object PentaViz {
     }
 
     fun updatePiece(piece: Piece) {
+        val boardState = gameState.boardStore.state
         val highlightedPiece = highlightedPieceAt(mousePos)
 
         val (circle, path) = pieces[piece.id] ?: throw IllegalArgumentException("piece; $piece is not on the board")
@@ -487,8 +493,8 @@ object PentaViz {
         val fillColor = when (piece) {
             is Piece.Player -> {
                 if (
-                    gameState.selectedPlayerPiece == null
-                    && gameState.currentPlayer.id == piece.playerId
+                    boardState.selectedPlayerPiece == null
+                    && boardState.currentPlayer.id == piece.playerId
                     && gameState.canClickPiece(piece)
                 )
                     piece.color.brighten(1.0)
@@ -510,16 +516,16 @@ object PentaViz {
             fill = fillColor
             stroke = fillColor.let {
                 when (piece) {
-                    gameState.selectedPlayerPiece -> {
+                    boardState.selectedPlayerPiece -> {
                         strokeWidth = 3.0
                         it.brighten(2.0)
                     }
-                    gameState.selectedBlackPiece -> {
+                    boardState.selectedBlackPiece -> {
                         strokeWidth = 3.0
                         it //.brighten(2.0)
                     }
 //                    gameState.selectedGrayPiece -> if(gameState.selectedGrayPiece == null) it.brighten(1.0) else it
-                    gameState.selectedGrayPiece -> {
+                    boardState.selectedGrayPiece -> {
                         strokeWidth = 3.0
                         it //.brighten(1.0)
                     }
@@ -558,6 +564,7 @@ object PentaViz {
 
     fun Viz.addEvents() {
         on(KPointerMove) { evt ->
+            val boardState = gameState.boardStore.state
 
             // convert pos back
             mousePos = (evt.pos / scale) * PentaMath.R_
@@ -580,15 +587,15 @@ object PentaViz {
             gameState.findPiecesAtPos(mousePos).firstOrNull()
                 ?.let { piece ->
                     when (val state = multiplayerState.value) {
-                        is MultiplayerState.HasGameSession -> {
-                            if (gameState.currentPlayer.id != state.userId) {
+                        is ConnectionState.HasGameSession -> {
+                            if (boardState.currentPlayer.id != state.userId) {
                                 return@let null
                             }
                         }
                     }
                     if (
                         (piece !is Piece.Player)
-                        || (piece.playerId != gameState.currentPlayer.id)
+                        || (piece.playerId != boardState.currentPlayer.id)
                     ) {
                         hoveredPiece = null
 //                        recolor()
@@ -612,9 +619,9 @@ object PentaViz {
                 }
                 ?: PentaBoard.findFieldAtPos(mousePos)?.let {
                     if (
-                        gameState.selectedPlayerPiece == null
-                        && gameState.selectedGrayPiece == null
-                        && gameState.selectedBlackPiece == null
+                        boardState.selectedPlayerPiece == null
+                        && boardState.selectedGrayPiece == null
+                        && boardState.selectedBlackPiece == null
                     ) {
                         hoveredField = null
                         hoveredPiece = null

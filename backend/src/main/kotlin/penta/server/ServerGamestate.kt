@@ -1,6 +1,5 @@
 package penta.server
 
-import com.lightningkite.reacktive.map.WrapperObservableMap
 import io.ktor.http.cio.websocket.Frame
 import io.ktor.http.cio.websocket.readText
 import io.ktor.websocket.DefaultWebSocketServerSession
@@ -13,13 +12,22 @@ import kotlinx.io.IOException
 import kotlinx.serialization.list
 import kotlinx.serialization.serializer
 import mu.KotlinLogging
-import penta.BoardState
+import org.reduxkotlin.Reducer
+import org.reduxkotlin.SelectorSubscriberBuilder
+import org.reduxkotlin.Store
+import org.reduxkotlin.StoreSubscription
+import org.reduxkotlin.applyMiddleware
+import org.reduxkotlin.createStore
+import penta.GameState
 import penta.PentaMove
 import penta.PlayerState
 import penta.network.GameEvent
-import penta.util.json
 import penta.network.GameSessionInfo
+import penta.redux_rewrite.BoardState
+import penta.util.exhaustive
 import penta.util.handler
+import penta.util.json
+import penta.util.loggingMiddleware
 
 /***
  * represents a pentagame match
@@ -27,38 +35,126 @@ import penta.util.handler
 class ServerGamestate(
     val id: String,
     var owner: User
-) : BoardState() {
+) : GameState() {
+    //    fun <T> errorHandler() = middleware<T> { store, next, action ->
+//        //log here
+//        try {
+//            next(action)
+//        } catch(e: IllegalMoveException) {
+//
+//        }
+//    }
+    val boardStateStore: Store<BoardState> = createStore(
+        BoardState.reducer,
+        BoardState.create(
+            // TODO: remove default users
+            listOf(PlayerState("alice", "cross"), PlayerState("bob", "triangle")),
+            BoardState.GameType.TWO
+        ),
+        applyMiddleware(loggingMiddleware(logger))
+    )
+
+    data class SessionState(
+        val observingSessions: Map<UserSession, DefaultWebSocketServerSession> = mapOf()
+    ) {
+        companion object {
+            sealed class Actions {
+                data class AddObserver(
+                    val session: UserSession,
+                    val wss: DefaultWebSocketServerSession
+                ) : Actions()
+
+                data class RemoveObserver(
+                    val session: UserSession
+                ) : Actions()
+            }
+
+            val reducer: Reducer<SessionState> = { state, action ->
+                // TODO: modify state
+                action as Actions
+                when (action) {
+                    is Actions.AddObserver -> {
+                        GlobalScope.launch(handler) {
+                            state.observingSessions.forEach { (session, wss) ->
+                                if (wss != action.wss) {
+                                    // TODO: wrap Move into object
+                                    // TODO: put observer join/leave
+//                                     wss.outgoing.send(
+//                                         Frame.Text(
+//                                             json.stringify(GameEvent.serializer(), GameEvent.ObserverLeave(session.userId))
+//                                         )
+//                                     )
+                                }
+                            }
+                        }
+
+                        state.copy(observingSessions = state.observingSessions + (action.session to action.wss))
+                    }
+                    is Actions.RemoveObserver -> {
+                        GlobalScope.launch(handler) {
+                            state.observingSessions.forEach { (session, wss) ->
+                                if (wss != state.observingSessions[action.session]) {
+                                    // TODO: wrap Move into object
+                                    // TODO: put observer join/leave
+//                                     wss.outgoing.send(
+//                                         Frame.Text(
+//                                             json.stringify(GameEvent.serializer(), GameEvent.ObserverJoin(session.userId))
+//                                         )
+//                                     )
+                                }
+                            }
+                        }
+
+                        state.copy(observingSessions = state.observingSessions - action.session)
+                    }
+                }.exhaustive
+            }
+        }
+    }
+
+    val sessionStore: Store<SessionState> = createStore(
+        SessionState.reducer,
+        SessionState(),
+        applyMiddleware(loggingMiddleware(logger))
+    )
+
     companion object {
         private val logger = KotlinLogging.logger {}
     }
 
     var running: Boolean = false
-    val observeringSessions = WrapperObservableMap<UserSession, DefaultWebSocketServerSession>().apply {
-        onMapRemove.add { session, new_wss ->
-            GlobalScope.launch(handler) {
-                values.forEach { wss ->
-                    if(wss != new_wss) {
-                        wss.outgoing.send(Frame.Text(
-                            json.stringify(GameEvent.serializer(), GameEvent.ObserverLeave(session.userId))
-                        ))
-                    }
-                }
-            }
-        }
-        onMapPut.add { session, hadPrevious,_, new_wss ->
-            GlobalScope.launch(handler) {
-                values.forEach { wss ->
-                    if(wss != new_wss) {
-                        wss.outgoing.send(
-                            Frame.Text(
-                                json.stringify(GameEvent.serializer(), GameEvent.ObserverJoin(session.userId))
-                            )
-                        )
-                    }
-                }
-            }
-        }
-    }
+//    val observeringSessions = WrapperObservableMap<UserSession, DefaultWebSocketServerSession>().apply {
+//        onMapRemove.add { session, new_wss ->
+//            GlobalScope.launch(handler) {
+//                values.forEach { wss ->
+//                    if (wss != new_wss) {
+//                        // TODO: wrap Move into object
+//                        // TODO: put observer join/leave
+////                        wss.outgoing.send(
+////                            Frame.Text(
+////                                json.stringify(GameEvent.serializer(), GameEvent.ObserverLeave(session.userId))
+////                            )
+////                        )
+//                    }
+//                }
+//            }
+//        }
+//        onMapPut.add { session, hadPrevious, _, new_wss ->
+//            GlobalScope.launch(handler) {
+//                values.forEach { wss ->
+//                    if (wss != new_wss) {
+//                        // TODO: wrap Move into object
+//                        // TODO: put observer join/leave
+////                        wss.outgoing.send(
+////                            Frame.Text(
+////                                json.stringify(GameEvent.serializer(), GameEvent.ObserverJoin(session.userId))
+////                            )
+////                        )
+//                    }
+//                }
+//            }
+//        }
+//    }
 
     val info: GameSessionInfo
         get() {
@@ -66,44 +162,70 @@ class ServerGamestate(
                 id = id,
                 owner = owner.userId,
                 running = running,
-                turn = turn,
-                players = players.map { it.id },
-                observers = observeringSessions.keys.map { it.userId }
+                turn = boardStateStore.state.turn,
+                players = boardStateStore.state.players.map { it.id },
+                observers = sessionStore.state.observingSessions.keys.map { it.userId }
             )
         }
 
     private val serializer = GameEvent.serializer()
 
     suspend fun handle(websocketSession: DefaultWebSocketServerSession, session: UserSession) = with(websocketSession) {
+        var unsubscribe: StoreSubscription = {}
         try {
-            observeringSessions[session] = this
+            sessionStore.dispatch(SessionState.Companion.Actions.AddObserver(session, this))
+//            observeringSessions[session] = this
             // play back history
             logger.info { "sending observers" }
-            outgoing.send(Frame.Text(json.stringify(String.serializer().list, observeringSessions.keys.map { it.userId })))
+            outgoing.send(
+                Frame.Text(
+                    json.stringify(
+                        String.serializer().list,
+                        sessionStore.state.observingSessions.keys.map { it.userId })
+                )
+            )
 
 
             logger.info { "play back history" }
-            outgoing.send(Frame.Text(json.stringify(serializer.list, history.map { it.toSerializable() })))
+            outgoing.send(
+                Frame.Text(
+                    json.stringify(
+                        serializer.list,
+                        boardStateStore.state.history.map { it.toSerializable() })
+                )
+            )
 //            history.forEach { move ->
 //                logger.info { "transmitting move $move" }
 //                outgoing.send(Frame.Text(json.stringify(serializer, move.toSerializable())))
 //            }
 
-            // new move added
-            history.onListAdd.add { move, index ->
-                logger.info { "transmitting move $move" }
-                // send
-                GlobalScope.launch(handler) {
-                    outgoing.send(Frame.Text(json.stringify(serializer, move.toSerializable())))
+            var oldHistory: List<PentaMove> = listOf()
+//            val subscriber: StoreSubscriber =
+            SelectorSubscriberBuilder<BoardState>(boardStateStore).apply {
+                withSingleField({ it.history }) {
+                    val moves = boardStateStore.state.history - oldHistory
+                    GlobalScope.launch(handler) {
+                        moves.forEach { move ->
+                            logger.info { "transmitting move $move" }
+                            outgoing.send(Frame.Text(json.stringify(serializer, move.toSerializable())))
+                        }
+                    }
+
+                    oldHistory = boardStateStore.state.history
                 }
             }
+            // TODO: not sure if this still needs to register
+
+//            boardStateStore.subscribe(subscriber)
+
             while (true) {
                 val notationJson = (incoming.receive() as Frame.Text).readText()
                 logger.info { "ws received: $notationJson" }
 
                 val notation = json.parse(serializer, notationJson)
-                notation.asMove(this@ServerGamestate).also {
-                    this@ServerGamestate.processMove(it) { illegalMove ->
+                notation.asMove(boardStateStore.state).also {
+                    boardStateStore.dispatch(it)
+                    boardStateStore.state.illegalMove?.let { illegalMove ->
                         logger.error {
                             "handle illegal move: $illegalMove"
                         }
@@ -122,43 +244,48 @@ class ServerGamestate(
                 // apply move ?
             }
         } catch (e: IOException) {
-            observeringSessions.remove(session)
+            sessionStore.dispatch(SessionState.Companion.Actions.RemoveObserver(session))
+//            observeringSessions.remove(session)
             val reason = closeReason.await()
             logger.debug(e) { "onClose $reason" }
         } catch (e: ClosedReceiveChannelException) {
-            observeringSessions.remove(session)
+            sessionStore.dispatch(SessionState.Companion.Actions.RemoveObserver(session))
+//            observeringSessions.remove(session)
             val reason = closeReason.await()
             logger.error { "onClose $reason" }
         } catch (e: ClosedSendChannelException) {
-            observeringSessions.remove(session)
+            sessionStore.dispatch(SessionState.Companion.Actions.RemoveObserver(session))
+//            observeringSessions.remove(session)
             val reason = closeReason.await()
             logger.error { "onClose $reason" }
         } catch (e: Exception) {
-            observeringSessions.remove(session)
+            sessionStore.dispatch(SessionState.Companion.Actions.RemoveObserver(session))
+//            observeringSessions.remove(session)
             logger.error(e) { "exception onClose ${e.message}" }
         } finally {
-
+            unsubscribe()
         }
-
     }
 
     fun requestJoin(user: User) {
-        if (players.size > 3) {
+        if (boardStateStore.state.players.size > 3) {
             logger.error { "max player limit reached" }
             return
         }
-        if (gameStarted) {
+        if (boardStateStore.state.gameStarted) {
             logger.error { "game has already started" }
             return
         }
 
         val shapes = listOf("triangle", "square", "cross", "circle")
-        processMove(PentaMove.PlayerJoin(PlayerState(user.userId, shapes[players.size])))
+        boardStateStore.dispatch(PentaMove.PlayerJoin(PlayerState(user.userId, shapes[boardStateStore.state.players.size])))
+//        processMove()
     }
 
     fun requestStart(user: User) {
         if (user.userId == owner.userId) {
-            processMove(PentaMove.InitGame)
+            boardStateStore.dispatch(PentaMove.InitGame)
+//            processMove(PentaMove.InitGame)
         }
     }
 }

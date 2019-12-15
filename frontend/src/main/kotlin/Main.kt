@@ -26,36 +26,36 @@ class Factory :
     ViewFactory<HTMLElement> by HtmlViewFactoryOverrides(myTheme),
     LayoutHtmlData2Viz
 
-fun main(args: Array<String>) {
-    logger.info { "running main" }
-    val mainVg = MainPentaVG<HTMLElement>()
-    document.body!!.appendChild(
-        Factory().contentRoot(mainVg)
-    )
-    logger.info { "UI finished" }
-
-    val playerSymbols = listOf("square", "cross", "circle")
-    val playerCount = 2
-    val canvasId = "vizCanvas"
-    val canvas = requireNotNull(document.getElementById(canvasId) as HTMLCanvasElement?)
-    val container = requireNotNull(document.getElementById("vizContainer") as HTMLDivElement?)
-    with(PentaViz) {
-        viz.bindRendererOn(canvas)
-        viz.addEvents()
-        gameState.initialize(playerSymbols.subList(0, playerCount).map { PlayerState(it, it) })
-    }
-    val rect = container.getBoundingClientRect()
-    val size = min(
-        min(rect.width, rect.height).toInt(),
-        window.document.documentElement!!.clientHeight
-    )
-    logger.info { "initial size: $size" }
-    canvas.width = size
-    canvas.height = size
-    with(PentaViz.viz) {
-        height = canvas.height.toDouble()
-        width = canvas.width.toDouble()
-        resize(canvas.width.toDouble(), canvas.height.toDouble())
-        render()
-    }
-}
+//fun main(args: Array<String>) {
+//    logger.info { "running main" }
+//    val mainVg = MainPentaVG<HTMLElement>()
+//    document.body!!.appendChild(
+//        Factory().contentRoot(mainVg)
+//    )
+//    logger.info { "UI finished" }
+//
+//    val playerSymbols = listOf("square", "cross", "circle")
+//    val playerCount = 2
+//    val canvasId = "vizCanvas"
+//    val canvas = requireNotNull(document.getElementById(canvasId) as HTMLCanvasElement?)
+//    val container = requireNotNull(document.getElementById("vizContainer") as HTMLDivElement?)
+//    with(PentaViz) {
+//        viz.bindRendererOn(canvas)
+//        viz.addEvents()
+//        gameState.initialize(playerSymbols.subList(0, playerCount).map { PlayerState(it, it) })
+//    }
+//    val rect = container.getBoundingClientRect()
+//    val size = min(
+//        min(rect.width, rect.height).toInt(),
+//        window.document.documentElement!!.clientHeight
+//    )
+//    logger.info { "initial size: $size" }
+//    canvas.width = size
+//    canvas.height = size
+//    with(PentaViz.viz) {
+//        height = canvas.height.toDouble()
+//        width = canvas.width.toDouble()
+//        resize(canvas.width.toDouble(), canvas.height.toDouble())
+//        render()
+//    }
+//}

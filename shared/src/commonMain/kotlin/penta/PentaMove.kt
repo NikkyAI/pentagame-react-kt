@@ -133,20 +133,36 @@ sealed class PentaMove {
         override fun toSerializable() = GameEvent.SetGrey(piece.id, from?.id, to.id)
     }
 
+    data class SelectGrey(
+        val grayPiece: Piece.GrayBlocker?
+    ): PentaMove() {
+        override fun asNotation(): String = "select grey ${grayPiece?.id}"
+        override fun toSerializable(): GameEvent = TODO("add serializer class")
+    }
+
+    data class SelectPlayerPiece(
+        val playerPiece: Piece.Player
+    ): PentaMove() {
+        override fun asNotation(): String = "select player ${playerPiece?.id}"
+        override fun toSerializable(): GameEvent = TODO("add serializer class")
+    }
+
     data class PlayerJoin(val player: PlayerState) : PentaMove() {
         override fun asNotation(): String = ">>> [${player.id}]"
         override fun toSerializable() = GameEvent.PlayerJoin(player)
     }
 
-    data class ObserverJoin(val id: String) : PentaMove() {
-        override fun asNotation(): String = "join [${id}]"
-        override fun toSerializable() = GameEvent.ObserverJoin(id)
-    }
-
-    data class ObserverLeave(val id: String) : PentaMove() {
-        override fun asNotation(): String = "leave [${id}]"
-        override fun toSerializable() = GameEvent.ObserverLeave(id)
-    }
+//    @Deprecated("not a move")
+//    data class ObserverJoin(val id: String) : PentaMove() {
+//        override fun asNotation(): String = "join [${id}]"
+//        override fun toSerializable() = GameEvent.ObserverJoin(id)
+//    }
+//
+//    @Deprecated("not a move")
+//    data class ObserverLeave(val id: String) : PentaMove() {
+//        override fun asNotation(): String = "leave [${id}]"
+//        override fun toSerializable() = GameEvent.ObserverLeave(id)
+//    }
 
     object InitGame : PentaMove() {
         override fun asNotation(): String = ">>>"

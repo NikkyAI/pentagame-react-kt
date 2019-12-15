@@ -13,7 +13,6 @@ import com.lightningkite.koolui.views.layout.horizontal
 import com.lightningkite.koolui.views.layout.space
 import com.lightningkite.koolui.views.layout.vertical
 import com.lightningkite.reacktive.list.mutableObservableListOf
-import com.lightningkite.reacktive.property.CombineObservableProperty2
 import com.lightningkite.reacktive.property.ConstantObservableProperty
 import com.lightningkite.reacktive.property.StandardObservableProperty
 import com.lightningkite.reacktive.property.transform
@@ -21,11 +20,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import mu.KotlinLogging
-import penta.MultiplayerState
+import penta.ConnectionState
 import penta.WSClient
 import penta.network.GameSessionInfo
 import penta.util.handler
-import showNotification
 
 class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
     companion object {
@@ -37,13 +35,13 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
             swap(
                 PentaViz.multiplayerState.transform { state ->
                     when (state) {
-                        is MultiplayerState.Disconnected, is MultiplayerState.UserIDRejected -> {
+                        is ConnectionState.Disconnected, is ConnectionState.UserIDRejected -> {
                             val urlInput = StandardObservableProperty(state.baseUrl.toString())
                             val userIdInput = StandardObservableProperty(state.userId)
 
                             vertical {
                                 +space()
-                                if (state is MultiplayerState.UserIDRejected) {
+                                if (state is ConnectionState.UserIDRejected) {
                                     -card(
                                         text(
                                             text = state.reason,
@@ -76,7 +74,7 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
                                 +space()
                             } to Animation.Fade
                         }
-                        is MultiplayerState.RequiresPassword -> {
+                        is ConnectionState.RequiresPassword -> {
                             val passwordInput = StandardObservableProperty("")
 
                             vertical {
@@ -99,7 +97,7 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
                                 -button(
                                     label = "back",
                                     onClick = {
-                                        PentaViz.multiplayerState.value = MultiplayerState.Disconnected(
+                                        PentaViz.multiplayerState.value = ConnectionState.Disconnected(
                                             baseUrl = state.baseUrl,
                                             userId = state.userId
                                         )
@@ -109,7 +107,7 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
 
                             } to Animation.Fade
                         }
-                        is MultiplayerState.Lobby -> {
+                        is ConnectionState.Lobby -> {
                             //TODO: receive games list initially
                             val games = mutableObservableListOf<GameSessionInfo>()
                             games.onListUpdate.add {
@@ -129,7 +127,7 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
                                         -button(
                                             label = "Disconnect",
                                             onClick = {
-                                                PentaViz.multiplayerState.value = MultiplayerState.Disconnected(
+                                                PentaViz.multiplayerState.value = ConnectionState.Disconnected(
                                                     baseUrl = state.baseUrl,
                                                     userId = state.userId
                                                 )
@@ -194,76 +192,63 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
                                 }
                             ).setWidth(200f) to Animation.Fade
                         }
-                        is MultiplayerState.Observing -> {
-                            gameState.currentPlayerProperty.add {
-                                if (it.id == state.userId) {
-                                    logger.info { "showing notification" }
-                                    if (!gameState.isPlayback) {
-                                        showNotification(
-                                            "Your Turn",
-                                            "Last Move: " + gameState.history.last().asNotation()
-                                        )
-                                    }
-
-//                                    ApplicationAccess.showNotification(Notification(
-//                                        title = "Your Turn",
-//                                        content = "Last Move: " + gameState.history.last().asNotation(),
-//                                        priority = .5f,
-//                                        action = "view",
-//                                        actions = mapOf(
-//                                            "Silence" to "silence",
-//                                            "Yell" to "yell"
+                        is ConnectionState.Observing -> {
+//                            gameState.currentPlayerProperty.add {
+//                                if (it.id == state.userId) {
+//                                    logger.info { "showing notification" }
+//                                    if (!gameState.isPlayback) {
+//                                        showNotification(
+//                                            "Your Turn",
+//                                            "Last Move: " + gameState.history.last().asNotation()
 //                                        )
-//                                    )
-//                                    )
-                                }
-
-                            }
+//                                    }
+//                                }
+//                            }
                             vertical {
                                 -text("gameId: ${state.game.id}")
                                 -text("owner: ${state.game.owner}")
-                                -text(gameState.observersProperty.onListUpdate.transform {
-                                    "connected: ${it.joinToString()}"
-                                })
+//                                -text(gameState.observersProperty.onListUpdate.transform {
+//                                    "connected: ${it.joinToString()}"
+//                                })
                                 // TODO: update list of connected observers
                                 // TODO: chat ?
-                                -swap(
-                                    CombineObservableProperty2(
-                                        gameState.gameStartedProperty,
-                                        gameState.players.onListUpdate
-                                    ) { initialized, players ->
-                                        if (!initialized && players.none { it.id == state.userId }) {
-                                            button(
-                                                label = "Join",
-                                                onClick = {
-                                                    GlobalScope.launch(Dispatchers.UI + handler) {
-                                                        WSClient.joinGame(state)
-                                                    }
-                                                }
-                                            )
-                                        } else {
-                                            // TODO: add "spectate" ?
-                                            space()
-                                        } to Animation.Fade
-                                    }
-                                )
+//                                -swap(
+//                                    CombineObservableProperty2(
+//                                        gameState.gameStartedProperty,
+//                                        gameState.players.onListUpdate
+//                                    ) { initialized, players ->
+//                                        if (!initialized && players.none { it.id == state.userId }) {
+//                                            button(
+//                                                label = "Join",
+//                                                onClick = {
+//                                                    GlobalScope.launch(Dispatchers.UI + handler) {
+//                                                        WSClient.joinGame(state)
+//                                                    }
+//                                                }
+//                                            )
+//                                        } else {
+//                                            // TODO: add "spectate" ?
+//                                            space()
+//                                        } to Animation.Fade
+//                                    }
+//                                )
                                 +space()
                                 // TODO: move to top row instead
-                                -swap(gameState.gameStartedProperty.transform {
-                                    if (!it && state.game.owner == state.userId) {
-                                        button(
-                                            // TODO: hide once started
-                                            label = "Start",
-                                            onClick = {
-                                                GlobalScope.launch(Dispatchers.UI + handler) {
-                                                    WSClient.startGame(state)
-                                                }
-                                            }
-                                        )
-                                    } else {
-                                        space()
-                                    } to Animation.Fade
-                                })
+//                                -swap(gameState.gameStartedProperty.transform {
+//                                    if (!it && state.game.owner == state.userId) {
+//                                        button(
+//                                            // TODO: hide once started
+//                                            label = "Start",
+//                                            onClick = {
+//                                                GlobalScope.launch(Dispatchers.UI + handler) {
+//                                                    WSClient.startGame(state)
+//                                                }
+//                                            }
+//                                        )
+//                                    } else {
+//                                        space()
+//                                    } to Animation.Fade
+//                                })
                                 +space()
                                 -button(
                                     label = "Leave Game",
@@ -275,7 +260,7 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
                                 )
                             } to Animation.Fade
                         }
-                        is MultiplayerState.Authenticated -> {
+                        is ConnectionState.Authenticated -> {
                             vertical {
                                 +space()
                                 -work(text("Connecting"), ConstantObservableProperty(true))

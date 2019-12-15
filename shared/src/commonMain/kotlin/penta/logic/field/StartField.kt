@@ -4,7 +4,7 @@ import PentaMath
 import io.data2viz.geom.Point
 import penta.PentaColor
 
-data class CornerField(
+data class StartField(
     override val id: String,
     override val pos: Point,
     override val pentaColor: PentaColor
@@ -13,6 +13,6 @@ data class CornerField(
     override val connected: List<AbstractField>
         get() = connectedFields
 
-    val connectedJointFields: List<JointField> = listOf()
-    val connectedCornerFields: List<CornerField> = listOf()
+    val connectedGoalFields: List<GoalField> = listOf()
+    val connectedStartFields: List<StartField> = listOf()
 }

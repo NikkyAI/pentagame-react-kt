@@ -84,6 +84,13 @@ kotlin {
                 // logging
                 api("io.github.microutils:kotlin-logging-common:${KotlinLogging.version}")
 
+                // Redux
+                api("org.reduxkotlin:redux-kotlin:0.2.9")
+                api("org.reduxkotlin:redux-kotlin-reselect-metadata:0.2.9")
+
+
+
+
                 api("com.lightningkite:kommon-metadata:${Kommon.version}")
                 api("com.lightningkite:reacktive-metadata:${Reacktive.version}")
             }
@@ -125,6 +132,10 @@ kotlin {
                 // logging
                 api("ch.qos.logback:logback-classic:${Logback.version}")
                 api("io.github.microutils:kotlin-logging:${KotlinLogging.version}")
+
+                // redux
+                api("org.reduxkotlin:redux-kotlin-reselect-jvm:0.2.9")
+
 
                 // krosslin
                 api("com.lightningkite:kommon-jvm:${Kommon.version}")
@@ -185,12 +196,16 @@ kotlin {
                 // logging
                 api("io.github.microutils:kotlin-logging-js:${KotlinLogging.version}")
 
+                // redux
+                api("org.reduxkotlin:redux-kotlin-reselect-js:0.2.9")
+
                 // ktor client
                 api(org.gradle.kotlin.dsl.ktor("client-core-js"))
                 api(org.gradle.kotlin.dsl.ktor("client-json-js"))
                 api(org.gradle.kotlin.dsl.ktor("client-serialization-js"))
 
                 // krosslin
+                // TODO: remove
                 api("com.lightningkite:kommon-js:${Kommon.version}")
                 api("com.lightningkite:reacktive-js:${Reacktive.version}")
                 api("com.lightningkite:recktangle-js:${Recktangle.version}")

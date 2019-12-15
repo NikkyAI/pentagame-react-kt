@@ -4,9 +4,9 @@ import io.data2viz.math.DEG_TO_RAD
 import penta.PentaColor
 import penta.logic.field.AbstractField
 import penta.logic.field.ConnectionField
-import penta.logic.field.CornerField
+import penta.logic.field.StartField
 import penta.logic.field.IntersectionField
-import penta.logic.field.JointField
+import penta.logic.field.GoalField
 import penta.util.interpolate
 import penta.util.length
 import kotlin.math.cos
@@ -14,8 +14,8 @@ import kotlin.math.sin
 
 object PentaBoard {
     val fields: List<AbstractField>
-    val c: Array<CornerField>
-    val j: Array<JointField>
+    val c: Array<StartField>
+    val j: Array<GoalField>
 
     init {
         val corners = PentaColor.values().map { color ->
@@ -26,7 +26,7 @@ object PentaBoard {
                 sin(angle * DEG_TO_RAD)
             ) * PentaMath.r
 //            val id = color.ordinal * 2
-            CornerField(
+            StartField(
 //                id.toString()
                 id = "${'A' + color.ordinal}",
                 pos = pos / 2 + (Point(0.5, 0.5) * PentaMath.R_),
@@ -42,7 +42,7 @@ object PentaBoard {
                 cos(angle * DEG_TO_RAD),
                 sin(angle * DEG_TO_RAD)
             ) * -PentaMath.inner_r
-            JointField(
+            GoalField(
                 id = "${'a' + color.ordinal}",
 //                id.toString(),
                 pos = pos / 2 + (Point(0.5, 0.5) * PentaMath.R_),

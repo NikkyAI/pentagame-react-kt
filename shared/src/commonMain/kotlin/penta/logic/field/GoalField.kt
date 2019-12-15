@@ -4,7 +4,7 @@ import PentaMath
 import io.data2viz.geom.Point
 import penta.PentaColor
 
-data class JointField(
+data class GoalField(
     override val id: String,
     override val pos: Point,
     override val pentaColor: PentaColor

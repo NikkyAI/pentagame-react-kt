@@ -11,21 +11,21 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.Url
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.Json
-import penta.MultiplayerState
+import penta.ConnectionState
 
 suspend fun <T> HttpResponse.parse(serializer: KSerializer<T>, json: Json = penta.util.json): T = json.parse(
     serializer,
     readText()
 )
 
-fun HttpRequestBuilder.authenticateWith(state: MultiplayerState.HasSession) {
+fun HttpRequestBuilder.authenticateWith(state: ConnectionState.HasSession) {
 //    attributes.put(AttributeKey("credentials"), "include")
     header("SESSION", state.session)
 }
 
 suspend fun HttpClient.authenticatedRequest(
     url: Url,
-    state: MultiplayerState.HasSession,
+    state: ConnectionState.HasSession,
     method: HttpMethod,
     builder: HttpRequestBuilder.() -> Unit = {}
 ): HttpResponse {
@@ -44,7 +44,7 @@ suspend fun HttpClient.authenticatedRequest(
 
 suspend fun <T : Any> HttpClient.authenticatedRequest(
     url: Url,
-    state: MultiplayerState.HasSession,
+    state: ConnectionState.HasSession,
     method: HttpMethod,
     serializer: KSerializer<T>,
     json: Json = penta.util.json,

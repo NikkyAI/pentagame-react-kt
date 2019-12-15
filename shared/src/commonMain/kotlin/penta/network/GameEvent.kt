@@ -6,10 +6,10 @@ import kotlinx.serialization.PolymorphicSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModuleBuilder
 import mu.KotlinLogging
-import penta.BoardState
 import penta.PentaMove
 import penta.PlayerState
 import penta.logic.Piece
+import penta.redux_rewrite.BoardState
 import penta.util.ObjectSerializer
 
 @Polymorphic
@@ -135,26 +135,6 @@ sealed class GameEvent {
             )
     }
 
-    @Serializable
-    data class ObserverJoin(
-        val id: String
-    ) : GameEvent() {
-        override fun asMove(boardState: BoardState) =
-            PentaMove.ObserverJoin(
-                id = id
-            )
-    }
-
-    @Serializable
-    data class ObserverLeave(
-        val id: String
-    ) : GameEvent() {
-        override fun asMove(boardState: BoardState) =
-            PentaMove.ObserverLeave(
-                id = id
-            )
-    }
-
     object InitGame : GameEvent() {
         override fun asMove(boardState: BoardState) =
             PentaMove.InitGame
@@ -191,8 +171,6 @@ sealed class GameEvent {
                 SetBlack::class with SetBlack.serializer()
                 SetGrey::class with SetGrey.serializer()
                 PlayerJoin::class with PlayerJoin.serializer()
-                ObserverJoin::class with ObserverJoin.serializer()
-                ObserverLeave::class with ObserverLeave.serializer()
                 InitGame::class with ObjectSerializer(InitGame)
                 Win::class with Win.serializer()
                 IllegalMove::class with IllegalMove.serializer()

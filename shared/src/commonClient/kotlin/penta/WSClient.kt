@@ -99,17 +99,17 @@ object WSClient {
             }
             PentaViz.multiplayerState.value = when (loginResponse) {
                 is LoginResponse.UserIdRejected -> {
-                    MultiplayerState.UserIDRejected(
+                    ConnectionState.UserIDRejected(
                         baseUrl = baseURL,
                         userId = userIdInput,
                         reason = loginResponse.reason
                     )
                 }
-                is LoginResponse.IncorrectPassword -> MultiplayerState.RequiresPassword(
+                is LoginResponse.IncorrectPassword -> ConnectionState.RequiresPassword(
                     baseUrl = baseURL,
                     userId = userIdInput
                 )
-                is LoginResponse.Success -> MultiplayerState.Authenticated(
+                is LoginResponse.Success -> ConnectionState.Authenticated(
                     baseUrl = baseURL,
                     userId = userIdInput,
                     session = sessionId ?: throw IllegalStateException("missing SESSION header")
@@ -130,7 +130,7 @@ object WSClient {
     }
 
     suspend fun listGames(
-        state: MultiplayerState.Lobby,
+        state: ConnectionState.Lobby,
         gamesList: MutableObservableList<GameSessionInfo>,
         onSuccess: () -> Unit = {}
     ) {
@@ -143,7 +143,7 @@ object WSClient {
         } catch (exception: Exception) {
             logger.error(exception) { "request failed" }
             // TODO: add state: connection lost
-            PentaViz.multiplayerState.value = MultiplayerState.Disconnected(
+            PentaViz.multiplayerState.value = ConnectionState.Disconnected(
                 baseUrl = state.baseUrl, userId = state.userId
             )
             return
@@ -154,7 +154,7 @@ object WSClient {
     }
 
     @UseExperimental(KtorExperimentalAPI::class)
-    suspend fun connectToLobby(state: MultiplayerState.Authenticated) {
+    suspend fun connectToLobby(state: ConnectionState.Authenticated) {
         val wsUrl = URLBuilder(state.baseUrl)
             .path("ws", "global")
             .build()
@@ -172,7 +172,7 @@ object WSClient {
 
             outgoing.send(Frame.Text(state.session))
 
-            val observingState = MultiplayerState.Lobby(
+            val observingState = ConnectionState.Lobby(
                 baseUrl = state.baseUrl,
                 userId = state.userId,
                 session = state.session
@@ -226,14 +226,14 @@ object WSClient {
         }
 
 
-        PentaViz.multiplayerState.value = MultiplayerState.Authenticated(
+        PentaViz.multiplayerState.value = ConnectionState.Authenticated(
             baseUrl = state.baseUrl,
             userId = state.userId,
             session = state.session
         )
     }
 
-    suspend fun createGameAndConnect(state: MultiplayerState.Lobby) {
+    suspend fun createGameAndConnect(state: ConnectionState.Lobby) {
         val createGameUrl = URLBuilder(state.baseUrl)
             .path("api", "game", "create")
             .build()
@@ -243,7 +243,7 @@ object WSClient {
     }
 
     @UseExperimental(ExperimentalStdlibApi::class)
-    suspend fun connectToGame(state: MultiplayerState.Lobby, game: GameSessionInfo) {
+    suspend fun connectToGame(state: ConnectionState.Lobby, game: GameSessionInfo) {
         val wsUrl = URLBuilder(state.baseUrl)
             .path("ws", "game", game.id)
             .build()
@@ -257,6 +257,11 @@ object WSClient {
                     url.protocol = URLProtocol.WSS
             }
         ) {
+//            val observerClientStore = createStore(
+//                MultiplayerState.reducer,
+//                MultiplayerState(),
+//
+//            )
             logger.info { "connection opened" }
             PentaViz.gameStateProperty.value = ClientGameState()
             PentaViz.updateBoard()
@@ -264,7 +269,7 @@ object WSClient {
             outgoing.send(Frame.Text(state.session))
 
             logger.info { "setting multiplayerStatus to Playing" }
-            val observingState = MultiplayerState.Observing(
+            val observingState = ConnectionState.Observing(
                 baseUrl = state.baseUrl,
                 userId = state.userId,
                 session = state.session,
@@ -277,23 +282,28 @@ object WSClient {
             }
 
             try {
+                // TODO: add another observerStore
                 val observersJsonList = (incoming.receive() as Frame.Text).readText()
                 logger.info { "receiving observers $observersJsonList" }
                 val observers = json.parse(String.serializer().list, observersJsonList)
-                PentaViz.gameState.observersProperty.replace(observers)
+                // TODO: dispatch action to store
+//                PentaViz.gameState.observersProperty.replace(observers)
 
                 val notationListJson = (incoming.receive() as Frame.Text).readText()
                 logger.info { "receiving notation $notationListJson" }
                 val history = json.parse(GameEvent.serializer().list, notationListJson)
-                PentaViz.gameState.isPlayback = true
+                // TODO: dispatch action to store
+//                PentaViz.gameState.isPlayback = true
                 withContext(Dispatchers.UI) {
                     history.forEach { notation ->
-                        notation.asMove(PentaViz.gameState).also {
-                            PentaViz.gameState.processMove(it)
+                        notation.asMove(PentaViz.gameState.boardStore.state).also {
+                            // TODO: dispatch action to store
+//                            PentaViz.gameState.processMove(it)
                         }
                     }
                 }
-                PentaViz.gameState.isPlayback = false
+                // TODO: dispatch action to store
+//                PentaViz.gameState.isPlayback = false
 
                 loop@ while (true) {
                     logger.info { "awaiting frame" }
@@ -313,10 +323,11 @@ object WSClient {
                             val notationJson = frame.readText()
                             logger.info { "receiving notation $notationJson" }
                             val notation = json.parse(GameEvent.serializer(), notationJson)
-                            notation.asMove(PentaViz.gameState).also {
+                            notation.asMove(PentaViz.gameState.boardStore.state).also {
                                 // apply move
                                 withContext(Dispatchers.UI) {
-                                    PentaViz.gameState.processMove(it)
+                                    // TODO: dispatch action to store
+//                                    PentaViz.gameState.processMove(it)
                                 }
 
                             }
@@ -353,14 +364,14 @@ object WSClient {
         PentaViz.updateBoard()
 
         // connection closed "normally" ?
-        PentaViz.multiplayerState.value = MultiplayerState.Lobby(
+        PentaViz.multiplayerState.value = ConnectionState.Lobby(
             baseUrl = state.baseUrl,
             userId = state.userId,
             session = state.session
         )
     }
 
-    suspend fun joinGame(state: MultiplayerState.Observing) {
+    suspend fun joinGame(state: ConnectionState.Observing) {
         val joinGameUrl = URLBuilder(state.baseUrl)
             .path("api", "game", state.game.id, "join")
             .build()
@@ -368,7 +379,7 @@ object WSClient {
         client.authenticatedRequest(joinGameUrl, state, HttpMethod.Get)
     }
 
-    suspend fun startGame(state: MultiplayerState.Observing) {
+    suspend fun startGame(state: ConnectionState.Observing) {
         val startGameUrl = URLBuilder(state.baseUrl)
             .path("api", "game", state.game.id, "start")
             .build()

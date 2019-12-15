@@ -4,7 +4,7 @@ import io.data2viz.color.Color
 import io.data2viz.geom.Point
 import penta.PentaColor
 import penta.PentaColors
-import penta.logic.field.JointField
+import penta.logic.field.GoalField
 
 sealed class Piece {
     abstract val id: String
@@ -21,7 +21,7 @@ sealed class Piece {
         override var pos: Point,
         override val radius: Double,
         override val pentaColor: PentaColor,
-        val originalPosition: JointField
+        val originalPosition: GoalField
     ) : Piece(), Blocker {
 
         override val color: Color get() = PentaColors.BLACK.value

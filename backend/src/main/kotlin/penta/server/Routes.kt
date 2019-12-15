@@ -25,6 +25,7 @@ import penta.network.LoginRequest
 import penta.network.LoginResponse
 import penta.network.ServerStatus
 import kotlin.random.Random
+import kotlin.IllegalArgumentException
 
 private val logger = KotlinLogging.logger {}
 fun Application.routes() = routing {

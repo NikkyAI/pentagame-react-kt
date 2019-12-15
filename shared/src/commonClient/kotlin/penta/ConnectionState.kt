@@ -10,7 +10,7 @@ import penta.network.GameEvent
 import penta.network.GameSessionInfo
 import penta.util.json
 
-sealed class MultiplayerState {
+sealed class ConnectionState {
     companion object {
         private val logger = KotlinLogging.logger {}
     }
@@ -22,18 +22,18 @@ sealed class MultiplayerState {
     data class Disconnected(
         override val baseUrl: Url = Url("https://pentagame.herokuapp.com"),
         override val userId: String = ""
-    ) : MultiplayerState(), NotLoggedIn
+    ) : ConnectionState(), NotLoggedIn
 
     data class UserIDRejected(
         override val baseUrl: Url,
         override val userId: String,
         val reason: String
-    ) : MultiplayerState(), NotLoggedIn
+    ) : ConnectionState(), NotLoggedIn
 
     data class RequiresPassword(
         override val baseUrl: Url,
         override val userId: String
-    ) : MultiplayerState(), NotLoggedIn
+    ) : ConnectionState(), NotLoggedIn
 
     interface HasSession {
         var session: String
@@ -47,13 +47,13 @@ sealed class MultiplayerState {
         override val baseUrl: Url,
         override val userId: String,
         override var session: String
-    ) : MultiplayerState(), HasSession
+    ) : ConnectionState(), HasSession
 
     data class Lobby(
         override val baseUrl: Url,
         override val userId: String,
         override var session: String
-    ) : MultiplayerState(), HasSession
+    ) : ConnectionState(), HasSession
 
     data class Observing(
         override val baseUrl: Url,
@@ -62,7 +62,7 @@ sealed class MultiplayerState {
         override val game: GameSessionInfo,
         private val websocketSession: DefaultClientWebSocketSession,
         var running: Boolean
-    ) : MultiplayerState(), HasSession, HasGameSession {
+    ) : ConnectionState(), HasSession, HasGameSession {
         suspend fun sendMove(move: PentaMove) {
             websocketSession.outgoing.send(
                 Frame.Text(json.stringify(GameEvent.serializer(), move.toSerializable()))
