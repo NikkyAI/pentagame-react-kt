@@ -90,8 +90,25 @@ data class BoardState(
         }
 
         private val logger = KotlinLogging.logger {}
-        val reducer: Reducer<BoardState> = { state, move ->
-            WithMutableState(state).processMove(move as PentaMove)
+        val reducer: Reducer<BoardState> = { state, action ->
+            logger.info { "action: ${action::class}" }
+            when(action) {
+                is org.reduxkotlin.ActionTypes.INIT -> {
+                    logger.info { "received INIT" }
+                    state
+                }
+                is org.reduxkotlin.ActionTypes.REPLACE -> {
+                    logger.info { "received REPLACE" }
+                    state
+                }
+                is PentaMove -> {
+                    WithMutableState(state).processMove(action)
+                }
+                else -> {
+                    error("$action is of unhandled type")
+                }
+            }
+
         }
 
         fun WithMutableState.handleIllegalMove(illegalMove: PentaMove.IllegalMove) {
@@ -99,6 +116,11 @@ data class BoardState(
                 illegalMove = illegalMove
             )
         }
+
+        fun reduce(state: BoardState, move: PentaMove): BoardState =
+            with(WithMutableState(state)) {
+                processMove(move)
+            }
 
         fun WithMutableState.processMove(move: PentaMove): BoardState = with(nextState) {
             try {

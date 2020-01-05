@@ -1,6 +1,6 @@
 package penta.view
 
-import PentaViz
+import penta.client.PentaViz
 import com.lightningkite.koolui.async.UI
 import com.lightningkite.koolui.concepts.Animation
 import com.lightningkite.koolui.concepts.Importance
@@ -138,9 +138,9 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
                                         -button(
                                             label = "Create Game",
                                             onClick = {
-                                                GlobalScope.launch(Dispatchers.UI + handler) {
-                                                    WSClient.createGameAndConnect(state)
-                                                }
+//                                                GlobalScope.launch(Dispatchers.UI + handler) {
+//                                                    WSClient.createGameAndConnect(state)
+//                                                }
                                             }
                                         )
                                         +space()
@@ -168,9 +168,9 @@ class MultiplayerVG<VIEW>() : MyViewGenerator<VIEW> {
                                                     -button(
                                                         label = "Join",
                                                         onClick = {
-                                                            GlobalScope.launch(Dispatchers.UI + handler) {
-                                                                WSClient.connectToGame(state, game)
-                                                            }
+//                                                            GlobalScope.launch(Dispatchers.UI + handler) {
+//                                                                WSClient.connectToGame(clientGameState, state, game)
+//                                                            }
                                                         }
                                                     )
                                                 }

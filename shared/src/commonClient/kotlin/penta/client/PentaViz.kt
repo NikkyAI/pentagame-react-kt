@@ -1,3 +1,7 @@
+package penta.client
+
+import PentaBoard
+import PentaMath
 import com.lightningkite.reacktive.property.StandardObservableProperty
 import com.lightningkite.reacktive.property.addAndInvoke
 import io.data2viz.color.Colors
@@ -19,7 +23,6 @@ import mu.KotlinLogging
 import penta.ClientGameState
 import penta.ConnectionState
 import penta.PentaColor
-import penta.client.PlayerCorner
 import penta.logic.Piece
 import penta.logic.field.AbstractField
 import penta.logic.field.ConnectionField
@@ -37,13 +40,13 @@ object PentaViz {
     private var scale: Double = 100.0
     private var mousePos: Point = Point(0.0, 0.0)
     val turnDisplay: StandardObservableProperty<String> = StandardObservableProperty("")
-    val gameStateProperty = StandardObservableProperty(ClientGameState(0))
-    val gameState: ClientGameState get() = gameStateProperty.value
+    val gameStateProperty: StandardObservableProperty<ClientGameState?> = StandardObservableProperty(null)
+    val gameState: ClientGameState get() = gameStateProperty.value!!
     val multiplayerState = StandardObservableProperty<ConnectionState>(ConnectionState.Disconnected())
 //    lateinit var centerDisplay: Pair<CircleNode, TextNode>
 
     fun highlightedPieceAt(mousePos: Point): Piece? = gameState.findPiecesAtPos(mousePos).firstOrNull()?.let {
-        val boardState = gameState.boardStore.state
+        val boardState = gameState.boardState
         // do not highlight pieces that are off the board
         if (boardState.positions[it.id] == null) return@let null
         // allow highlighting blockers when a piece is selected
@@ -157,7 +160,7 @@ object PentaViz {
                 }
             }
 
-            gameState.boardStore.state.figures.forEach {
+            gameState.boardState.figures.forEach {
                 updatePiece(it)
             }
         }
@@ -167,7 +170,7 @@ object PentaViz {
         gameStateProperty.addAndInvoke { gameState ->
             logger.info { "setting gameState" }
             logger.info { "resetting" }
-            gameState.updatePiece = ::updatePiece
+            gameState!!.updatePiece = PentaViz::updatePiece
 
             viz.apply {
                 playerCorners.forEach { corner ->
@@ -181,7 +184,7 @@ object PentaViz {
                 }
                 pieces.clear()
 
-                playerCorners = gameState.boardStore.state.players.map {
+                playerCorners = gameState!!.boardState.players.map {
                     logger.debug { ("init face $it") }
                     PlayerCorner(
                         it,
@@ -196,7 +199,7 @@ object PentaViz {
                         }
                     )
                 }
-                if (::currentPlayerMarker.isInitialized) {
+                if (PentaViz::currentPlayerMarker.isInitialized) {
                     currentPlayerMarker.remove()
                 }
                 currentPlayerMarker = circle {
@@ -205,7 +208,7 @@ object PentaViz {
                 }
 
                 // init pieces
-                gameState.boardStore.state.figures.forEach { piece ->
+                gameState!!.boardState.figures.forEach { piece ->
                     logger.debug { ("initialzing piece: $piece") }
                     val c = circle {
                         strokeWidth = 4.0
@@ -235,7 +238,7 @@ object PentaViz {
     }
 
     fun updateCorners() {
-        val boardState = gameState.boardStore.state
+        val boardState = gameState.boardState
         logger.trace { ("gameState.currentPlayer: ${boardState.currentPlayer}") }
         playerCorners.forEachIndexed { index, corner ->
             val angle = (-45 + (index) * 90).deg
@@ -290,7 +293,7 @@ object PentaViz {
     }
 
     fun updatePlayers() {
-        val boardState = gameState.boardStore.state
+        val boardState = gameState.boardState
         logger.info { "updating player render" }
         viz.apply {
             playerCorners.forEach { corner ->
@@ -321,7 +324,7 @@ object PentaViz {
                 )
             }
 
-            if (::currentPlayerMarker.isInitialized) {
+            if (PentaViz::currentPlayerMarker.isInitialized) {
                 currentPlayerMarker.remove()
             }
             currentPlayerMarker = circle {
@@ -372,7 +375,7 @@ object PentaViz {
                 }
             }
         }
-        val boardState = gameState.boardStore.state
+        val boardState = gameState.boardState
         boardState.figures.forEach {
             updatePiece(it)
         }
@@ -460,7 +463,7 @@ object PentaViz {
     }
 
     fun updateBoard(render: Boolean = true) {
-        val boardState = gameState.boardStore.state
+        val boardState = gameState.boardState
         // TODO: background: #28292b
         turnDisplay.apply {
             val turn = boardState.turn
@@ -564,7 +567,7 @@ object PentaViz {
 
     fun Viz.addEvents() {
         on(KPointerMove) { evt ->
-            val boardState = gameState.boardStore.state
+            val boardState = gameState.boardState
 
             // convert pos back
             mousePos = (evt.pos / scale) * PentaMath.R_

@@ -34,19 +34,24 @@ kotlin {
             dependencies {
                 implementation(kotlin("stdlib-js"))
 
-                implementation(npm("react", "^16.9.0"))
-                implementation(npm("react-dom", "^16.9.0"))
-                implementation(npm("styled-components", "^4.4.1"))
-                implementation(npm("inline-style-prefixer", "^5.1.0"))
-                implementation(npm("core-js", "^3.4.7"))
-                implementation(npm("css-in-js-utils", "^3.0.2"))
-
-                var kotlinWrappersVersion = "pre.88-kotlin-1.3.60"
-                implementation("org.jetbrains:kotlin-react:16.9.0-${kotlinWrappersVersion}")
-                implementation("org.jetbrains:kotlin-react-dom:16.9.0-${kotlinWrappersVersion}")
-                implementation("org.jetbrains:kotlin-css:1.0.0-${kotlinWrappersVersion}")
-                implementation("org.jetbrains:kotlin-css-js:1.0.0-${kotlinWrappersVersion}")
-                implementation("org.jetbrains:kotlin-styled:1.0.0-${kotlinWrappersVersion}")
+//                implementation(npm("react", "^16.9.0"))
+//                implementation(npm("react-dom", "^16.9.0"))
+//                implementation(npm("styled-components", "^4.4.1"))
+//                implementation(npm("inline-style-prefixer", "^5.1.0"))
+//                implementation(npm("core-js", "^3.4.7"))
+//                implementation(npm("css-in-js-utils", "^3.0.2"))
+//                implementation(npm("redux", "^4.0.0"))
+//                implementation(npm("react-redux", "^5.0.7"))
+//
+//                val kotlinWrappersVersion = "pre.88-kotlin-1.3.60"
+//                implementation("org.jetbrains:kotlin-react:16.9.0-${kotlinWrappersVersion}")
+//                implementation("org.jetbrains:kotlin-react-dom:16.9.0-${kotlinWrappersVersion}")
+//                implementation("org.jetbrains:kotlin-css:1.0.0-${kotlinWrappersVersion}")
+//                implementation("org.jetbrains:kotlin-css-js:1.0.0-${kotlinWrappersVersion}")
+//                implementation("org.jetbrains:kotlin-styled:1.0.0-${kotlinWrappersVersion}")
+//
+//                implementation("org.jetbrains:kotlin-redux:4.0.0-${kotlinWrappersVersion}")
+//                implementation("org.jetbrains:kotlin-react-redux:5.0.7-${kotlinWrappersVersion}")
 
 //                implementation(npm("kotlinx-coroutines-core","^1.3.2"))
 //                implementation(npm("kotlinx-html","0.6.12"))

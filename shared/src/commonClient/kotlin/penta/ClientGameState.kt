@@ -1,7 +1,7 @@
 package penta
 
 import PentaMath
-import PentaViz
+import penta.client.PentaViz
 import io.data2viz.geom.Point
 import io.data2viz.math.Angle
 import io.data2viz.math.deg
@@ -17,9 +17,8 @@ import penta.logic.field.AbstractField
 import penta.logic.field.StartField
 import penta.redux_rewrite.BoardState
 import penta.util.length
-import penta.util.loggingMiddleware
 
-open class ClientGameState(localPlayerCount: Int = 0) : GameState() {
+open class ClientGameState(localPlayerCount: Int = 1) : GameState() {
     companion object {
         private val logger = KotlinLogging.logger {}
     }
@@ -31,8 +30,13 @@ open class ClientGameState(localPlayerCount: Int = 0) : GameState() {
             listOf(PlayerState("alice", "cross"), PlayerState("bob", "triangle")),
             BoardState.GameType.TWO
         ),
-        applyMiddleware(loggingMiddleware(logger))
+        applyMiddleware(/*loggingMiddleware(logger)*/)
     )
+
+    val boardState: BoardState = boardStore.state
+    fun boardStoreDispatch(move: PentaMove) {
+        boardStore.dispatch(move);
+    }
 
     //    override var updateLogPanel: (String) -> Unit = {}
     var updatePiece: (Piece) -> Unit = { piece -> }
@@ -49,9 +53,11 @@ open class ClientGameState(localPlayerCount: Int = 0) : GameState() {
     fun initialize(players: List<PlayerState>) {
         logger.info { "initializing with $players" }
         players.forEach {
-            boardStore.dispatch(PentaMove.PlayerJoin(it))
+            boardStoreDispatch(PentaMove.PlayerJoin(it))
+//            boardStore.dispatch(PentaMove.PlayerJoin(it))
         }
-        boardStore.dispatch(PentaMove.InitGame)
+        boardStoreDispatch(PentaMove.InitGame)
+//        boardStore.dispatch(PentaMove.InitGame)
     }
 
     init {
@@ -60,7 +66,8 @@ open class ClientGameState(localPlayerCount: Int = 0) : GameState() {
             initialize(localSymbols.subList(0, localPlayerCount).map { PlayerState("local+" + it, it) })
         }
 
-        boardStore.state.figures.forEach(::updatePiecePos)
+        boardState.figures.forEach(::updatePiecePos)
+//        boardState.figures.forEach(::updatePiecePos)
     }
 
     fun preProcessMove(move: PentaMove) {
@@ -72,8 +79,9 @@ open class ClientGameState(localPlayerCount: Int = 0) : GameState() {
                 }
             }
             else -> {
-                boardStore.dispatch(move)
-                boardStore.state.illegalMove?.let { illegalMove ->
+                boardStoreDispatch(move)
+//                boardStore.dispatch(move)
+                boardState.illegalMove?.let { illegalMove ->
                     logger.error { "TODO: add popup about $illegalMove" }
                 }
             }
@@ -83,11 +91,11 @@ open class ClientGameState(localPlayerCount: Int = 0) : GameState() {
     }
 
     override fun updatePiecePos(piece: Piece) {
-        val field: AbstractField? = boardStore.state.positions[piece.id]
+        val field: AbstractField? = boardState.positions[piece.id]
         updatePiecePos(piece, field)
     }
 
-    fun updatePiecePos(piece: Piece, field: AbstractField?) = with(boardStore.state){
+    fun updatePiecePos(piece: Piece, field: AbstractField?) = with(boardState){
         var pos: Point = field?.pos ?: run {
             val radius = when (piece) {
                 is Piece.GrayBlocker -> {
@@ -154,12 +162,12 @@ open class ClientGameState(localPlayerCount: Int = 0) : GameState() {
         updatePiece(piece)
     }
 
-    fun findPiecesAtPos(mousePos: Point) = boardStore.state.figures.filter {
+    fun findPiecesAtPos(mousePos: Point) = boardState.figures.filter {
         (it.pos - mousePos).length < it.radius
     }
 
     fun canClickPiece(clickedPiece: Piece): Boolean {
-        with(boardStore.state) {
+        with(boardState) {
             if (winner != null) {
                 return false
             }
@@ -212,7 +220,7 @@ open class ClientGameState(localPlayerCount: Int = 0) : GameState() {
      * click on a piece
      * @param clickedPiece game piece that was clicked on
      */
-    fun clickPiece(clickedPiece: Piece) = with(boardStore.state){
+    fun clickPiece(clickedPiece: Piece) = with(boardState){
         if (!canClickPiece(clickedPiece)) return
 
         logger.info { "currentPlayer: $currentPlayer" }
@@ -231,8 +239,9 @@ open class ClientGameState(localPlayerCount: Int = 0) : GameState() {
         ) {
             if (selectedPlayerPiece == null) {
                 logger.info { "selecting: $clickedPiece" }
-                // TODO: boardStateStore.submit(...)
-                boardStore.dispatch(PentaMove.SelectPlayerPiece(clickedPiece))
+                // TODO: boardStateStore.dispatch(...)
+                boardStoreDispatch(PentaMove.SelectPlayerPiece(clickedPiece))
+//                boardStore.dispatch(PentaMove.SelectPlayerPiece(clickedPiece))
 //                selectedPlayerPiece = clickedPieceg
                 PentaViz.updateBoard()
                 return
@@ -240,7 +249,8 @@ open class ClientGameState(localPlayerCount: Int = 0) : GameState() {
             if (selectedPlayerPiece == clickedPiece) {
                 logger.info { "deselecting: $clickedPiece" }
 
-                boardStore.dispatch(PentaMove.SelectGrey(null))
+                boardStoreDispatch(PentaMove.SelectGrey(null))
+//                boardStore.dispatch(PentaMove.SelectGrey(null))
 //                selectedPlayerPiece = null
                 PentaViz.updateBoard()
                 return
@@ -252,8 +262,9 @@ open class ClientGameState(localPlayerCount: Int = 0) : GameState() {
             && clickedPiece is Piece.GrayBlocker
         ) {
             logger.info { "selecting: $clickedPiece" }
-            // TODO: boardStateStore.submit(...)
-            boardStore.dispatch(PentaMove.SelectGrey(clickedPiece))
+            // TODO: boardStateStore.dispatch(...)
+            boardStoreDispatch(PentaMove.SelectGrey(clickedPiece))
+//            boardStore.C(PentaMove.SelectGrey(clickedPiece))
 //            selectedGrayPiece = clickedPiece
 //            selectingGrayPiece = false
 //            clickedPiece.position = null
@@ -324,7 +335,7 @@ open class ClientGameState(localPlayerCount: Int = 0) : GameState() {
     }
 
     fun canClickField(targetField: AbstractField): Boolean {
-        with(boardStore.state) {
+        with(boardState) {
             if (winner != null) {
                 return false
             }
@@ -382,7 +393,7 @@ open class ClientGameState(localPlayerCount: Int = 0) : GameState() {
         return true
     }
 
-    fun clickField(targetField: AbstractField) = with(boardStore.state) {
+    fun clickField(targetField: AbstractField) = with(boardState) {
         if (!canClickField(targetField)) return
         logger.info { ("currentPlayer: $currentPlayer") }
         logger.info { ("selected player piece: $selectedPlayerPiece") }
@@ -468,14 +479,14 @@ open class ClientGameState(localPlayerCount: Int = 0) : GameState() {
     }
 
     // TODO: clientside
-    fun updateAllPieces() = with(boardStore.state) {
+    fun updateAllPieces() = with(boardState) {
         figures.forEach { piece ->
             updatePiecePos(piece)
         }
     }
 
     // TODO: clientside
-    override fun updatePiecesAtPos(field: AbstractField?)= with(boardStore.state)  {
+    override fun updatePiecesAtPos(field: AbstractField?)= with(boardState)  {
         positions.filterValues { it == field }.keys.map { id ->
             figures.find { it.id == id }
                 ?: throw IllegalStateException("cannot find figure with id: $id in ${figures.map { it.id }}")

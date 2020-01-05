@@ -1,10 +1,9 @@
 package penta.view
 
-import PentaViz
+import penta.client.PentaViz
 import com.lightningkite.koolui.color.Color
 import com.lightningkite.koolui.concepts.Animation
 import com.lightningkite.koolui.concepts.Importance
-import com.lightningkite.koolui.concepts.TextSize
 import com.lightningkite.koolui.image.Image
 import com.lightningkite.koolui.image.MaterialIcon
 import com.lightningkite.koolui.image.color
@@ -18,7 +17,6 @@ import com.lightningkite.reacktive.property.CombineObservableProperty2
 import com.lightningkite.reacktive.property.ConstantObservableProperty
 import com.lightningkite.reacktive.property.MutableObservableProperty
 import com.lightningkite.reacktive.property.StandardObservableProperty
-import com.lightningkite.reacktive.property.sub
 import com.lightningkite.reacktive.property.transform
 import com.lightningkite.recktangle.Point
 import io.data2viz.geom.svgPath
@@ -26,7 +24,6 @@ import io.data2viz.viz.PathNode
 import mu.KotlinLogging
 import penta.ClientGameState
 import penta.PlayerState
-import penta.util.asKoolUIColor
 import penta.util.fromSvgString
 
 class MainPentaVG<VIEW>() : MyViewGenerator<VIEW> {

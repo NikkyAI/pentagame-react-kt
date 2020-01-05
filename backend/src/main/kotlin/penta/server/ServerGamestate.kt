@@ -13,7 +13,7 @@ import kotlinx.serialization.list
 import kotlinx.serialization.serializer
 import mu.KotlinLogging
 import org.reduxkotlin.Reducer
-import org.reduxkotlin.SelectorSubscriberBuilder
+import org.reduxkotlin.SelectorBuilder
 import org.reduxkotlin.Store
 import org.reduxkotlin.StoreSubscription
 import org.reduxkotlin.applyMiddleware
@@ -24,7 +24,6 @@ import penta.PlayerState
 import penta.network.GameEvent
 import penta.network.GameSessionInfo
 import penta.redux_rewrite.BoardState
-import penta.util.exhaustive
 import penta.util.handler
 import penta.util.json
 import penta.util.loggingMiddleware
@@ -36,16 +35,14 @@ class ServerGamestate(
     val id: String,
     var owner: User
 ) : GameState() {
-    //    fun <T> errorHandler() = middleware<T> { store, next, action ->
-//        //log here
-//        try {
-//            next(action)
-//        } catch(e: IllegalMoveException) {
-//
-//        }
-//    }
+    val reducer: Reducer<BoardState> = { state, move ->
+        BoardState.Companion.reduce(
+            state,
+            move as PentaMove
+        )
+    }
     val boardStateStore: Store<BoardState> = createStore(
-        BoardState.reducer,
+        reducer,
         BoardState.create(
             // TODO: remove default users
             listOf(PlayerState("alice", "cross"), PlayerState("bob", "triangle")),
@@ -53,64 +50,6 @@ class ServerGamestate(
         ),
         applyMiddleware(loggingMiddleware(logger))
     )
-
-    data class SessionState(
-        val observingSessions: Map<UserSession, DefaultWebSocketServerSession> = mapOf()
-    ) {
-        companion object {
-            sealed class Actions {
-                data class AddObserver(
-                    val session: UserSession,
-                    val wss: DefaultWebSocketServerSession
-                ) : Actions()
-
-                data class RemoveObserver(
-                    val session: UserSession
-                ) : Actions()
-            }
-
-            val reducer: Reducer<SessionState> = { state, action ->
-                // TODO: modify state
-                action as Actions
-                when (action) {
-                    is Actions.AddObserver -> {
-                        GlobalScope.launch(handler) {
-                            state.observingSessions.forEach { (session, wss) ->
-                                if (wss != action.wss) {
-                                    // TODO: wrap Move into object
-                                    // TODO: put observer join/leave
-//                                     wss.outgoing.send(
-//                                         Frame.Text(
-//                                             json.stringify(GameEvent.serializer(), GameEvent.ObserverLeave(session.userId))
-//                                         )
-//                                     )
-                                }
-                            }
-                        }
-
-                        state.copy(observingSessions = state.observingSessions + (action.session to action.wss))
-                    }
-                    is Actions.RemoveObserver -> {
-                        GlobalScope.launch(handler) {
-                            state.observingSessions.forEach { (session, wss) ->
-                                if (wss != state.observingSessions[action.session]) {
-                                    // TODO: wrap Move into object
-                                    // TODO: put observer join/leave
-//                                     wss.outgoing.send(
-//                                         Frame.Text(
-//                                             json.stringify(GameEvent.serializer(), GameEvent.ObserverJoin(session.userId))
-//                                         )
-//                                     )
-                                }
-                            }
-                        }
-
-                        state.copy(observingSessions = state.observingSessions - action.session)
-                    }
-                }.exhaustive
-            }
-        }
-    }
 
     val sessionStore: Store<SessionState> = createStore(
         SessionState.reducer,
@@ -200,23 +139,20 @@ class ServerGamestate(
 //            }
 
             var oldHistory: List<PentaMove> = listOf()
-//            val subscriber: StoreSubscriber =
-            SelectorSubscriberBuilder<BoardState>(boardStateStore).apply {
-                withSingleField({ it.history }) {
-                    val moves = boardStateStore.state.history - oldHistory
-                    GlobalScope.launch(handler) {
-                        moves.forEach { move ->
-                            logger.info { "transmitting move $move" }
-                            outgoing.send(Frame.Text(json.stringify(serializer, move.toSerializable())))
-                        }
+            val historySelector = SelectorBuilder<BoardState>()
+                .withSingleField({ boardStateStore.state.history })
+
+            unsubscribe = boardStateStore.subscribe {
+                val history = historySelector(boardStateStore.state)
+                val moves = history - oldHistory
+                GlobalScope.launch(handler) {
+                    moves.forEach { move ->
+                        logger.info { "transmitting move $move" }
+                        outgoing.send(Frame.Text(json.stringify(serializer, move.toSerializable())))
                     }
-
-                    oldHistory = boardStateStore.state.history
                 }
+                oldHistory = boardStateStore.state.history
             }
-            // TODO: not sure if this still needs to register
-
-//            boardStateStore.subscribe(subscriber)
 
             while (true) {
                 val notationJson = (incoming.receive() as Frame.Text).readText()
@@ -278,7 +214,14 @@ class ServerGamestate(
         }
 
         val shapes = listOf("triangle", "square", "cross", "circle")
-        boardStateStore.dispatch(PentaMove.PlayerJoin(PlayerState(user.userId, shapes[boardStateStore.state.players.size])))
+        boardStateStore.dispatch(
+            PentaMove.PlayerJoin(
+                PlayerState(
+                    user.userId,
+                    shapes[boardStateStore.state.players.size]
+                )
+            )
+        )
 //        processMove()
     }
 

@@ -1,7 +1,6 @@
 package penta
 
 import com.lightningkite.reacktive.property.MutableObservableProperty
-import com.lightningkite.reacktive.property.ObservableProperty
 import com.lightningkite.reacktive.property.StandardObservableProperty
 import io.data2viz.color.Color
 import io.data2viz.color.Colors

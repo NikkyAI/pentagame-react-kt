@@ -1,6 +1,3 @@
-import org.jetbrains.kotlin.gradle.plugin.KotlinTarget
-import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinJvmCompilation
-import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinOnlyTarget
 import org.jetbrains.kotlin.gradle.tasks.AbstractKotlinCompile
 import java.time.LocalDateTime
 import java.time.ZoneOffset
@@ -57,6 +54,14 @@ repositories {
             name = "bundled local"
         }
     }
+}
+
+repositories {
+//    mavenLocal()
+//    jcenter()
+    maven("https://dl.bintray.com/kotlin/kotlin-js-wrappers")
+//    maven("https://dl.bintray.com/kotlin/kotlinx")
+//    mavenCentral()
 }
 
 kotlin {
@@ -134,6 +139,7 @@ kotlin {
                 api("io.github.microutils:kotlin-logging:${KotlinLogging.version}")
 
                 // redux
+                api("org.reduxkotlin:redux-kotlin-jvm:0.2.9")
                 api("org.reduxkotlin:redux-kotlin-reselect-jvm:0.2.9")
 
 
@@ -197,7 +203,7 @@ kotlin {
                 api("io.github.microutils:kotlin-logging-js:${KotlinLogging.version}")
 
                 // redux
-                api("org.reduxkotlin:redux-kotlin-reselect-js:0.2.9")
+//                api("org.reduxkotlin:redux-kotlin-reselect-js:0.2.9")
 
                 // ktor client
                 api(org.gradle.kotlin.dsl.ktor("client-core-js"))
@@ -212,11 +218,31 @@ kotlin {
 //                    implementation("com.lightningkite:lokalize-js:${Lokalize.version}")
                 api("com.lightningkite:koolui-js:${KoolUI.version}")
 
+
+                api(npm("react", "^16.9.0"))
+                api(npm("react-dom", "^16.9.0"))
+                api(npm("styled-components", "^4.4.1"))
+                api(npm("inline-style-prefixer", "^5.1.0"))
+                api(npm("core-js", "^3.4.7"))
+                api(npm("css-in-js-utils", "^3.0.2"))
+                api(npm("redux", "^4.0.0"))
+                api(npm("react-redux", "^5.0.7"))
+
+                val kotlinWrappersVersion = "pre.88-kotlin-1.3.60"
+                api("org.jetbrains:kotlin-react:16.9.0-${kotlinWrappersVersion}")
+                api("org.jetbrains:kotlin-react-dom:16.9.0-${kotlinWrappersVersion}")
+                api("org.jetbrains:kotlin-css:1.0.0-${kotlinWrappersVersion}")
+                api("org.jetbrains:kotlin-css-js:1.0.0-${kotlinWrappersVersion}")
+                api("org.jetbrains:kotlin-styled:1.0.0-${kotlinWrappersVersion}")
+
+                api("org.jetbrains:kotlin-redux:4.0.0-${kotlinWrappersVersion}")
+                api("org.jetbrains:kotlin-react-redux:5.0.7-${kotlinWrappersVersion}")
             }
         }
 
         js().compilations["test"].defaultSourceSet {
             dependencies {
+                api(kotlin("test-js"))
                 implementation(kotlin("stdlib-js"))
             }
         }
