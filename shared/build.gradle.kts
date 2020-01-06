@@ -96,6 +96,7 @@ kotlin {
 
 
 
+                // TODO: remove
                 api("com.lightningkite:kommon-metadata:${Kommon.version}")
                 api("com.lightningkite:reacktive-metadata:${Reacktive.version}")
             }
@@ -173,6 +174,9 @@ kotlin {
                 }
                 api(org.gradle.kotlin.dsl.ktor("client-core"))
                 api(org.gradle.kotlin.dsl.ktor("client-json"))
+
+
+                // TODO: remove
                 api("com.lightningkite:kommon-metadata:${Kommon.version}")
                 api("com.lightningkite:reacktive-metadata:${Reacktive.version}")
                 api("com.lightningkite:recktangle-metadata:${Recktangle.version}")
@@ -203,12 +207,13 @@ kotlin {
                 api("io.github.microutils:kotlin-logging-js:${KotlinLogging.version}")
 
                 // redux
+                api("org.reduxkotlin:redux-kotlin-js:0.2.9")
 //                api("org.reduxkotlin:redux-kotlin-reselect-js:0.2.9")
 
                 // ktor client
-                api(org.gradle.kotlin.dsl.ktor("client-core-js"))
-                api(org.gradle.kotlin.dsl.ktor("client-json-js"))
-                api(org.gradle.kotlin.dsl.ktor("client-serialization-js"))
+                api(ktor("client-core-js"))
+                api(ktor("client-json-js"))
+                api(ktor("client-serialization-js"))
 
                 // krosslin
                 // TODO: remove
@@ -221,6 +226,7 @@ kotlin {
 
                 api(npm("react", "^16.9.0"))
                 api(npm("react-dom", "^16.9.0"))
+//                api(npm("react-router-dom"))
                 api(npm("styled-components", "^4.4.1"))
                 api(npm("inline-style-prefixer", "^5.1.0"))
                 api(npm("core-js", "^3.4.7"))
@@ -231,6 +237,7 @@ kotlin {
                 val kotlinWrappersVersion = "pre.88-kotlin-1.3.60"
                 api("org.jetbrains:kotlin-react:16.9.0-${kotlinWrappersVersion}")
                 api("org.jetbrains:kotlin-react-dom:16.9.0-${kotlinWrappersVersion}")
+//                api("org.jetbrains:kotlin-react-router-dom:4.3.1-${kotlinWrappersVersion}")
                 api("org.jetbrains:kotlin-css:1.0.0-${kotlinWrappersVersion}")
                 api("org.jetbrains:kotlin-css-js:1.0.0-${kotlinWrappersVersion}")
                 api("org.jetbrains:kotlin-styled:1.0.0-${kotlinWrappersVersion}")

@@ -35,14 +35,8 @@ class ServerGamestate(
     val id: String,
     var owner: User
 ) : GameState() {
-    val reducer: Reducer<BoardState> = { state, move ->
-        BoardState.Companion.reduce(
-            state,
-            move as PentaMove
-        )
-    }
     val boardStateStore: Store<BoardState> = createStore(
-        reducer,
+        BoardState.reducer,
         BoardState.create(
             // TODO: remove default users
             listOf(PlayerState("alice", "cross"), PlayerState("bob", "triangle")),

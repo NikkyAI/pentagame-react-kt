@@ -1,5 +1,6 @@
 package tests
 
+import actions.Action
 import mu.KotlinLogging
 import org.junit.Test
 import org.reduxkotlin.applyMiddleware
@@ -22,8 +23,8 @@ class Tests {
             applyMiddleware(/*loggingMiddleware(logger)*/)
         )
         logger.info { "initialized" }
-        boardStore.dispatch(PentaMove.PlayerJoin(PlayerState("eve", "square")))
-        boardStore.dispatch(PentaMove.InitGame)
+        boardStore.dispatch(Action(PentaMove.PlayerJoin(PlayerState("eve", "square"))))
+        boardStore.dispatch(Action(PentaMove.InitGame))
     }
 
 }

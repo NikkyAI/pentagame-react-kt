@@ -2,6 +2,7 @@ import org.reduxkotlin.Store
 import redux.Reducer
 import redux.Store as RStore
 
+@Deprecated("nice try")
 class WrapperStore<S, A: Any/*, R: Any*/> (
     val backingStore: Store<S>
 ) : RStore<S, A, Any> {

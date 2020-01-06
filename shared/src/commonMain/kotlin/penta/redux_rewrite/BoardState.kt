@@ -2,6 +2,7 @@ package penta.redux_rewrite
 
 import PentaBoard
 import PentaMath
+import actions.Action
 import io.data2viz.geom.Point
 import mu.KotlinLogging
 import org.reduxkotlin.Reducer
@@ -16,9 +17,9 @@ import penta.util.exhaustive
 import penta.util.requireMove
 
 data class BoardState(
-    val players: List<PlayerState>,
+    val players: List<PlayerState> = listOf(PlayerState("local", "triangle")),
     val currentPlayer: PlayerState = players.first(),
-    val gameType: GameType,
+    val gameType: GameType = GameType.TWO,
     val scoringColors: Map<String, List<PentaColor>> = mapOf(),
     val figures: Array<Piece> = arrayOf(),
     val positions: Map<String, AbstractField?> = mapOf(),
@@ -36,15 +37,19 @@ data class BoardState(
     val selectingGrayPiece: Boolean = false,
     val illegalMove: PentaMove.IllegalMove? = null
 ) {
+
     enum class GameType {
         TWO, THREE, FOUR, TWO_VS_TO
     }
 
     companion object {
+        private val logger = KotlinLogging.logger {}
         fun create(
             players: List<PlayerState>,
             gameType: GameType
         ): BoardState {
+            logger.info { "created new BoardState" }
+
             return WithMutableState(
                 BoardState(
                     players = players,
@@ -89,7 +94,6 @@ data class BoardState(
                 }
         }
 
-        private val logger = KotlinLogging.logger {}
         val reducer: Reducer<BoardState> = { state, action ->
             logger.info { "action: ${action::class}" }
             when(action) {
@@ -101,6 +105,9 @@ data class BoardState(
                     logger.info { "received REPLACE" }
                     state
                 }
+                is Action<*> -> {
+                    WithMutableState(state).processMove(action.action as PentaMove)
+                }
                 is PentaMove -> {
                     WithMutableState(state).processMove(action)
                 }
@@ -108,7 +115,6 @@ data class BoardState(
                     error("$action is of unhandled type")
                 }
             }
-
         }
 
         fun WithMutableState.handleIllegalMove(illegalMove: PentaMove.IllegalMove) {
@@ -116,11 +122,6 @@ data class BoardState(
                 illegalMove = illegalMove
             )
         }
-
-        fun reduce(state: BoardState, move: PentaMove): BoardState =
-            with(WithMutableState(state)) {
-                processMove(move)
-            }
 
         fun WithMutableState.processMove(move: PentaMove): BoardState = with(nextState) {
             try {

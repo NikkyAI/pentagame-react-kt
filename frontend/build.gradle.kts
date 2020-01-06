@@ -59,7 +59,7 @@ kotlin {
 
                 implementation(project(":shared"))
 
-                // temp fx ?
+                // temp fix ?
                 implementation(npm("text-encoding"))
             }
         }
