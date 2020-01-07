@@ -17,7 +17,7 @@ val store = redux.createStore<State, RAction, dynamic>(
         js("if(window.__REDUX_DEVTOOLS_EXTENSION__ )window.__REDUX_DEVTOOLS_EXTENSION__ ();else(function(f){return f;});")
     )
 )
-
+var onHtmlRendered: MutableList<() -> Unit> = mutableListOf()
 fun main() {
 //    logger.info { "store initialized" }
 //    store.dispatch(
@@ -36,6 +36,9 @@ fun main() {
         provider(store) {
             app()
         }
+    }
+    onHtmlRendered.forEach {
+        it()
     }
 
 }

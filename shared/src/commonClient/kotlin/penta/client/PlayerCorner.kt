@@ -8,7 +8,4 @@ data class PlayerCorner(
     val player: PlayerState,
     val face: PathNode,
     val graySlot: CircleNode
-) {
-    fun update() {
-    }
-}
+)

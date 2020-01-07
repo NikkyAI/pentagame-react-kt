@@ -23,13 +23,17 @@ import mu.KotlinLogging
 import penta.ClientGameState
 import penta.ConnectionState
 import penta.PentaColor
+import penta.canClickPiece
+import penta.drawPlayer
 import penta.logic.Piece
 import penta.logic.field.AbstractField
 import penta.logic.field.ConnectionField
 import penta.logic.field.StartField
+import penta.redux_rewrite.BoardState
 import kotlin.math.pow
 import kotlin.math.sqrt
 
+@Deprecated("move code away")
 object PentaViz {
     private val logger = KotlinLogging.logger {}
 
@@ -161,7 +165,7 @@ object PentaViz {
             }
 
             gameState.boardState.figures.forEach {
-                updatePiece(it)
+                updatePiece(it, gameState.boardState)
             }
         }
     }
@@ -208,7 +212,7 @@ object PentaViz {
                 }
 
                 // init pieces
-                gameState!!.boardState.figures.forEach { piece ->
+                gameState.boardState.figures.forEach { piece ->
                     logger.debug { ("initialzing piece: $piece") }
                     val c = circle {
                         strokeWidth = 4.0
@@ -228,7 +232,7 @@ object PentaViz {
 
                     pieces[piece.id] = Pair(c, p)
 
-                    updatePiece(piece)
+                    updatePiece(piece, gameState.boardState)
                 }
                 updateBoard(render = false)
             }
@@ -351,7 +355,7 @@ object PentaViz {
 
                 pieces[piece.id] = Pair(c, p)
 
-                updatePiece(piece)
+                updatePiece(piece, gameState.boardState)
             }
             updateBoard()
         }
@@ -377,90 +381,11 @@ object PentaViz {
         }
         val boardState = gameState.boardState
         boardState.figures.forEach {
-            updatePiece(it)
+            updatePiece(it, boardState)
         }
     }
 
-    fun PathNode.drawPlayer(figureId: String, center: Point, radius: Double) {
-        clearPath()
 
-        fun point(angle: Angle, radius: Double, center: Point = Point(0.0, 0.0)): Point {
-            return Point(angle.cos * radius, angle.sin * radius) + center
-        }
-
-        fun angles(n: Int, start: Angle = 0.deg): List<Angle> {
-            val step = 360.deg / n
-
-            return (0..n).map { i ->
-                (start + (step * i))
-            }
-        }
-
-        when (figureId) {
-            "square" -> {
-                val points = angles(4, 0.deg).map { angle ->
-                    point(angle, radius, center)
-                }
-                points.forEachIndexed { index, it ->
-                    if (index == 0) {
-                        moveTo(it.x, it.y)
-                    } else {
-                        lineTo(it.x, it.y)
-                    }
-                }
-            }
-            "triangle" -> {
-                val points = angles(3, -90.deg).map { angle ->
-                    point(angle, radius, center)
-                }
-                points.forEachIndexed { index, it ->
-                    if (index == 0) {
-                        moveTo(it.x, it.y)
-                    } else {
-                        lineTo(it.x, it.y)
-                    }
-                }
-            }
-            "cross" -> {
-
-                val width = 15
-
-                val p1 = point((45 - width).deg, radius, center)
-                val p2 = point((45 + width).deg, radius, center)
-
-                val c = sqrt((p2.x - p1.x).pow(2) + (p2.y - p1.y).pow(2))
-
-                val a = c / sqrt(2.0)
-
-                val points = listOf(
-                    point((45 - width).deg, radius, center),
-                    point((45 + width).deg, radius, center),
-                    point((90).deg, a, center),
-                    point((135 - width).deg, radius, center),
-                    point((135 + width).deg, radius, center),
-                    point((180).deg, a, center),
-                    point((45 + 180 - width).deg, radius, center),
-                    point((45 + 180 + width).deg, radius, center),
-                    point((270).deg, a, center),
-                    point((135 + 180 - width).deg, radius, center),
-                    point((135 + 180 + width).deg, radius, center),
-                    point((360).deg, a, center)
-                )
-                points.forEachIndexed { index, it ->
-                    if (index == 0) {
-                        moveTo(it.x, it.y)
-                    } else {
-                        lineTo(it.x, it.y)
-                    }
-                }
-            }
-            "circle" -> {
-                arc(center.x, center.y, radius, 0.0, 180.0, false)
-            }
-            else -> throw IllegalStateException("illegal figureId: ''")
-        }
-        closePath()
-    }
 
     fun updateBoard(render: Boolean = true) {
         val boardState = gameState.boardState
@@ -484,8 +409,8 @@ object PentaViz {
         }
     }
 
-    fun updatePiece(piece: Piece) {
-        val boardState = gameState.boardStore.state
+    fun updatePiece(piece: Piece, boardState: BoardState) {
+//        val boardState = gameState.boardStore.state
         val highlightedPiece = highlightedPieceAt(mousePos)
 
         val (circle, path) = pieces[piece.id] ?: throw IllegalArgumentException("piece; $piece is not on the board")
@@ -498,7 +423,7 @@ object PentaViz {
                 if (
                     boardState.selectedPlayerPiece == null
                     && boardState.currentPlayer.id == piece.playerId
-                    && gameState.canClickPiece(piece)
+                    && canClickPiece(piece, boardState)
                 )
                     piece.color.brighten(1.0)
                 else

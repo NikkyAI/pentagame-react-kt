@@ -18,6 +18,7 @@ import penta.logic.field.StartField
 import penta.redux_rewrite.BoardState
 import penta.util.length
 
+@Deprecated("move code away")
 open class ClientGameState(localPlayerCount: Int = 1) : GameState() {
     companion object {
         private val logger = KotlinLogging.logger {}
@@ -39,7 +40,7 @@ open class ClientGameState(localPlayerCount: Int = 1) : GameState() {
     }
 
     //    override var updateLogPanel: (String) -> Unit = {}
-    var updatePiece: (Piece) -> Unit = { piece -> }
+    var updatePiece: (Piece, BoardState) -> Unit = { piece, boardState -> }
 
     fun cornerPoint(index: Int, angleDelta: Angle = 0.deg, radius: Double = PentaMath.R_): Point {
         val angle = (-45 + (index) * 90).deg + angleDelta
@@ -159,61 +160,11 @@ open class ClientGameState(localPlayerCount: Int = 1) : GameState() {
             )
         }
         piece.pos = pos
-        updatePiece(piece)
+        updatePiece(piece, boardState)
     }
 
     fun findPiecesAtPos(mousePos: Point) = boardState.figures.filter {
         (it.pos - mousePos).length < it.radius
-    }
-
-    fun canClickPiece(clickedPiece: Piece): Boolean {
-        with(boardState) {
-            if (winner != null) {
-                return false
-            }
-            if (positions[clickedPiece.id] == null) {
-                return false
-            }
-            when (val state = PentaViz.multiplayerState.value) {
-                is ConnectionState.HasGameSession -> {
-                    if (currentPlayer.id != state.userId) {
-                        return false
-                    }
-                }
-            }
-            if (
-            // make sure you are not selecting black or gray
-                selectedGrayPiece == null && selectedBlackPiece == null && !selectingGrayPiece
-                && clickedPiece is Piece.Player && currentPlayer.id == clickedPiece.playerId
-            ) {
-                if (selectedPlayerPiece == null) {
-                    return true
-                }
-                if (selectedPlayerPiece == clickedPiece) {
-                    return true
-                }
-            }
-
-            if (selectingGrayPiece
-                && selectedPlayerPiece == null
-                && clickedPiece is Piece.GrayBlocker
-            ) {
-                return true
-            }
-
-            if (selectedPlayerPiece != null && currentPlayer.id == selectedPlayerPiece!!.playerId) {
-                val playerPiece = selectedPlayerPiece!!
-                val sourcePos = positions[playerPiece.id] ?: run {
-                    return false
-                }
-                val targetPos = positions[clickedPiece.id] ?: return false
-                if (sourcePos == targetPos) {
-                    return false
-                }
-                return true
-            }
-        }
-        return false
     }
 
     /**
@@ -221,7 +172,7 @@ open class ClientGameState(localPlayerCount: Int = 1) : GameState() {
      * @param clickedPiece game piece that was clicked on
      */
     fun clickPiece(clickedPiece: Piece) = with(boardState){
-        if (!canClickPiece(clickedPiece)) return
+        if (!canClickPiece(clickedPiece, boardState)) return
 
         logger.info { "currentPlayer: $currentPlayer" }
         logger.info { "selected player piece: $selectedPlayerPiece" }

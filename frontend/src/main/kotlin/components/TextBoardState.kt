@@ -80,7 +80,7 @@ class TextBoardState(props: TextBoardStateProps) : RComponent<TextBoardStateProp
 /**
  * parameter on callsite
  */
-interface TextBoardStateContainer : RProps {
+interface TextBoardsStateParameters : RProps {
 //    var size: Int
 }
 
@@ -95,8 +95,8 @@ interface TextBoardStateContainer : RProps {
     var relay: (PentaMove) -> Unit
 }
 
-val textBoardState: RClass<TextBoardStateContainer> =
-    rConnect<State, Action<PentaMove>, WrapperAction, TextBoardStateContainer, StateProps, DispatchProps, TextBoardStateProps>(
+val textBoardState
+    = rConnect<State, Action<PentaMove>, WrapperAction, TextBoardsStateParameters, StateProps, DispatchProps, TextBoardStateProps>(
         { state, configProps ->
             println("TextBoardContainer.state")
             println("state: $state ")

@@ -50,11 +50,11 @@ class MainPentaVG<VIEW>() : MyViewGenerator<VIEW> {
         val svgImage = player.figureIdProperty.transform { figureId ->
             val pathNode = PathNode()
             with(PentaViz) {
-                pathNode.drawPlayer(
-                    figureId,
-                    center = io.data2viz.geom.Point(12.0, 12.0),
-                    radius = 12.0
-                )
+//                pathNode.drawPlayer(
+//                    figureId,
+//                    center = io.data2viz.geom.Point(12.0, 12.0),
+//                    radius = 12.0
+//                )
             }
             val color = if (isCurrent) Color.white else Color.black
             val svgString = pathNode.path.svgPath.let {
