@@ -73,7 +73,7 @@ open class ClientGameState(localPlayerCount: Int = 1) : GameState() {
 
     fun preProcessMove(move: PentaMove) {
         logger.info { "preProcess $move" }
-        when (val state = PentaViz.multiplayerState.value) {
+        when (val state = PentaViz.multiplayerState) {
             is ConnectionState.Observing -> {
                 GlobalScope.launch(Dispatchers.Default) {
                     state.sendMove(move)
@@ -296,7 +296,7 @@ open class ClientGameState(localPlayerCount: Int = 1) : GameState() {
             ) {
                 return false
             }
-            when (val state = PentaViz.multiplayerState.value) {
+            when (val state = PentaViz.multiplayerState) {
                 is ConnectionState.HasGameSession -> {
                     if (currentPlayer.id != state.userId) {
                         return false

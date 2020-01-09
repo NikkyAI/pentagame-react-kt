@@ -17,6 +17,7 @@ import io.data2viz.viz.TextVAlign
 import io.data2viz.viz.Viz
 import io.data2viz.viz.viz
 import mu.KotlinLogging
+import onHtmlRendered
 import penta.PentaColor
 import penta.client.PlayerCorner
 import penta.logic.Piece
@@ -46,7 +47,7 @@ class PentaViz(props: PentaVizProps) : RComponent<PentaVizProps, RState>(props) 
 
     override fun RBuilder.render() {
         vizCanvas {
-            externalViz(this@PentaViz, props, attrs)
+            applyViz(this@PentaViz, props, attrs)
 
             //TODO: make canvas square
         }
@@ -56,164 +57,171 @@ class PentaViz(props: PentaVizProps) : RComponent<PentaVizProps, RState>(props) 
         private val logger = KotlinLogging.logger {}
     }
 
-    private fun RBuilder.externalViz(component: PentaViz, props: PentaVizProps, attrs: VizProps) {
-        attrs.viz = viz {
-            logger.info { ("height: $height") }
-            logger.info { ("width: $width") }
-            val scaleHCL = ScalesChromatic.Continuous.linearHCL {
-                domain = PentaColor.values().map { it.ordinal * 72.0 * 3 }
-                range = PentaColor.values().map { it.color.value }
-            }
-            val backgroundCircle = circle {
-                stroke = Colors.Web.black
-                fill = 0x28292b.col
-            }
-            val outerCircle = circle {
-                stroke = Colors.Web.lightgrey
-                strokeWidth = 4.0
-            }
-            PentaBoard.fields.forEach { field ->
-                logger.debug { ("adding: $field") }
-                val c = circle {
-                    if (field is StartField) {
-                        strokeWidth = 5.0
-                        stroke = field.color
-                        fill = Colors.Web.lightgrey
-                    } else {
-//                    strokeWidth = 0.0
-//                    stroke = 0.col
-                        fill = field.color
+    private fun RBuilder.applyViz(component: PentaViz, props: PentaVizProps, attrs: VizProps) {
+        fun f() {
+            attrs.viz?.apply {
+                playerCorners.forEach { corner ->
+                    corner.face.remove()
+                    corner.graySlot.remove()
+                }
+                // clear old pieces
+                pieces.values.forEach { (circle, path) ->
+                    circle.remove()
+                    path?.remove()
+                }
+                pieces.clear()
+
+                playerCorners = props.boardState.players.map {
+                    logger.debug { ("init face $it") }
+                    PlayerCorner(
+                        it,
+                        path {
+                            drawPlayer(it.figureId, Point(0.0,0.0), PentaMath.s)
+                        },
+                        circle {
+                            visible = false
+                            fill = Colors.Web.lightgrey.brighten(0.5)
+                            stroke = 0.col
+                            strokeWidth = 1.0
+                        }
+                    )
+                }
+                if (::currentPlayerMarker.isInitialized) {
+                    currentPlayerMarker.remove()
+                }
+                currentPlayerMarker = circle {
+                    stroke = 0.col
+                    strokeWidth = 3.0
+                }
+
+                // init pieces
+                props.boardState.figures.forEach { piece ->
+                    logger.debug { ("initialzing piece: $piece") }
+                    val c = circle {
+                        strokeWidth = 4.0
+                        stroke = piece.color
                     }
-                }
-                val t1 = text {
-                    fontSize -= 2
-                    hAlign = TextHAlign.MIDDLE
-                    vAlign = TextVAlign.BASELINE
-                    textContent = field.id
 
-                    visible = false
-                }
+                    val p =
+                        if (piece is Piece.Player) {
+                            path {
+                                vAlign = TextVAlign.MIDDLE
+                                hAlign = TextHAlign.MIDDLE
 
-                val t2 = if (field is ConnectionField) {
-                    text {
+                                strokeWidth = 2.0
+                                stroke = Colors.Web.black
+                            }
+                        } else null
+
+                    pieces[piece.id] = Pair(c, p)
+
+                    updatePiece(piece, props.boardState)
+                }
+                updateBoard(render = true)
+            }
+        }
+        onHtmlRendered.add {
+            logger.info { "initializing viz" }
+            attrs.viz = viz {
+                logger.info { ("height: $height") }
+                logger.info { ("width: $width") }
+                val scaleHCL = ScalesChromatic.Continuous.linearHCL {
+                    domain = PentaColor.values().map { it.ordinal * 72.0 * 3 }
+                    range = PentaColor.values().map { it.color }
+                }
+                val backgroundCircle = circle {
+                    stroke = Colors.Web.black
+                    fill = 0x28292b.col
+                }
+                val outerCircle = circle {
+                    stroke = Colors.Web.lightgrey
+                    strokeWidth = 4.0
+                }
+                PentaBoard.fields.forEach { field ->
+                    logger.debug { ("adding: $field") }
+                    val c = circle {
+                        if (field is StartField) {
+                            strokeWidth = 5.0
+                            stroke = field.color
+                            fill = Colors.Web.lightgrey
+                        } else {
+                            fill = field.color
+                        }
+                    }
+                    val t1 = text {
                         fontSize -= 2
                         hAlign = TextHAlign.MIDDLE
-                        vAlign = TextVAlign.HANGING
-                        textContent = field.altId
+                        vAlign = TextVAlign.BASELINE
+                        textContent = field.id
+
                         visible = false
                     }
-                } else null
-                component.fieldElements[field] = Triple(c, t1, t2)
-            }
 
-            onResize { newWidth, newHeight ->
-                component.scale = kotlin.math.min(newWidth, newHeight)
-
-                findPiecesAtPos(component.mousePos).firstOrNull()
-                    ?: PentaBoard.findFieldAtPos(component.mousePos)
-
-                backgroundCircle.apply {
-                    x = 0.5 * component.scale
-                    y = 0.5 * component.scale
-
-                    radius = (1.0 * component.scale) / 2
-                }
-                outerCircle.apply {
-                    x = 0.5 * component.scale
-                    y = 0.5 * component.scale
-
-                    radius = (PentaMath.r / PentaMath.R_ * component.scale) / 2
+                    val t2 = if (field is ConnectionField) {
+                        text {
+                            fontSize -= 2
+                            hAlign = TextHAlign.MIDDLE
+                            vAlign = TextVAlign.HANGING
+                            textContent = field.altId
+                            visible = false
+                        }
+                    } else null
+                    component.fieldElements[field] = Triple(c, t1, t2)
                 }
 
-                updateCorners()
+                onResize { newWidth, newHeight ->
+                    component.scale = kotlin.math.min(newWidth, newHeight)
 
-                // do not highlight blocker pieces or pieces that are out of the game
+                    findPiecesAtPos(component.mousePos).firstOrNull()
+                        ?: PentaBoard.findFieldAtPos(component.mousePos)
+
+                    backgroundCircle.apply {
+                        x = 0.5 * component.scale
+                        y = 0.5 * component.scale
+
+                        radius = (1.0 * component.scale) / 2
+                    }
+                    outerCircle.apply {
+                        x = 0.5 * component.scale
+                        y = 0.5 * component.scale
+
+                        radius = (PentaMath.r / PentaMath.R_ * component.scale) / 2
+                    }
+
+                    updateCorners()
+
+                    // do not highlight blocker pieces or pieces that are out of the game
 //            val highlightedPiece = highlightedPieceAt(mousePos)
 //            val highlightedField = if (highlightedPiece == null) PentaBoard.findFieldAtPos(mousePos) else null
 
-                component.fieldElements.forEach { (field, triple) ->
-                    val (circle, text1, text2) = triple
-                    with(circle) {
-                        x = ((field.pos.x / PentaMath.R_)) * component.scale
-                        y = ((field.pos.y / PentaMath.R_)) * component.scale
-                        radius = (field.radius / PentaMath.R_ * component.scale) - (strokeWidth ?: 0.0)
-                    }
-                    text1.apply {
-                        x = ((field.pos.x / PentaMath.R_)) * component.scale
-                        y = ((field.pos.y / PentaMath.R_)) * component.scale
-                    }
-                    text2?.apply {
-                        x = ((field.pos.x / PentaMath.R_)) * component.scale
-                        y = ((field.pos.y / PentaMath.R_)) * component.scale
-                    }
-                }
-
-                props.boardState.figures.forEach {
-                    updatePiece(it, props.boardState)
-                }
-            }
-        }
-
-        attrs.viz.apply {
-            playerCorners.forEach { corner ->
-                corner.face.remove()
-                corner.graySlot.remove()
-            }
-            // clear old pieces
-            pieces.values.forEach { (circle, path) ->
-                circle.remove()
-                path?.remove()
-            }
-            pieces.clear()
-
-            playerCorners = props.boardState.players.map {
-                logger.debug { ("init face $it") }
-                PlayerCorner(
-                    it,
-                    path {
-                        //                        drawPlayer(it.figureId, Point(0.0,0.0), PentaMath.s)
-                    },
-                    circle {
-                        visible = false
-                        fill = Colors.Web.lightgrey.brighten(0.5)
-                        stroke = 0.col
-                        strokeWidth = 1.0
-                    }
-                )
-            }
-            if (::currentPlayerMarker.isInitialized) {
-                currentPlayerMarker.remove()
-            }
-            currentPlayerMarker = circle {
-                stroke = 0.col
-                strokeWidth = 3.0
-            }
-
-            // init pieces
-            props.boardState.figures.forEach { piece ->
-                logger.debug { ("initialzing piece: $piece") }
-                val c = circle {
-                    strokeWidth = 4.0
-                    stroke = piece.color
-                }
-
-                val p =
-                    if (piece is Piece.Player) {
-                        path {
-                            vAlign = TextVAlign.MIDDLE
-                            hAlign = TextHAlign.MIDDLE
-
-                            strokeWidth = 2.0
-                            stroke = Colors.Web.black
+                    component.fieldElements.forEach { (field, triple) ->
+                        val (circle, text1, text2) = triple
+                        with(circle) {
+                            x = ((field.pos.x / PentaMath.R_)) * component.scale
+                            y = ((field.pos.y / PentaMath.R_)) * component.scale
+                            radius = (field.radius / PentaMath.R_ * component.scale) - (strokeWidth ?: 0.0)
                         }
-                    } else null
+                        text1.apply {
+                            x = ((field.pos.x / PentaMath.R_)) * component.scale
+                            y = ((field.pos.y / PentaMath.R_)) * component.scale
+                        }
+                        text2?.apply {
+                            x = ((field.pos.x / PentaMath.R_)) * component.scale
+                            y = ((field.pos.y / PentaMath.R_)) * component.scale
+                        }
+                    }
 
-                pieces[piece.id] = Pair(c, p)
-
-                updatePiece(piece, props.boardState)
+                    props.boardState.figures.forEach {
+                        updatePiece(it, props.boardState)
+                    }
+                }
             }
-            updateBoard(render = false)
+            f()
         }
+
+        f()
+
+
     }
 
     fun updateCorners() {
@@ -309,7 +317,7 @@ class PentaViz(props: PentaVizProps) : RComponent<PentaVizProps, RState>(props) 
 //        }
         updateCorners()
 //        centerDisplay.second.textContent = turnDisplay.textContent
-        if (render) {
+        if (render && renderer != null) {
             render()
         }
     }

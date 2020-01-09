@@ -1,4 +1,3 @@
-import org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpack
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
 var ktorVersion = "1.2.6"

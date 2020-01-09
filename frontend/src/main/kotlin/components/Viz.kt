@@ -55,7 +55,7 @@ class VizComponent(props: VizProps): RComponent<VizProps, RState>(props) {
             logger.info { "canvasRef.current: ${canvasRef.current}" }
             val canvas = canvasRef.current!!
             val div = divRef.current!!
-            props.viz.bindRendererOn(canvas)
+            props.viz?.bindRendererOn(canvas)
 
             window.addEventListener("resize",
                 EventListener { event ->
@@ -70,7 +70,7 @@ class VizComponent(props: VizProps): RComponent<VizProps, RState>(props) {
                     )
                     canvas.width = size
                     canvas.height = size
-                    with(props.viz) {
+                    props.viz?.apply {
                         height = canvas.height.toDouble()
                         width = canvas.width.toDouble()
                         resize(canvas.width.toDouble(), canvas.height.toDouble())
@@ -81,7 +81,7 @@ class VizComponent(props: VizProps): RComponent<VizProps, RState>(props) {
     }
 }
 interface VizStateProps: RProps {
-    var viz: Viz
+    var viz: Viz?
     var id: String?
 }
 interface VizDispatchProps : RProps {

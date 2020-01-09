@@ -2,12 +2,9 @@ package penta.client
 
 import PentaBoard
 import PentaMath
-import com.lightningkite.reacktive.property.StandardObservableProperty
-import com.lightningkite.reacktive.property.addAndInvoke
 import io.data2viz.color.Colors
 import io.data2viz.color.col
 import io.data2viz.geom.Point
-import io.data2viz.math.Angle
 import io.data2viz.math.deg
 import io.data2viz.scale.ScalesChromatic
 import io.data2viz.viz.CircleNode
@@ -30,8 +27,6 @@ import penta.logic.field.AbstractField
 import penta.logic.field.ConnectionField
 import penta.logic.field.StartField
 import penta.redux_rewrite.BoardState
-import kotlin.math.pow
-import kotlin.math.sqrt
 
 @Deprecated("move code away")
 object PentaViz {
@@ -43,11 +38,11 @@ object PentaViz {
     private lateinit var currentPlayerMarker: CircleNode
     private var scale: Double = 100.0
     private var mousePos: Point = Point(0.0, 0.0)
-    val turnDisplay: StandardObservableProperty<String> = StandardObservableProperty("")
-    val gameStateProperty: StandardObservableProperty<ClientGameState?> = StandardObservableProperty(null)
-    val gameState: ClientGameState get() = gameStateProperty.value!!
-    val multiplayerState = StandardObservableProperty<ConnectionState>(ConnectionState.Disconnected())
-//    lateinit var centerDisplay: Pair<CircleNode, TextNode>
+//    val turnDisplay: AtomicRef<String> = StandardObservableProperty("")
+//    val gameStateProperty: StandardObservableProperty<ClientGameState?> = StandardObservableProperty(null)
+    lateinit var gameState: ClientGameState
+    var multiplayerState: ConnectionState = ConnectionState.Disconnected()
+    lateinit var centerDisplay: Pair<CircleNode, TextNode>
 
     fun highlightedPieceAt(mousePos: Point): Piece? = gameState.findPiecesAtPos(mousePos).firstOrNull()?.let {
         val boardState = gameState.boardState
@@ -71,7 +66,7 @@ object PentaViz {
         logger.info { ("width: $width") }
         val scaleHCL = ScalesChromatic.Continuous.linearHCL {
             domain = PentaColor.values().map { it.ordinal * 72.0 * 3 }
-            range = PentaColor.values().map { it.color.value }
+            range = PentaColor.values().map { it.color }
         }
 //        turnDisplay = StandardObservableProperty("") {
 //            vAlign = TextVAlign.HANGING
@@ -171,74 +166,74 @@ object PentaViz {
     }
 
     init {
-        gameStateProperty.addAndInvoke { gameState ->
-            logger.info { "setting gameState" }
-            logger.info { "resetting" }
-            gameState!!.updatePiece = PentaViz::updatePiece
-
-            viz.apply {
-                playerCorners.forEach { corner ->
-                    corner.face.remove()
-                    corner.graySlot.remove()
-                }
-                // clear old pieces
-                pieces.values.forEach { (circle, path) ->
-                    circle.remove()
-                    path?.remove()
-                }
-                pieces.clear()
-
-                playerCorners = gameState!!.boardState.players.map {
-                    logger.debug { ("init face $it") }
-                    PlayerCorner(
-                        it,
-                        path {
-                            //                        drawPlayer(it.figureId, Point(0.0,0.0), PentaMath.s)
-                        },
-                        circle {
-                            visible = false
-                            fill = Colors.Web.lightgrey.brighten(0.5)
-                            stroke = 0.col
-                            strokeWidth = 1.0
-                        }
-                    )
-                }
-                if (PentaViz::currentPlayerMarker.isInitialized) {
-                    currentPlayerMarker.remove()
-                }
-                currentPlayerMarker = circle {
-                    stroke = 0.col
-                    strokeWidth = 3.0
-                }
-
-                // init pieces
-                gameState.boardState.figures.forEach { piece ->
-                    logger.debug { ("initialzing piece: $piece") }
-                    val c = circle {
-                        strokeWidth = 4.0
-                        stroke = piece.color
-                    }
-
-                    val p =
-                        if (piece is Piece.Player) {
-                            path {
-                                vAlign = TextVAlign.MIDDLE
-                                hAlign = TextHAlign.MIDDLE
-
-                                strokeWidth = 2.0
-                                stroke = Colors.Web.black
-                            }
-                        } else null
-
-                    pieces[piece.id] = Pair(c, p)
-
-                    updatePiece(piece, gameState.boardState)
-                }
-                updateBoard(render = false)
-            }
-
-            logger.info { "reset complete" }
-        }
+//        gameStateProperty.addAndInvoke { gameState ->
+//            logger.info { "setting gameState" }
+//            logger.info { "resetting" }
+//            gameState!!.updatePiece = PentaViz::updatePiece
+//
+//            viz.apply {
+//                playerCorners.forEach { corner ->
+//                    corner.face.remove()
+//                    corner.graySlot.remove()
+//                }
+//                // clear old pieces
+//                pieces.values.forEach { (circle, path) ->
+//                    circle.remove()
+//                    path?.remove()
+//                }
+//                pieces.clear()
+//
+//                playerCorners = gameState!!.boardState.players.map {
+//                    logger.debug { ("init face $it") }
+//                    PlayerCorner(
+//                        it,
+//                        path {
+//                            //                        drawPlayer(it.figureId, Point(0.0,0.0), PentaMath.s)
+//                        },
+//                        circle {
+//                            visible = false
+//                            fill = Colors.Web.lightgrey.brighten(0.5)
+//                            stroke = 0.col
+//                            strokeWidth = 1.0
+//                        }
+//                    )
+//                }
+//                if (PentaViz::currentPlayerMarker.isInitialized) {
+//                    currentPlayerMarker.remove()
+//                }
+//                currentPlayerMarker = circle {
+//                    stroke = 0.col
+//                    strokeWidth = 3.0
+//                }
+//
+//                // init pieces
+//                gameState.boardState.figures.forEach { piece ->
+//                    logger.debug { ("initialzing piece: $piece") }
+//                    val c = circle {
+//                        strokeWidth = 4.0
+//                        stroke = piece.color
+//                    }
+//
+//                    val p =
+//                        if (piece is Piece.Player) {
+//                            path {
+//                                vAlign = TextVAlign.MIDDLE
+//                                hAlign = TextHAlign.MIDDLE
+//
+//                                strokeWidth = 2.0
+//                                stroke = Colors.Web.black
+//                            }
+//                        } else null
+//
+//                    pieces[piece.id] = Pair(c, p)
+//
+//                    updatePiece(piece, gameState.boardState)
+//                }
+//                updateBoard(render = false)
+//            }
+//
+//            logger.info { "reset complete" }
+//        }
     }
 
     fun updateCorners() {
@@ -305,7 +300,7 @@ object PentaViz {
                 corner.graySlot.remove()
             }
             // get all player pieces
-            logger.info { gameStateProperty }
+//            logger.info { gameStateProperty }
             val playerFigures = boardState.figures.filterIsInstance<Piece.Player>()
             playerFigures.forEach { figure ->
                 val (circle, path) = pieces[figure.id] ?: return@forEach
@@ -390,18 +385,18 @@ object PentaViz {
     fun updateBoard(render: Boolean = true) {
         val boardState = gameState.boardState
         // TODO: background: #28292b
-        turnDisplay.apply {
-            val turn = boardState.turn
-            value = "Turn: $turn" +
-                if (boardState.winner != null) ", winner: ${boardState.winner}" else ""
-//                    + when {
-//                        gameState.selectedPlayerPiece != null -> "move PlayerPiece (${gameState.selectedPlayerPiece!!.id})"
-//                        gameState.selectedBlackPiece != null -> "set black (${gameState.selectedBlackPiece!!.id})"
-//                        gameState.selectedGrayPiece != null -> "set grey (${gameState.selectedGrayPiece!!.id})"
-//                        gameState.selectingGrayPiece -> "select gray piece"
-//                        else -> "select Piece.Player"
-//                    }
-        }
+//        turnDisplay.apply {
+//            val turn = boardState.turn
+//            value = "Turn: $turn" +
+//                if (boardState.winner != null) ", winner: ${boardState.winner}" else ""
+////                    + when {
+////                        gameState.selectedPlayerPiece != null -> "move PlayerPiece (${gameState.selectedPlayerPiece!!.id})"
+////                        gameState.selectedBlackPiece != null -> "set black (${gameState.selectedBlackPiece!!.id})"
+////                        gameState.selectedGrayPiece != null -> "set grey (${gameState.selectedGrayPiece!!.id})"
+////                        gameState.selectingGrayPiece -> "select gray piece"
+////                        else -> "select Piece.Player"
+////                    }
+//        }
         updateCorners()
 //        centerDisplay.second.textContent = turnDisplay.textContent
         if (render) {
@@ -514,13 +509,13 @@ object PentaViz {
 
             gameState.findPiecesAtPos(mousePos).firstOrNull()
                 ?.let { piece ->
-                    when (val state = multiplayerState.value) {
-                        is ConnectionState.HasGameSession -> {
-                            if (boardState.currentPlayer.id != state.userId) {
-                                return@let null
-                            }
-                        }
-                    }
+//                    when (val state = multiplayerState.value) {
+//                        is ConnectionState.HasGameSession -> {
+//                            if (boardState.currentPlayer.id != state.userId) {
+//                                return@let null
+//                            }
+//                        }
+//                    }
                     if (
                         (piece !is Piece.Player)
                         || (piece.playerId != boardState.currentPlayer.id)

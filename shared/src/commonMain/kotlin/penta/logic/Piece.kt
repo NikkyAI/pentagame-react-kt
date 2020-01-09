@@ -12,7 +12,7 @@ sealed class Piece {
     abstract var pos: Point
     abstract val radius: Double
 
-    open val color: Color get() = pentaColor.color.value
+    open val color: Color get() = pentaColor.color
 
     interface Blocker
 
@@ -24,7 +24,7 @@ sealed class Piece {
         val originalPosition: GoalField
     ) : Piece(), Blocker {
 
-        override val color: Color get() = PentaColors.BLACK.value
+        override val color: Color get() = PentaColors.BLACK
     }
 
     data class GrayBlocker(
@@ -33,7 +33,7 @@ sealed class Piece {
         override val radius: Double,
         override val pentaColor: PentaColor
     ) : Piece(), Blocker {
-        override val color: Color get() = PentaColors.GREY.value
+        override val color: Color get() = PentaColors.GREY
     }
 
     data class Player(
@@ -45,6 +45,6 @@ sealed class Piece {
         override val pentaColor: PentaColor
     ) : Piece() {
 
-        override val color: Color get() = pentaColor.color.value.brighten(1.0)
+        override val color: Color get() = pentaColor.color.brighten(1.0)
     }
 }

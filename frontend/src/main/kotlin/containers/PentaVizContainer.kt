@@ -3,6 +3,8 @@ package containers
 import actions.Action
 import components.PentaViz
 import components.PentaVizProps
+import io.data2viz.viz.Viz
+import kotlinext.js.getOwnPropertyNames
 import penta.PentaMove
 import penta.redux_rewrite.BoardState
 import react.RClass
@@ -27,14 +29,14 @@ interface PentaVizDispatchProps : RProps {
 val pentaViz =
     rConnect<State, Action<PentaMove>, WrapperAction, PentaVizParameters, PentaVizStateProps, PentaVizDispatchProps, PentaVizProps>(
         { state, configProps ->
-            println("PentaViz.state")
+            println("PentaViz update state")
             println("state: $state ")
-            println("configProps: $configProps ")
+            println("configProps: ${configProps::class.js.getOwnPropertyNames()} ")
             boardState = state.boardState
         },
         { dispatch, configProps ->
             // any kind of interactivity is linked to dispatching state changes here
-            println("PentaViz.dispatch")
+            println("PentaViz update dispatch")
             println("dispatch: $dispatch ")
             println("configProps: $configProps ")
 //            startGameClick = { dispatch(Action(PentaMove.InitGame)) }

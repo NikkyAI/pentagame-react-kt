@@ -17,7 +17,8 @@ fun canClickPiece(clickedPiece: Piece, boardState: BoardState): Boolean {
         if (positions[clickedPiece.id] == null) {
             return false
         }
-        when (val state = penta.client.PentaViz.multiplayerState.value) {
+        // TODO: have multiplayer state in store
+        when (val state: ConnectionState = ConnectionState.Disconnected()/*penta.client.PentaViz.multiplayerState.value*/) {
             is ConnectionState.HasGameSession -> {
                 if (currentPlayer.id != state.userId) {
                     return false

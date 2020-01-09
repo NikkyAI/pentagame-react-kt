@@ -37,6 +37,7 @@ fun main() {
             app()
         }
     }
+    logger.info { "html rendered" }
     onHtmlRendered.forEach {
         it()
     }

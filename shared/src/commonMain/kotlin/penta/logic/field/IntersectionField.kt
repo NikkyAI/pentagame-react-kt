@@ -6,7 +6,7 @@ import penta.PentaColor
 abstract class IntersectionField : AbstractField() {
     abstract val pentaColor: PentaColor
 
-    override val color: Color get() = pentaColor.color.value
+    override val color: Color get() = pentaColor.color
 
     protected var connectedIntersectionFields: List<IntersectionField> = listOf()
     fun connectIntersection(vararg others: IntersectionField) {

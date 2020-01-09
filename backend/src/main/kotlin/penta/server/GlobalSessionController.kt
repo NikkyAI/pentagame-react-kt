@@ -1,7 +1,5 @@
 package penta.server
 
-import com.lightningkite.reacktive.list.WrapperObservableList
-import com.lightningkite.reacktive.map.WrapperObservableMap
 import io.ktor.http.cio.websocket.CloseReason
 import io.ktor.http.cio.websocket.Frame
 import io.ktor.http.cio.websocket.close
@@ -20,44 +18,51 @@ import penta.util.json
 
 object GlobalSessionController {
     private val logger = KotlinLogging.logger {}
-    val observeringSessions = WrapperObservableMap<UserSession, DefaultWebSocketServerSession>().apply {
-        onMapRemove.add { session, new_wss ->
-            GlobalScope.launch(handler) {
-                values.forEach { wss ->
-                    if (wss != new_wss) {
-                        wss.outgoing.send(
-                            Frame.Text(
-                                json.stringify(GlobalEvent.serializer(), GlobalEvent.Leave(session.userId, ""))
-                            )
+    private val observeringSessions = mutableMapOf<UserSession, DefaultWebSocketServerSession>()
+    fun observeringSessionsPut(
+        session: UserSession,
+        defaultWebSocketServerSession: DefaultWebSocketServerSession
+    ) {
+        GlobalScope.launch(handler) {
+            observeringSessions.values.forEach { wss ->
+                if (wss != defaultWebSocketServerSession) {
+                    wss.outgoing.send(
+                        Frame.Text(
+                            json.stringify(GlobalEvent.serializer(), GlobalEvent.Join(session.userId))
                         )
-                    }
-                }
-            }
-        }
-        onMapPut.add { session, hadPrevious, _, new_wss ->
-            GlobalScope.launch(handler) {
-                values.forEach { wss ->
-                    if (wss != new_wss) {
-                        wss.outgoing.send(
-                            Frame.Text(
-                                json.stringify(GlobalEvent.serializer(), GlobalEvent.Join(session.userId))
-                            )
-                        )
-                    }
+                    )
                 }
             }
         }
     }
-    val chatHistory = WrapperObservableList<GlobalEvent.Message>().apply {
-        onListAdd.add { new_message, _ ->
-            GlobalScope.launch(handler) {
-                observeringSessions.values.forEach { wss ->
+    fun observeringSessionsRemove(
+        session: UserSession
+    ) {
+        val removedSession = observeringSessions.remove(session)
+        GlobalScope.launch(handler) {
+            observeringSessions.values.forEach { wss ->
+                if (wss != removedSession) {
                     wss.outgoing.send(
                         Frame.Text(
-                            json.stringify(GlobalEvent.serializer(), new_message)
+                            json.stringify(GlobalEvent.serializer(), GlobalEvent.Leave(session.userId, ""))
                         )
                     )
                 }
+            }
+        }
+    }
+
+    private val mutableChatHistory = mutableListOf<GlobalEvent.Message>()
+    val chatHistory: List<GlobalEvent.Message> = mutableChatHistory
+    fun chatHistoryAdd(new_message: GlobalEvent.Message) {
+        mutableChatHistory += new_message
+        GlobalScope.launch(handler) {
+            observeringSessions.values.forEach { wss ->
+                wss.outgoing.send(
+                    Frame.Text(
+                        json.stringify(GlobalEvent.serializer(), new_message)
+                    )
+                )
             }
         }
     }
@@ -82,7 +87,8 @@ object GlobalSessionController {
 
             // register as observer
 
-            observeringSessions[session] = this
+//            observeringSessions[session] = this
+            observeringSessionsPut(session, this)
 
             while (true) {
                 val notationJson = (incoming.receive() as Frame.Text).readText()
@@ -95,7 +101,7 @@ object GlobalSessionController {
                 when (event) {
                     is GlobalEvent.Message -> {
                         if (session.userId == event.userId) {
-                            chatHistory += event
+                            chatHistoryAdd(event)
                         } else {
                             logger.error("user ${session.userId} sent message from ${event.userId}")
                         }
@@ -106,19 +112,19 @@ object GlobalSessionController {
                 }.exhaustive
             }
         } catch (e: IOException) {
-            observeringSessions.remove(session)
+            observeringSessionsRemove(session)
             val reason = closeReason.await()
             logger.debug(e) { "onClose $reason" }
         } catch (e: ClosedReceiveChannelException) {
-            observeringSessions.remove(session)
+            observeringSessionsRemove(session)
             val reason = closeReason.await()
             logger.error { "onClose $reason" }
         } catch (e: ClosedSendChannelException) {
-            observeringSessions.remove(session)
+            observeringSessionsRemove(session)
             val reason = closeReason.await()
             logger.error { "onClose $reason" }
         } catch (e: Exception) {
-            observeringSessions.remove(session)
+            observeringSessionsRemove(session)
             logger.error(e) { "exception onClose ${e.message}" }
         } finally {
 

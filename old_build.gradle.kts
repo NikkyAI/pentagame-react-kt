@@ -110,9 +110,6 @@ kotlin {
                 api("org.jetbrains.kotlinx:kotlinx-serialization-runtime-common:${Serialization.version}")
 
                 api("io.github.microutils:kotlin-logging-common:${KotlinLogging.version}")
-
-                api("com.lightningkite:kommon-metadata:${Kommon.version}")
-                api("com.lightningkite:reacktive-metadata:${Reacktive.version}")
             }
 
             kotlin.srcDirs(genCommonSrcKt.path)
@@ -134,11 +131,6 @@ kotlin {
                 }
                 api(ktor("client-core"))
                 api(ktor("client-json"))
-                api("com.lightningkite:kommon-metadata:${Kommon.version}")
-                api("com.lightningkite:reacktive-metadata:${Reacktive.version}")
-                api("com.lightningkite:recktangle-metadata:${Recktangle.version}")
-//                api("com.lightningkite:lokalize-metadata:${Lokalize.version}")
-                api("com.lightningkite:koolui-metadata:${KoolUI.version}")
 
 //                api(ktor("client-websocket"))
             }
@@ -177,9 +169,6 @@ kotlin {
                         exclude(mapOf("group" to Data2Viz.group, "module" to "geojson-jvm"))
                         exclude(mapOf("group" to Data2Viz.group, "module" to "d2v-geo-jvm"))
                     }
-                    // krosslin
-                    implementation("com.lightningkite:kommon-jvm:${Kommon.version}")
-                    implementation("com.lightningkite:reacktive-jvm:${Reacktive.version}")
 
                     // mongodb
 //                    implementation("org.litote.kmongo:kmongo-serialization:3.11.1")
@@ -229,14 +218,6 @@ kotlin {
                     implementation(ktor("client-json-jvm"))
                     implementation(ktor("client-serialization-jvm"))
 //                    implementation(ktor("client-websockets"))
-
-                    // krosslin
-                    implementation("com.lightningkite:kommon-jvm:${Kommon.version}")
-                    implementation("com.lightningkite:reacktive-jvm:${Reacktive.version}")
-                    implementation("com.lightningkite:recktangle-jvm:${Recktangle.version}")
-//                    implementation("com.lightningkite:lokalize-jvm:${Lokalize.version}")
-                    implementation("com.lightningkite:koolui-javafx:${KoolUI.version}")
-
                 }
             }
             // JVM-specific tests and their dependencies:
@@ -278,14 +259,6 @@ kotlin {
                     implementation(ktor("client-core-js"))
                     implementation(ktor("client-json-js"))
                     implementation(ktor("client-serialization-js"))
-
-                    // krosslin
-                    implementation("com.lightningkite:kommon-js:${Kommon.version}")
-                    implementation("com.lightningkite:reacktive-js:${Reacktive.version}")
-                    implementation("com.lightningkite:recktangle-js:${Recktangle.version}")
-//                    implementation("com.lightningkite:lokalize-js:${Lokalize.version}")
-                    implementation("com.lightningkite:koolui-js:${KoolUI.version}")
-
 
 //                    implementation("org.jetbrains:kotlin-react:+")
 //                    implementation("org.jetbrains:kotlin-styled:+")

@@ -15,6 +15,9 @@ sealed class ConnectionState {
         private val logger = KotlinLogging.logger {}
     }
 
+    // tmp fix
+    val value: ConnectionState get() = this
+
     abstract val baseUrl: Url
     abstract val userId: String
 

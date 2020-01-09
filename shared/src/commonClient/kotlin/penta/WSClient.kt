@@ -1,8 +1,6 @@
 package penta
 
 import client
-import com.lightningkite.koolui.async.UI
-import com.lightningkite.reacktive.list.MutableObservableList
 import io.ktor.client.features.websocket.webSocket
 import io.ktor.client.request.post
 import io.ktor.client.request.request
@@ -98,7 +96,7 @@ object WSClient {
                 logger.info { "setCookie: ${setCookie()}" }
                 parse(LoginResponse.serializer()) to headers["SESSION"]
             }
-            PentaViz.multiplayerState.value = when (loginResponse) {
+            PentaViz.multiplayerState = when (loginResponse) {
                 is LoginResponse.UserIdRejected -> {
                     ConnectionState.UserIDRejected(
                         baseUrl = baseURL,
@@ -132,7 +130,7 @@ object WSClient {
 
     suspend fun listGames(
         state: ConnectionState.Lobby,
-        gamesList: MutableObservableList<GameSessionInfo>,
+        gamesList: MutableList<GameSessionInfo>,
         onSuccess: () -> Unit = {}
     ) {
         val listGamesUrl = URLBuilder(state.baseUrl)
@@ -144,13 +142,14 @@ object WSClient {
         } catch (exception: Exception) {
             logger.error(exception) { "request failed" }
             // TODO: add state: connection lost
-            PentaViz.multiplayerState.value = ConnectionState.Disconnected(
+            PentaViz.multiplayerState = ConnectionState.Disconnected(
                 baseUrl = state.baseUrl, userId = state.userId
             )
             return
         }
 
-        gamesList.replace(receivedList)
+        gamesList.clear()
+        gamesList.addAll(receivedList)
         onSuccess()
     }
 
@@ -178,7 +177,7 @@ object WSClient {
                 userId = state.userId,
                 session = state.session
             )
-            PentaViz.multiplayerState.value = observingState.also {
+            PentaViz.multiplayerState = observingState.also {
                 logger.info { "setting multiplayerStatus to $it" }
             }
 
@@ -227,7 +226,7 @@ object WSClient {
         }
 
 
-        PentaViz.multiplayerState.value = ConnectionState.Authenticated(
+        PentaViz.multiplayerState = ConnectionState.Authenticated(
             baseUrl = state.baseUrl,
             userId = state.userId,
             session = state.session
@@ -264,7 +263,7 @@ object WSClient {
 //
 //            )
             logger.info { "connection opened" }
-            PentaViz.gameStateProperty.value = clientGameState
+            PentaViz.gameState = clientGameState
             PentaViz.updateBoard()
 
             outgoing.send(Frame.Text(state.session))
@@ -278,7 +277,7 @@ object WSClient {
                 websocketSession = this@webSocket,
                 running = true
             )
-            PentaViz.multiplayerState.value = observingState.also {
+            PentaViz.multiplayerState = observingState.also {
                 logger.info { "setting multiplayerStatus to $it" }
             }
 
@@ -295,7 +294,7 @@ object WSClient {
                 val history = json.parse(GameEvent.serializer().list, notationListJson)
                 // TODO: dispatch action to store
 //                penta.client.PentaViz.gameState.isPlayback = true
-                withContext(Dispatchers.UI) {
+                withContext(Dispatchers.Main) {
                     history.forEach { notation ->
                         notation.asMove(PentaViz.gameState.boardState).also {
                             // TODO: dispatch action to store
@@ -326,7 +325,7 @@ object WSClient {
                             val notation = json.parse(GameEvent.serializer(), notationJson)
                             notation.asMove(PentaViz.gameState.boardState).also {
                                 // apply move
-                                withContext(Dispatchers.UI) {
+                                withContext(Dispatchers.Main) {
                                     // TODO: dispatch action to store
 //                                    penta.client.PentaViz.gameState.processMove(it)
                                 }
@@ -361,7 +360,7 @@ object WSClient {
 //        penta.client.PentaViz.gameState.players.replace(listOf(PlayerState("triangle", "triangle"), PlayerState("square", "square")))
 //        penta.client.PentaViz.resetBoard()
         logger.info { "connection closed" }
-        PentaViz.gameStateProperty.value = TODO("create new clientgamestate") //ClientGameState(2)
+        PentaViz.gameState = TODO("create new clientgamestate") //ClientGameState(2)
         PentaViz.updateBoard()
 
         // connection closed "normally" ?
