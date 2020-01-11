@@ -10,6 +10,7 @@ import react.RClass
 import react.RComponent
 import react.RProps
 import react.RState
+import react.dom.br
 import react.dom.button
 import react.dom.div
 import react.dom.li
@@ -17,7 +18,6 @@ import react.dom.ol
 import react.dom.p
 import react.invoke
 import react.redux.rConnect
-import reducers.State
 import redux.WrapperAction
 
 interface TextBoardStateProps : StateProps, DispatchProps {
@@ -28,17 +28,64 @@ interface TextBoardStateProps : StateProps, DispatchProps {
 
 class TextBoardState(props: TextBoardStateProps) : RComponent<TextBoardStateProps, RState>(props) {
     override fun RBuilder.render() {
+        if (props.boardState == undefined) {
+            return
+        }
         div {
+
+            div {
+                val localSymbols = listOf("triangle", "square", "cross", "circle")
+                localSymbols.forEach { symbol ->
+                    button {
+                        +"add $symbol"
+                        attrs.onClickFunction = {
+                            val playerCount = props.boardState.players.size
+                            props.addPlayerClick("local$playerCount", symbol)
+                        }
+                    }
+                }
+            }
+            div {
+                button {
+                    +"start game"
+                    attrs.onClickFunction = { props.startGameClick() }
+                }
+            }
+
             div {
                 with(props.boardState) {
-                    p {
-                        +"players: $players"
+                    div {
+                        +"players: "
+                        ol {
+                            players.forEach {
+                                li {
+                                    +it.toString()
+                                }
+                            }
+                        }
                     }
                     p {
                         +"currentPlayer: $currentPlayer"
-                    }
-                    p {
+                        br {}
+                        +"selectedPlayerPiece: $selectedPlayerPiece"
+                        br {}
+                        +"selectedBlackPiece: $selectedBlackPiece"
+                        br {}
+                        +"selectedGrayPiece: $selectedGrayPiece"
+                        br {}
+                        +"selectingGrayPiece: $selectingGrayPiece"
+                        br {}
                         +"gameStarted: $gameStarted"
+                    }
+                    div {
+                        +"figures: "
+                        ol {
+                            figures.forEach {
+                                li {
+                                    +it.toString()
+                                }
+                            }
+                        }
                     }
 
                     div {
@@ -51,29 +98,37 @@ class TextBoardState(props: TextBoardStateProps) : RComponent<TextBoardStateProp
                             }
                         }
                     }
+                    div {
+                        +"positions: "
+                        ol {
+                            positions.forEach { (id, field) ->
+                                li {
+                                    +"$id : ${field?.id}"
+                                }
+                            }
+                        }
+                    }
                 }
             }
             div {
                 +props.boardState.toString()
             }
 
-
-            div {
-                button {
-                    +"addplayer"
-                    attrs.onClickFunction = { props.addPlayerClick() }
-                }
-            }
-            div {
-                button {
-                    +"start game"
-                    attrs.onClickFunction = { props.startGameClick() }
-                }
-            }
-
-
             children()
         }
+    }
+
+//    override fun componentWillUpdate(nextProps: TextBoardStateProps, nextState: RState) {
+//        console.log("componentWillUpdate")
+//    }
+
+    override fun componentDidUpdate(prevProps: TextBoardStateProps, prevState: RState, snapshot: Any) {
+        console.log("componentDidUpdate")
+    }
+
+    override fun shouldComponentUpdate(nextProps: TextBoardStateProps, nextState: RState): Boolean {
+        console.log("shouldComponentUpdate")
+        return true
     }
 }
 
@@ -90,26 +145,30 @@ interface TextBoardsStateParameters : RProps {
 }
 
 /*private*/ interface DispatchProps : RProps {
-    var addPlayerClick: () -> Unit
+    var addPlayerClick: (playerId: String, figureId: String) -> Unit
     var startGameClick: () -> Unit
     var relay: (PentaMove) -> Unit
 }
 
-val textBoardState
-    = rConnect<State, Action<PentaMove>, WrapperAction, TextBoardsStateParameters, StateProps, DispatchProps, TextBoardStateProps>(
+val textBoardState =
+    rConnect<BoardState, Action<PentaMove>, WrapperAction, TextBoardsStateParameters, StateProps, DispatchProps, TextBoardStateProps>(
         { state, configProps ->
-            println("TextBoardContainer.state")
-            println("state: $state ")
-            println("configProps: $configProps ")
-            boardState = state.boardState
+            console.log("TextBoardContainer.state")
+            console.log("state: $state ")
+            console.log("state: ${state::class.js}) ")
+            console.log("configProps: $configProps ")
+            console.log("configProps: ${configProps::class.js} ")
+            boardState = state
         },
         { dispatch, configProps ->
             // any kind of interactivity is linked to dispatching state changes here
-            println("TextBoardContainer.dispatch")
-            println("dispatch: $dispatch ")
-            println("configProps: $configProps ")
+            console.log("TextBoardContainer.dispatch")
+            console.log("dispatch: $dispatch ")
+            console.log("configProps: $configProps ")
             startGameClick = { dispatch(Action(PentaMove.InitGame)) }
-            addPlayerClick = { dispatch(Action(PentaMove.PlayerJoin(PlayerState("local2", "square")))) }
+            addPlayerClick = { playerId: String, figureId: String ->
+                dispatch(Action(PentaMove.PlayerJoin(PlayerState(playerId, figureId))))
+            }
             relay = { dispatch(Action(it)) }
         }
     )(TextBoardState::class.js.unsafeCast<RClass<TextBoardStateProps>>())

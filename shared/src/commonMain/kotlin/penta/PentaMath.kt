@@ -16,7 +16,7 @@ object PentaMath {
     val K = (2.0 * j) + 6
     val d = 2.0 * (c + 12 + j) + (2 * j + 6) // (2.0*L) + K
 
-    // diameter to outer ring
+    // diameter of outer ring
     val r = (2.0 / 5.0) * sqrt(1570 + (698.0 * sqrt(5.0)))// d / sqrt(PHI + 2.0)
     // diameter with
     val R_ = r + c

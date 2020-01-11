@@ -3,9 +3,11 @@ package components
 import io.data2viz.viz.Viz
 import io.data2viz.viz.bindRendererOn
 import kotlinx.css.margin
+import kotlinx.css.minHeight
+import kotlinx.css.minWidth
+import kotlinx.css.px
 import kotlinx.html.id
 import mu.KotlinLogging
-import onHtmlRendered
 import react.RBuilder
 import react.RClass
 import react.RComponent
@@ -23,7 +25,6 @@ import kotlin.math.min
 import kotlin.math.max
 import org.w3c.dom.HTMLCanvasElement
 import org.w3c.dom.HTMLDivElement
-import org.w3c.dom.HTMLElement
 import org.w3c.dom.events.EventListener
 import react.dom.div
 
@@ -39,45 +40,61 @@ class VizComponent(props: VizProps): RComponent<VizProps, RState>(props) {
     val divRef = createRef<HTMLDivElement>()
     override fun RBuilder.render() {
         div {
+            ref = divRef
             styledCanvas {
+                ref = canvasRef
                 css {
                     margin = "0px"
+                    minHeight = 200.px
+                    minWidth = 200.px
                 }
                 attrs.id = props.id ?: "vizCanvas"
                 attrs.width = "100"
                 attrs.height = "100"
-                ref = canvasRef
             }
-            ref = divRef
         }
+    }
 
-        onHtmlRendered.add {
-            logger.info { "canvasRef.current: ${canvasRef.current}" }
-            val canvas = canvasRef.current!!
-            val div = divRef.current!!
-            props.viz?.bindRendererOn(canvas)
-
-            window.addEventListener("resize",
-                EventListener { event ->
-                    val rect = div.getBoundingClientRect()
-                    logger.debug { "rect width: ${rect.width} height: ${rect.height}" }
-                    logger.debug { "canvas width: ${canvas.width} height: ${canvas.height}" }
-                    val size = max(200,
-                        min(
-                            min(rect.height, rect.width).toInt(),
-                            window.document.documentElement!!.clientHeight
-                        )
-                    )
-                    canvas.width = size
-                    canvas.height = size
-                    props.viz?.apply {
-                        height = canvas.height.toDouble()
-                        width = canvas.width.toDouble()
-                        resize(canvas.width.toDouble(), canvas.height.toDouble())
-                        render()
-                    }
-                })
+    private fun resize() {
+        val canvas = canvasRef.current!!
+        val div = divRef.current!!
+        val rect = div.getBoundingClientRect()
+        logger.debug { "rect width: ${rect.width} height: ${rect.height}" }
+        logger.debug { "canvas width: ${canvas.width} height: ${canvas.height}" }
+        val size = max(200,
+            min(
+                min(rect.height, rect.width).toInt(),
+                window.document.documentElement!!.clientHeight
+            )
+        )
+        canvas.width = size
+        canvas.height = size
+        props.viz?.apply {
+            height = canvas.height.toDouble()
+            width = canvas.width.toDouble()
+            resize(canvas.width.toDouble(), canvas.height.toDouble())
+            render()
         }
+    }
+
+    override fun componentDidMount() {
+        logger.info { "canvasRef.current: ${canvasRef.current}" }
+        val canvas = canvasRef.current!!
+        val div = divRef.current!!
+        props.viz?.bindRendererOn(canvas)
+
+        window.addEventListener("resize",
+            EventListener { event ->
+                resize()
+            })
+
+        props.viz?.render()
+    }
+
+    override fun shouldComponentUpdate(nextProps: VizProps, nextState: RState): Boolean {
+        nextProps.viz?.render()
+
+        return false
     }
 }
 interface VizStateProps: RProps {

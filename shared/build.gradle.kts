@@ -205,6 +205,7 @@ kotlin {
                 api(npm("css-in-js-utils", "^3.0.2"))
                 api(npm("redux", "^4.0.0"))
                 api(npm("react-redux", "^5.0.7"))
+//                api(npm("@types/redux-logger"))
 
                 val kotlinWrappersVersion = "pre.89-kotlin-1.3.60"
                 api("org.jetbrains:kotlin-react:16.9.0-${kotlinWrappersVersion}")

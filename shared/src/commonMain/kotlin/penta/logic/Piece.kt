@@ -9,6 +9,7 @@ import penta.logic.field.GoalField
 sealed class Piece {
     abstract val id: String
     abstract val pentaColor: PentaColor
+    @Deprecated("not necessary for placing svg components")
     abstract var pos: Point
     abstract val radius: Double
 

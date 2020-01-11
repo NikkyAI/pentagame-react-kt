@@ -1,5 +1,6 @@
 package components
 
+import containers.pentaCanvas
 import containers.pentaViz
 import io.data2viz.color.Colors
 import io.data2viz.viz.viz
@@ -12,12 +13,11 @@ fun RBuilder.app() {
         h1 {
             +"Kotlin React + React-Dom + Redux + React-Redux"
         }
-        textBoardState {
-
-        }
+        pentaCanvas {}
+        textBoardState {}
 
 //        vizCanvas {
-//            attrs.id = "viz"
+//            attrs.id = "demo_viz"
 //            attrs.viz = viz {
 //                circle {
 //                    x = 5.0
@@ -28,9 +28,10 @@ fun RBuilder.app() {
 //            }
 //        }
 
-        pentaViz {
 
-        }
+//        pentaViz{
+//            +"hallo"
+//        }
 
 //                    navLink(TODO_LIST_PATH) {
 //                        +"Go to todo list"

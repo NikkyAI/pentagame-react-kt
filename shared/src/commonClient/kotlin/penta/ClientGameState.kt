@@ -26,11 +26,7 @@ open class ClientGameState(localPlayerCount: Int = 1) : GameState() {
 
     val boardStore: Store<BoardState> = createStore(
         BoardState.reducer,
-        BoardState.create(
-            // TODO: remove default users
-            listOf(PlayerState("alice", "cross"), PlayerState("bob", "triangle")),
-            BoardState.GameType.TWO
-        ),
+        BoardState.create(),
         applyMiddleware(/*loggingMiddleware(logger)*/)
     )
 
@@ -280,10 +276,6 @@ open class ClientGameState(localPlayerCount: Int = 1) : GameState() {
         logger.info { ("no action on click") }
     }
 
-    override fun updateBoard() {
-        super.updateBoard()
-        PentaViz.updateBoard()
-    }
 
     fun canClickField(targetField: AbstractField): Boolean {
         with(boardState) {
@@ -422,6 +414,10 @@ open class ClientGameState(localPlayerCount: Int = 1) : GameState() {
             }
         }
         preProcessMove(move)
+    }
+    override fun updateBoard() {
+        super.updateBoard()
+        PentaViz.updateBoard()
     }
 
     override fun resetPlayers() {

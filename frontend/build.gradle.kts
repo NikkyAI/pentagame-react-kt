@@ -2,7 +2,7 @@ plugins {
     kotlin("js")
 //    id("kotlin2js")
 //    id("org.jetbrains.kotlin.frontend")
-    id("kotlin-dce-js")
+//    id("kotlin-dce-js")
 }
 
 repositories {
@@ -47,6 +47,8 @@ kotlin {
 
                 implementation(project(":shared"))
 
+                api(npm("redux-logger"))
+
                 // temp fix ?
                 implementation(npm("text-encoding"))
             }
@@ -60,11 +62,45 @@ kotlin {
     }
 }
 
-
+val bundleDir = buildDir.resolve("full_bundle")//.apply { mkdirs() }
 val browserWebpack = tasks.getByName<org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpack>("browserWebpack") {
 
 }
 
+val processResources = tasks.getByName("processResources")
+
+val bundle = tasks.create("bundle") {
+    group = "build"
+    dependsOn(processResources)
+    dependsOn(browserWebpack)
+
+    outputs.upToDateWhen { false }
+    outputs.dir(bundleDir)
+
+//    val staticFolder = gen_resource.resolve("static").apply { mkdirs() }
+//
+    doFirst {
+        bundleDir.deleteRecursively()
+        bundleDir.mkdirs()
+    }
+
+
+
+    // TODO: readd terser and require.js for dev
+//    from(terserTask)
+//    from(bundleTask)
+
+    doLast {
+        copy {
+            from(processResources)
+//            from(browserWebpack)
+//            from(buildDir.resolve("processedResources/js/main"))
+            from(buildDir.resolve("bundle"))
+            from(buildDir.resolve("distributions"))
+            into(bundleDir)
+        }
+    }
+}
 
 val JsJar = tasks.getByName<Jar>("JsJar")
 

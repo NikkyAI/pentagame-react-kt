@@ -11,3 +11,6 @@ fun <T> loggingMiddleware(logger: KLogger) = middleware<T> { store, next, action
     next(action)
 }
 
+fun test(c: Char) {
+    c.isUpperCase()
+}

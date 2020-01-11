@@ -16,14 +16,14 @@ import penta.logic.field.GoalField
 import penta.util.exhaustive
 import penta.util.requireMove
 
-data class BoardState(
-    val players: List<PlayerState> = listOf(PlayerState("local", "triangle")),
-    val currentPlayer: PlayerState = players.first(),
+data class BoardState private constructor(
+    val players: Array<PlayerState> = arrayOf(),
+    val currentPlayer: PlayerState = PlayerState("_", "triangle"),
     val gameType: GameType = GameType.TWO,
-    val scoringColors: Map<String, List<PentaColor>> = mapOf(),
+    val scoringColors: Map<String, Array<PentaColor>> = mapOf(),
     val figures: Array<Piece> = arrayOf(),
     val positions: Map<String, AbstractField?> = mapOf(),
-    val history: List<PentaMove> = listOf(),
+    val history: Array<PentaMove> = arrayOf(),
     val gameStarted: Boolean = false,
     val turn: Int = 0,
     val forceMoveNextPlayer: Boolean = false,
@@ -37,25 +37,18 @@ data class BoardState(
     val selectingGrayPiece: Boolean = false,
     val illegalMove: PentaMove.IllegalMove? = null
 ) {
-
     enum class GameType {
         TWO, THREE, FOUR, TWO_VS_TO
     }
 
     companion object {
         private val logger = KotlinLogging.logger {}
-        fun create(
-            players: List<PlayerState>,
-            gameType: GameType
-        ): BoardState {
+
+        fun create(): BoardState {
             logger.info { "created new BoardState" }
 
             return WithMutableState(
-                BoardState(
-                    players = players,
-                    gameType = gameType,
-                    positions = mapOf()
-                )
+                BoardState()
             ).apply {
                 val blacks = (0 until 5).map { i ->
                     Piece.BlackBlocker(
@@ -96,7 +89,7 @@ data class BoardState(
 
         val reducer: Reducer<BoardState> = { state, action ->
             logger.info { "action: ${action::class}" }
-            when(action) {
+            when (action) {
                 is org.reduxkotlin.ActionTypes.INIT -> {
                     logger.info { "received INIT" }
                     state
@@ -123,38 +116,40 @@ data class BoardState(
             )
         }
 
-        fun WithMutableState.processMove(move: PentaMove): BoardState = with(nextState) {
+        fun WithMutableState.processMove(move: PentaMove): BoardState {
             try {
-                logger.info { "turn: $turn" }
-                logger.info { "currentPlayer: $currentPlayer" }
+                logger.info { "turn: ${nextState.turn}" }
+                logger.info { "currentPlayer: ${nextState.currentPlayer}" }
                 logger.info { "processing $move" }
                 when (move) {
                     is PentaMove.MovePlayer -> {
-                        requireMove(gameStarted) {
-                            PentaMove.IllegalMove(
-                                "game is not started yet",
-                                move
-                            )
-                        }
-                        requireMove(move.playerPiece.playerId == currentPlayer.id) {
-                            PentaMove.IllegalMove(
-                                "move is not from currentPlayer: ${currentPlayer.id}",
-                                move
-                            )
-                        }
-                        requireMove(canMove(move.from, move.to)) {
-                            PentaMove.IllegalMove(
-                                "no path between ${move.from.id} and ${move.to.id}",
-                                move
-                            )
+                        with(originalState) {
+                            requireMove(gameStarted) {
+                                PentaMove.IllegalMove(
+                                    "game is not started yet",
+                                    move
+                                )
+                            }
+                            requireMove(move.playerPiece.playerId == currentPlayer.id) {
+                                PentaMove.IllegalMove(
+                                    "move is not from currentPlayer: ${currentPlayer.id}",
+                                    move
+                                )
+                            }
+                            requireMove(canMove(move.from, move.to)) {
+                                PentaMove.IllegalMove(
+                                    "no path between ${move.from.id} and ${move.to.id}",
+                                    move
+                                )
+                            }
                         }
 
-                        val piecesOnTarget = positions
+                        val piecesOnTarget = nextState.positions
                             .filterValues {
                                 it == move.to
                             }.keys
                             .mapNotNull { id ->
-                                figures.find {
+                                nextState.figures.find {
                                     it.id == id
                                 }
                             }
@@ -212,20 +207,24 @@ data class BoardState(
 //                                updateBoard()
 
                         logger.info { "append history" }
-                        nextState = nextState.copy(history = history + move)
+                        with(nextState) {
+                            nextState = nextState.copy(history = history + move)
+                        }
                     }
                     is PentaMove.ForcedPlayerMove -> {
-                        requireMove(gameStarted) {
-                            PentaMove.IllegalMove(
-                                "game is not started yet",
-                                move
-                            )
-                        }
-                        requireMove(move.playerPiece.playerId == currentPlayer.id) {
-                            PentaMove.IllegalMove(
-                                "move is not from currentPlayer: ${currentPlayer.id}",
-                                move
-                            )
+                        with(originalState) {
+                            requireMove(gameStarted) {
+                                PentaMove.IllegalMove(
+                                    "game is not started yet",
+                                    move
+                                )
+                            }
+                            requireMove(move.playerPiece.playerId == currentPlayer.id) {
+                                PentaMove.IllegalMove(
+                                    "move is not from currentPlayer: ${currentPlayer.id}",
+                                    move
+                                )
+                            }
                         }
                         val sourceField = move.from
                         if (sourceField is GoalField && move.playerPiece.pentaColor == sourceField.pentaColor) {
@@ -238,44 +237,49 @@ data class BoardState(
                                 )
                             }
                         }
-                        nextState = nextState.copy(history = history + move)
+
+                        with(nextState) {
+                            nextState = nextState.copy(history = history + move)
+                        }
                     }
                     is PentaMove.SwapOwnPiece -> {
-                        requireMove(gameStarted) {
-                            PentaMove.IllegalMove(
-                                "game is not started yet",
-                                move
-                            )
-                        }
-                        requireMove(canMove(move.from, move.to)) {
-                            PentaMove.IllegalMove(
-                                "no path between ${move.from.id} and ${move.to.id}",
-                                move
-                            )
-                        }
-                        requireMove(move.playerPiece.playerId == currentPlayer.id) {
-                            PentaMove.IllegalMove(
-                                "move is not from currentPlayer: ${currentPlayer.id}",
-                                move
-                            )
-                        }
-                        requireMove(move.playerPiece.position == move.from) {
-                            PentaMove.IllegalMove(
-                                "piece ${move.playerPiece.id} is not on expected position ${move.from.id}",
-                                move
-                            )
-                        }
-                        requireMove(move.otherPlayerPiece.playerId == currentPlayer.id) {
-                            PentaMove.IllegalMove(
-                                "piece ${move.otherPlayerPiece.id} is not from another player",
-                                move
-                            )
-                        }
-                        requireMove(move.otherPlayerPiece.position == move.to) {
-                            PentaMove.IllegalMove(
-                                "piece ${move.otherPlayerPiece.id} is not on expected position ${move.to.id}",
-                                move
-                            )
+                        with(originalState) {
+                            requireMove(gameStarted) {
+                                PentaMove.IllegalMove(
+                                    "game is not started yet",
+                                    move
+                                )
+                            }
+                            requireMove(canMove(move.from, move.to)) {
+                                PentaMove.IllegalMove(
+                                    "no path between ${move.from.id} and ${move.to.id}",
+                                    move
+                                )
+                            }
+                            requireMove(move.playerPiece.playerId == currentPlayer.id) {
+                                PentaMove.IllegalMove(
+                                    "move is not from currentPlayer: ${currentPlayer.id}",
+                                    move
+                                )
+                            }
+                            requireMove(move.playerPiece.position == move.from) {
+                                PentaMove.IllegalMove(
+                                    "piece ${move.playerPiece.id} is not on expected position ${move.from.id}",
+                                    move
+                                )
+                            }
+                            requireMove(move.otherPlayerPiece.playerId == currentPlayer.id) {
+                                PentaMove.IllegalMove(
+                                    "piece ${move.otherPlayerPiece.id} is not from another player",
+                                    move
+                                )
+                            }
+                            requireMove(move.otherPlayerPiece.position == move.to) {
+                                PentaMove.IllegalMove(
+                                    "piece ${move.otherPlayerPiece.id} is not on expected position ${move.to.id}",
+                                    move
+                                )
+                            }
                         }
 
                         move.playerPiece.position = move.to
@@ -284,54 +288,60 @@ data class BoardState(
 //                        updatePiecesAtPos(move.from)
 
                         postProcess(move)
-                        nextState = nextState.copy(history = history + move)
+
+                        with(nextState) {
+                            nextState = nextState.copy(history = history + move)
+                        }
                     }
                     is PentaMove.SwapHostilePieces -> {
-                        requireMove(gameStarted) {
-                            PentaMove.IllegalMove(
-                                "game is not started yet",
-                                move
-                            )
-                        }
-                        requireMove(canMove(move.from, move.to)) {
-                            PentaMove.IllegalMove(
-                                "no path between ${move.from.id} and ${move.to.id}",
-                                move
-                            )
 
-                        }
-                        requireMove(move.playerPiece.playerId == currentPlayer.id) {
-                            PentaMove.IllegalMove(
-                                "move is not from currentPlayer: ${currentPlayer.id}",
-                                move
-                            )
-                        }
-                        requireMove(move.playerPiece.position == move.from) {
-                            PentaMove.IllegalMove(
-                                "piece ${move.playerPiece.id} is not on expected position ${move.from.id}",
-                                move
-                            )
-                        }
-                        requireMove(move.otherPlayerPiece.playerId != currentPlayer.id) {
-                            PentaMove.IllegalMove(
-                                "piece ${move.otherPlayerPiece.id} is from another player",
-                                move
-                            )
-                        }
-                        requireMove(move.otherPlayerPiece.position == move.to) {
-                            PentaMove.IllegalMove(
-                                "piece ${move.otherPlayerPiece.id} is not on expected position ${move.to.id}",
-                                move
-                            )
-                        }
-                        val lastMove = history.findLast {
-                            it is PentaMove.Move && it.playerPiece.playerId == move.playerPiece.playerId
-                        }
-                        requireMove(lastMove != move) {
-                            PentaMove.IllegalMove(
-                                "repeating move ${move.asNotation()} is illegal",
-                                move
-                            )
+                        with(originalState) {
+                            requireMove(gameStarted) {
+                                PentaMove.IllegalMove(
+                                    "game is not started yet",
+                                    move
+                                )
+                            }
+                            requireMove(canMove(move.from, move.to)) {
+                                PentaMove.IllegalMove(
+                                    "no path between ${move.from.id} and ${move.to.id}",
+                                    move
+                                )
+
+                            }
+                            requireMove(move.playerPiece.playerId == currentPlayer.id) {
+                                PentaMove.IllegalMove(
+                                    "move is not from currentPlayer: ${currentPlayer.id}",
+                                    move
+                                )
+                            }
+                            requireMove(move.playerPiece.position == move.from) {
+                                PentaMove.IllegalMove(
+                                    "piece ${move.playerPiece.id} is not on expected position ${move.from.id}",
+                                    move
+                                )
+                            }
+                            requireMove(move.otherPlayerPiece.playerId != currentPlayer.id) {
+                                PentaMove.IllegalMove(
+                                    "piece ${move.otherPlayerPiece.id} is from another player",
+                                    move
+                                )
+                            }
+                            requireMove(move.otherPlayerPiece.position == move.to) {
+                                PentaMove.IllegalMove(
+                                    "piece ${move.otherPlayerPiece.id} is not on expected position ${move.to.id}",
+                                    move
+                                )
+                            }
+                            val lastMove = history.findLast {
+                                it is PentaMove.Move && it.playerPiece.playerId == move.playerPiece.playerId
+                            }
+                            requireMove(lastMove != move) {
+                                PentaMove.IllegalMove(
+                                    "repeating move ${move.asNotation()} is illegal",
+                                    move
+                                )
+                            }
                         }
 
                         move.playerPiece.position = move.to
@@ -340,7 +350,9 @@ data class BoardState(
 //                        updatePiecesAtPos(move.from)
                         // TODO
                         postProcess(move)
-                        nextState = nextState.copy(history = history + move)
+                        with(nextState) {
+                            nextState = nextState.copy(history = history + move)
+                        }
                     }
                     is PentaMove.CooperativeSwap -> {
                         TODO("implement cooperative swap")
@@ -348,83 +360,92 @@ data class BoardState(
                     }
 
                     is PentaMove.SetBlack -> {
-                        if (positions.values.any { it == move.to }) {
-                            PentaMove.IllegalMove(
-                                "target position not empty: ${move.to.id}",
-                                move
-                            )
-                        }
-                        requireMove(move.piece.position == null || move.piece.position == move.from) {
-                            PentaMove.IllegalMove(
-                                "illegal source position of ${move.piece.position?.id}",
-                                move
-                            )
+                        with(originalState) {
+                            if (positions.values.any { it == move.to }) {
+                                PentaMove.IllegalMove(
+                                    "target position not empty: ${move.to.id}",
+                                    move
+                                )
+                            }
+                            requireMove(move.piece.position == null || move.piece.position == move.from) {
+                                PentaMove.IllegalMove(
+                                    "illegal source position of ${move.piece.position?.id}",
+                                    move
+                                )
+                            }
+
+                            move.piece.position = move.to
+
+                            val lastMove = history.findLast { it !is PentaMove.SetGrey }
+                            if (lastMove !is PentaMove.CanSetBlack) {
+                                PentaMove.IllegalMove(
+                                    "last move was not the expected move type: ${lastMove!!::class.simpleName} instead of ${PentaMove.CanSetBlack::class.simpleName}",
+                                    move
+                                )
+                            }
                         }
 
-                        move.piece.position = move.to
-
-                        val lastMove = history.asReversed().find { it !is PentaMove.SetGrey }
-                        if (lastMove !is PentaMove.CanSetBlack) {
-                            PentaMove.IllegalMove(
-                                "last move was not the expected move type: ${lastMove!!::class.simpleName} instead of ${PentaMove.CanSetBlack::class.simpleName}",
-                                move
+                        with(nextState) {
+                            nextState = nextState.copy(
+                                history = history + move,
+                                selectedBlackPiece = null
                             )
                         }
-
-                        nextState = nextState.copy(
-                            history = history + move,
-                            selectedBlackPiece = null
-                        )
 
 //                        updatePiecesAtPos(move.to)
 //                        updatePiecesAtPos(move.from)
                     }
                     is PentaMove.SetGrey -> {
-                        if (positions.values.any { it == move.to }) {
-                            handleIllegalMove(
-                                PentaMove.IllegalMove(
-                                    "target position not empty: ${move.to.id}",
-                                    move
+                        with(originalState) {
+                            if (positions.values.any { it == move.to }) {
+                                handleIllegalMove(
+                                    PentaMove.IllegalMove(
+                                        "target position not empty: ${move.to.id}",
+                                        move
+                                    )
                                 )
-                            )
-                            return nextState
-                        }
-                        requireMove(move.piece.position == move.from) {
-                            PentaMove.IllegalMove(
-                                "source and target position are the same: ${move.from?.id}",
-                                move
-                            )
-                        }
-                        logger.debug { "selected: $selectedGrayPiece" }
-                        if (selectingGrayPiece) {
-                            requireMove(selectingGrayPiece && move.from != null) {
+                                return nextState
+                            }
+                            requireMove(move.piece.position == move.from) {
                                 PentaMove.IllegalMove(
-                                    "source is null",
+                                    "source and target position are the same: ${move.from?.id}",
                                     move
                                 )
                             }
-                        } else {
-                            requireMove(selectedGrayPiece == move.piece) {
+                            logger.debug { "selected: $selectedGrayPiece" }
+                            if (selectingGrayPiece) {
+                                requireMove(selectingGrayPiece && move.from != null) {
+                                    PentaMove.IllegalMove(
+                                        "source is null",
+                                        move
+                                    )
+                                }
+                            } else {
+                                requireMove(selectedGrayPiece == move.piece) {
+                                    PentaMove.IllegalMove(
+                                        "piece ${move.piece.id} is not the same as selected gray piece: ${selectedGrayPiece?.id}",
+                                        move
+                                    )
+                                }
+                            }
+
+                            move.piece.position = move.to
+                            val lastMove = history.findLast { it !is PentaMove.SetBlack }
+                            requireMove(lastMove is PentaMove.CanSetGrey) {
                                 PentaMove.IllegalMove(
-                                    "piece ${move.piece.id} is not the same as selected gray piece: ${selectedGrayPiece?.id}",
+                                    "last move was not the expected move type: ${lastMove!!::class.simpleName} instead of ${PentaMove.CanSetGrey::class.simpleName}",
                                     move
                                 )
                             }
                         }
 
-                        move.piece.position = move.to
-                        val lastMove = history.asReversed().find { it !is PentaMove.SetBlack }
-                        requireMove(lastMove is PentaMove.CanSetGrey) {
-                            PentaMove.IllegalMove(
-                                "last move was not the expected move type: ${lastMove!!::class.simpleName} instead of ${PentaMove.CanSetGrey::class.simpleName}",
-                                move
+
+                        with(nextState) {
+                            nextState = nextState.copy(
+                                history = history + move,
+                                selectedGrayPiece = null
                             )
                         }
-
-                        nextState = nextState.copy(
-                            history = history + move,
-                            selectedGrayPiece = null
-                        )
 
 //                        updatePiecesAtPos(move.to)
 //                        updatePiecesAtPos(move.from)
@@ -432,18 +453,20 @@ data class BoardState(
                     is PentaMove.SelectGrey -> {
                         // TODO: add checks
 
-                        if(move.grayPiece != null) {
+                        if (move.grayPiece != null) {
                             nextState = nextState.copy(
                                 selectedGrayPiece = move.grayPiece,
                                 selectingGrayPiece = false
                             )
                             move.grayPiece.position = null
                         } else {
-                            requireMove(selectedGrayPiece != null) {
-                                PentaMove.IllegalMove(
-                                    "cannot deselect, since no grey piece is selected",
-                                    move
-                                )
+                            with(originalState) {
+                                requireMove(selectedGrayPiece != null) {
+                                    PentaMove.IllegalMove(
+                                        "cannot deselect, since no grey piece is selected",
+                                        move
+                                    )
+                                }
                             }
                             nextState = nextState.copy(
                                 selectedGrayPiece = null
@@ -451,39 +474,45 @@ data class BoardState(
                         }
                     }
                     is PentaMove.SelectPlayerPiece -> {
-                        requireMove(currentPlayer.id == move.playerPiece.playerId) {
-                            PentaMove.IllegalMove(
-                                "selected piece ${move.playerPiece} is not owned by current player ${currentPlayer.id}",
-                                move
-                            )
+                        with(originalState) {
+                            requireMove(currentPlayer.id == move.playerPiece.playerId) {
+                                PentaMove.IllegalMove(
+                                    "selected piece ${move.playerPiece} is not owned by current player ${currentPlayer.id}",
+                                    move
+                                )
+                            }
                         }
                         nextState = nextState.copy(
                             selectedPlayerPiece = move.playerPiece
                         )
                     }
                     is PentaMove.PlayerJoin -> {
-                        requireMove(!gameStarted) {
-                            PentaMove.IllegalMove(
-                                "game is already started",
-                                move
+                        with(originalState) {
+                            requireMove(!gameStarted) {
+                                PentaMove.IllegalMove(
+                                    "game is already started",
+                                    move
+                                )
+                            }
+                            requireMove(players.none { it.id == move.player.id }) {
+                                PentaMove.IllegalMove(
+                                    "player already joined",
+                                    move
+                                )
+                            }
+                        }
+                        with(nextState) {
+                            nextState = nextState.copy(
+                                players = players + move.player
                             )
                         }
-                        requireMove(players.none { it.id == move.player.id }) {
-                            PentaMove.IllegalMove(
-                                "player already joined",
-                                move
-                            )
-                        }
-                        nextState = nextState.copy(
-                            players = players + move.player
-                        )
 
-                        val playerPieces = (0 until players.size).flatMap { p ->
+                        val playerPieces = (0 until nextState.players.size).flatMap { p ->
                             (0 until 5).map { i ->
                                 Piece.Player(
                                     "p$p$i",
-                                    players[p].id,
-                                    players[p].figureId,
+                                    nextState.players[p].id,
+                                    nextState.players[p].figureId,
                                     Point(0.0, 0.0),
                                     PentaMath.s / 2.3,
                                     PentaColor.values()[i]
@@ -493,26 +522,57 @@ data class BoardState(
                             }
                         }
 
-                        nextState = nextState.copy(
-                            figures = arrayOf<Piece>(
-                                // keep all black and grey blockers
-                                *figures.filterIsInstance<Piece.BlackBlocker>().toTypedArray(),
-                                *figures.filterIsInstance<Piece.GrayBlocker>().toTypedArray(),
-                                *playerPieces.toTypedArray()
+                        val removedPositions = originalState.positions.entries - nextState.positions.entries
+                        val addedPositions = nextState.positions.entries - originalState.positions.entries
+                        val changed = originalState.positions.entries.map {
+                            it.key to "${it.value?.id} -> ${nextState.positions[it.key]?.id}"
+                        }.toMap()
+                        logger.info { "removed pos" }
+                        removedPositions.forEach {
+                            logger.warn { "-  pos ${it.key} : ${it.value?.id}" }
+                        }
+                        logger.info { "added pos" }
+                        addedPositions.forEach {
+                            logger.warn { "+  pos ${it.key} : ${it.value?.id}" }
+                        }
+                        logger.info { "changed pos" }
+                        changed.forEach {
+                            logger.warn { "~  pos ${it.key} : ${it.value}" }
+                        }
+
+
+                        with(nextState) {
+                            nextState = nextState.copy(
+                                figures = arrayOf<Piece>(
+                                    // keep all black and grey blockers
+                                    *figures.filterIsInstance<Piece.BlackBlocker>().toTypedArray(),
+                                    *figures.filterIsInstance<Piece.GrayBlocker>().toTypedArray(),
+                                    *playerPieces.toTypedArray()
+                                )
                             )
-                        )
+                        }
 
-
-                        resetPlayers()
+//                        resetPlayers()
 //                        updateAllPieces()
-                        nextState = nextState.copy(history = history + move)
+
+                        with(nextState) {
+                            nextState = nextState.copy(history = history + move)
+                        }
                     }
                     is PentaMove.InitGame -> {
-                        requireMove(!gameStarted) {
-                            PentaMove.IllegalMove(
-                                "game is already started",
-                                move
-                            )
+                        with(originalState) {
+                            requireMove(!gameStarted) {
+                                PentaMove.IllegalMove(
+                                    "game is already started",
+                                    move
+                                )
+                            }
+                            requireMove(players.isNotEmpty()) {
+                                PentaMove.IllegalMove(
+                                    "there is no players",
+                                    move
+                                )
+                            }
                         }
                         // TODO: setup UI for players related stuff here
 
@@ -526,22 +586,27 @@ data class BoardState(
 //                    figures.filterIsInstance<Piece.GrayBlocker>().forEach {
 //                        it.position = null
 //                    }
-                        nextState = nextState.copy(
-                            gameStarted = true,
-                            turn = 0,
-                            history = history + move
-                        )
+                        with(nextState) {
+                            nextState = nextState.copy(
+                                gameStarted = true,
+                                turn = 0,
+                                history = history + move,
+                                currentPlayer = players.first()
+                            )
+                        }
 
 //                        updateAllPieces()
 
-                        logger.info { "after init: " + figures.joinToString { it.id } }
+                        logger.info { "after init: " + nextState.figures.joinToString { it.id } }
                     }
                     // TODO: is this a Move ?
                     is PentaMove.Win -> {
                         // TODO handle win
-                        nextState = nextState.copy(
-                            history = history + move
-                        )
+                        with(nextState) {
+                            nextState = nextState.copy(
+                                history = history + move
+                            )
+                        }
                     }
                     is PentaMove.IllegalMove -> {
                         logger.error {
@@ -553,16 +618,18 @@ data class BoardState(
 
                 checkWin()
 
-                if (selectedBlackPiece == null && selectedGrayPiece == null && !selectingGrayPiece
-                    && move !is PentaMove.InitGame
-                    && move !is PentaMove.PlayerJoin
-                    && move !is PentaMove.Win
-                    && winner == null
-                ) {
-                    nextState = nextState.copy(turn = turn + 1)
+                with(nextState) {
+                    if (selectedBlackPiece == null && selectedGrayPiece == null && !selectingGrayPiece
+                        && move !is PentaMove.InitGame
+                        && move !is PentaMove.PlayerJoin
+                        && move !is PentaMove.Win
+                        && winner == null
+                    ) {
+                        nextState = nextState.copy(turn = turn + 1)
+                    }
                 }
 //        if(forceMoveNextPlayer) {
-                forceMovePlayerPiece(currentPlayer)
+                forceMovePlayerPiece(nextState.currentPlayer)
 //        }
 
 //                updateBoard()
@@ -571,7 +638,7 @@ data class BoardState(
             } catch (e: Exception) {
                 logger.error(e) { "error" }
             }
-            nextState
+            return nextState
         }
 
         /**
@@ -598,6 +665,7 @@ data class BoardState(
                     .filter { it.playerId == move.playerPiece.playerId }
                     .filter { it.position == null }
                     .map { it.pentaColor }
+                    .toTypedArray()
 
                 val selectedGrayPiece = nextState.positions.filterValues { it == null }
                     .keys.map { id -> nextState.figures.find { it.id == id } }
@@ -639,7 +707,6 @@ data class BoardState(
                             to = field
                         )
                     )
-                    return
                 }
             }
         }

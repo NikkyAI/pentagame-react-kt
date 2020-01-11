@@ -1,5 +1,6 @@
 package penta
 
+import com.github.nwillc.ksvg.elements.SVG
 import io.data2viz.geom.Point
 import io.data2viz.math.Angle
 import io.data2viz.math.deg
@@ -61,6 +62,105 @@ fun canClickPiece(clickedPiece: Piece, boardState: BoardState): Boolean {
 }
 
 
+fun SVG.drawPlayer(figureId: String, center: Point, radius: Double, piece: Piece.Player, selected: Boolean) {
+    fun point(angle: Angle, radius: Double, center: Point = Point(0.0, 0.0)): Point {
+        return Point(angle.cos * radius, angle.sin * radius) + center
+    }
+
+    fun angles(n: Int, start: Angle = 0.deg): List<Angle> {
+        val step = 360.deg / n
+
+        return (0..n).map { i ->
+            (start + (step * i))
+        }
+    }
+
+    val color = if(selected) piece.color.brighten(2.0).rgbHex else piece.color.rgbHex
+
+    when (figureId) {
+        "square" -> {
+            rect {
+                id = piece.id
+                x = "${center.x}"
+                y = "${center.y}"
+                height = "${radius * 1.5}"
+                width = "${radius * 1.5}"
+                fill = color
+                strokeWidth = "1.0"
+                stroke = "black"
+            }
+//            val points = angles(4, 0.deg).map { angle ->
+//                point(angle, radius, center)
+//            }
+//            points.forEachIndexed { index, it ->
+//                if (index == 0) {
+//                    moveTo(it.x, it.y)
+//                } else {
+//                    lineTo(it.x, it.y)
+//                }
+//            }
+        }
+        "triangle" -> {
+//            val points = angles(3, -90.deg).map { angle ->
+//                point(angle, radius, center)
+//            }
+//            points.forEachIndexed { index, it ->
+//                if (index == 0) {
+//                    moveTo(it.x, it.y)
+//                } else {
+//                    lineTo(it.x, it.y)
+//                }
+//            }
+        }
+        "cross" -> {
+//
+//            val width = 15
+//
+//            val p1 = point((45 - width).deg, radius, center)
+//            val p2 = point((45 + width).deg, radius, center)
+//
+//            val c = sqrt((p2.x - p1.x).pow(2) + (p2.y - p1.y).pow(2))
+//
+//            val a = c / sqrt(2.0)
+//
+//            val points = listOf(
+//                point((45 - width).deg, radius, center),
+//                point((45 + width).deg, radius, center),
+//                point((90).deg, a, center),
+//                point((135 - width).deg, radius, center),
+//                point((135 + width).deg, radius, center),
+//                point((180).deg, a, center),
+//                point((45 + 180 - width).deg, radius, center),
+//                point((45 + 180 + width).deg, radius, center),
+//                point((270).deg, a, center),
+//                point((135 + 180 - width).deg, radius, center),
+//                point((135 + 180 + width).deg, radius, center),
+//                point((360).deg, a, center)
+//            )
+//            points.forEachIndexed { index, it ->
+//                if (index == 0) {
+//                    moveTo(it.x, it.y)
+//                } else {
+//                    lineTo(it.x, it.y)
+//                }
+//            }
+        }
+        "circle" -> {
+            circle {
+                id = piece.id
+                cx = "${center.x}"
+                cy = "${center.y}"
+                r = "${radius}"
+                fill = color
+                strokeWidth = "1.0"
+                stroke = "black"
+            }
+//            arc(center.x, center.y, radius, 0.0, 180.0, false)
+        }
+        else -> throw IllegalStateException("illegal figureId: '$figureId'")
+    }
+
+}
 
 fun PathNode.drawPlayer(figureId: String, center: Point, radius: Double) {
     clearPath()

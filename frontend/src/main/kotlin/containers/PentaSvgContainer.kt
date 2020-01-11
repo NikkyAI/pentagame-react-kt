@@ -1,36 +1,38 @@
 package containers
 
 import actions.Action
-import components.PentaViz
-import components.PentaVizProps
+import components.PentaSvg
+import components.PentaSvgProps
+import kotlinext.js.getOwnPropertyNames
 import penta.PentaMove
 import penta.redux_rewrite.BoardState
+import penta.util.json
 import react.RClass
 import react.RProps
 import react.invoke
 import react.redux.rConnect
 import redux.WrapperAction
 
-interface PentaVizParameters : RProps {
+interface PentaSvgParameters : RProps {
 
 }
 
-interface PentaVizStateProps : RProps {
+interface PentaSvgStateProps : RProps {
     var boardState: BoardState
 }
 
-interface PentaVizDispatchProps : RProps {
+interface PentaSvgDispatchProps : RProps {
     var dispatch: (PentaMove) -> Unit
 }
 
-val pentaViz =
-    rConnect<BoardState, Action<PentaMove>, WrapperAction, PentaVizParameters, PentaVizStateProps, PentaVizDispatchProps, PentaVizProps>(
+val pentaCanvas =
+    rConnect<BoardState, Action<PentaMove>, WrapperAction, PentaSvgParameters, PentaSvgStateProps, PentaSvgDispatchProps, PentaSvgProps>(
         { state, configProps ->
             console.log("PentaViz update state")
-            console.log("state: $state ")
-            console.log("configProps: $configProps ")
+//            console.log("state: $state ")
+            console.log("lastMove: ${state.history.lastOrNull()} ")
             console.log("configProps: ${configProps::class.js} ")
-            boardState = state//.boardState
+            boardState = state
 
             // todo: trigger redraw here
         },
@@ -41,7 +43,7 @@ val pentaViz =
             console.log("configProps: $configProps ")
 //            startGameClick = { dispatch(Action(PentaMove.InitGame)) }
 //            addPlayerClick = { dispatch(Action(PentaMove.PlayerJoin(PlayerState("local2", "square")))) }
-            this.dispatch = { dispatch(Action(it)) }
+            this@rConnect.dispatch = { dispatch(Action(it)) }
         }
-    )(PentaViz::class.js.unsafeCast<RClass<PentaVizProps>>())
+    )(PentaSvg::class.js.unsafeCast<RClass<PentaSvgProps>>())
 

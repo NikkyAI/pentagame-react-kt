@@ -9,22 +9,25 @@ import redux.RAction
 import util.combineReducers
 
 data class State(
-    val boardState: BoardState = BoardState(),
-    val array: Array<String> = emptyArray()
+    val boardState: BoardState = BoardState.create()
+//    val array: Array<String> = emptyArray()
 ) {
     companion object{
         val logger = KotlinLogging.logger {}
 
         fun combinedReducers() = combineReducers(
             mapOf(
-                State::boardState to ::boardState,
-                State::array to ::array
+                State::boardState to ::boardState
+//                State::array to ::array
             )
         )
 
-        fun boardState(state: BoardState = BoardState(), action: RAction): BoardState {
-            logger.info { "state: $state" }
-            logger.info { "action: $action" }
+        fun boardState(state: BoardState = BoardState.create(), action: RAction): BoardState {
+            console.log("state: $state")
+            console.log("action: $action")
+            if(action != undefined) {
+                console.log("action.js: ${action::class.js}")
+            }
             return when(action) {
                 is Action<*> -> {
                     BoardState.Companion.WithMutableState(state).processMove(action.action as PentaMove)
@@ -33,9 +36,8 @@ data class State(
             }
         }
         fun array(state: Array<String> = emptyArray(), action: RAction): Array<String> {
-            val logger = KotlinLogging.logger {}
-            logger.info { "state: $state" }
-            logger.info { "action: $action" }
+            console.log("state: $state")
+            console.log("action: $action")
             return when(action) {
 //        is Action<*> -> {
 //            // do stuff with array
