@@ -62,14 +62,14 @@ kotlin {
     }
 }
 
-val bundleDir = buildDir.resolve("full_bundle")//.apply { mkdirs() }
+val bundleDir = buildDir.resolve("bundle")//.apply { mkdirs() }
 val browserWebpack = tasks.getByName<org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpack>("browserWebpack") {
 
 }
 
 val processResources = tasks.getByName("processResources")
 
-val bundle = tasks.create("bundle") {
+val bundle = tasks.create<Copy>("bundle") {
     group = "build"
     dependsOn(processResources)
     dependsOn(browserWebpack)
@@ -90,16 +90,12 @@ val bundle = tasks.create("bundle") {
 //    from(terserTask)
 //    from(bundleTask)
 
-    doLast {
-        copy {
-            from(processResources)
+    from(processResources)
 //            from(browserWebpack)
 //            from(buildDir.resolve("processedResources/js/main"))
-            from(buildDir.resolve("bundle"))
-            from(buildDir.resolve("distributions"))
-            into(bundleDir)
-        }
-    }
+//    from(buildDir.resolve("bundle"))
+    from(buildDir.resolve("distributions"))
+    into(bundleDir)
 }
 
 val JsJar = tasks.getByName<Jar>("JsJar")
@@ -109,6 +105,30 @@ val unzipJsJar = tasks.create<Copy>("unzipJsJar") {
     group = "build"
     from(zipTree(JsJar.archiveFile))
     into(JsJar.destinationDirectory.file(JsJar.archiveBaseName))
+}
+
+task<DefaultTask>("depsize") {
+    group = "help"
+    description = "prints dependency sizes"
+    doLast {
+        val formatStr = "%,10.2f"
+        val configuration = kotlin.target.compilations.getByName("main").compileDependencyFiles as Configuration
+        val size = configuration.resolve()
+            .map { it.length() / (1024.0 * 1024.0) }.sum()
+
+        val out = buildString {
+            append("Total dependencies size:".padEnd(55))
+            append("${String.format(formatStr, size)} Mb\n\n")
+            configuration
+                .resolve()
+                .sortedWith(compareBy { -it.length() })
+                .forEach {
+                    append(it.name.padEnd(55))
+                    append("${String.format(formatStr, (it.length() / 1024.0))} kb\n")
+                }
+        }
+        println(out)
+    }
 }
 
 //kotlin {

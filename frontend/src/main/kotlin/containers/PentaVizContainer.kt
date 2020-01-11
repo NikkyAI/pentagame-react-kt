@@ -9,6 +9,7 @@ import react.RClass
 import react.RProps
 import react.invoke
 import react.redux.rConnect
+import reducers.State
 import redux.WrapperAction
 
 interface PentaVizParameters : RProps {
@@ -24,13 +25,13 @@ interface PentaVizDispatchProps : RProps {
 }
 
 val pentaViz =
-    rConnect<BoardState, Action<PentaMove>, WrapperAction, PentaVizParameters, PentaVizStateProps, PentaVizDispatchProps, PentaVizProps>(
+    rConnect<State, Action<PentaMove>, WrapperAction, PentaVizParameters, PentaVizStateProps, PentaVizDispatchProps, PentaVizProps>(
         { state, configProps ->
             console.log("PentaViz update state")
             console.log("state: $state ")
             console.log("configProps: $configProps ")
             console.log("configProps: ${configProps::class.js} ")
-            boardState = state//.boardState
+            boardState = state.boardState
 
             // todo: trigger redraw here
         },

@@ -527,18 +527,18 @@ data class BoardState private constructor(
                         val changed = originalState.positions.entries.map {
                             it.key to "${it.value?.id} -> ${nextState.positions[it.key]?.id}"
                         }.toMap()
-                        logger.info { "removed pos" }
-                        removedPositions.forEach {
-                            logger.warn { "-  pos ${it.key} : ${it.value?.id}" }
-                        }
-                        logger.info { "added pos" }
-                        addedPositions.forEach {
-                            logger.warn { "+  pos ${it.key} : ${it.value?.id}" }
-                        }
-                        logger.info { "changed pos" }
-                        changed.forEach {
-                            logger.warn { "~  pos ${it.key} : ${it.value}" }
-                        }
+//                        logger.info { "removed pos" }
+//                        removedPositions.forEach {
+//                            logger.warn { "-  pos ${it.key} : ${it.value?.id}" }
+//                        }
+//                        logger.info { "added pos" }
+//                        addedPositions.forEach {
+//                            logger.warn { "+  pos ${it.key} : ${it.value?.id}" }
+//                        }
+//                        logger.info { "changed pos" }
+//                        changed.forEach {
+//                            logger.warn { "~  pos ${it.key} : ${it.value}" }
+//                        }
 
 
                         with(nextState) {
@@ -623,9 +623,15 @@ data class BoardState private constructor(
                         && move !is PentaMove.InitGame
                         && move !is PentaMove.PlayerJoin
                         && move !is PentaMove.Win
+                        && move !is PentaMove.SelectPlayerPiece
+                        && move !is PentaMove.SelectGrey
                         && winner == null
                     ) {
-                        nextState = nextState.copy(turn = turn + 1)
+                        logger.info {"incrementing turn after ${move.asNotation()}"}
+                        nextState = nextState.copy(
+                            currentPlayer = players[(turn + 1) % players.count()],
+                            turn = turn + 1
+                        )
                     }
                 }
 //        if(forceMoveNextPlayer) {

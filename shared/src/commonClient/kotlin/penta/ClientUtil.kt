@@ -75,91 +75,90 @@ fun SVG.drawPlayer(figureId: String, center: Point, radius: Double, piece: Piece
         }
     }
 
-    val color = if(selected) piece.color.brighten(2.0).rgbHex else piece.color.rgbHex
+    val color = when {
+        selected -> piece.color.brighten(0.5)
+        else -> piece.color
+    }.rgbHex
+    val lineWidth = when {
+        selected -> "3.0"
+        else -> "1.0"
+    }
 
     when (figureId) {
         "square" -> {
-            rect {
+            val points = angles(4, 0.deg).map { angle ->
+                point(angle, radius, center)
+            }
+
+            polygon {
                 id = piece.id
-                x = "${center.x}"
-                y = "${center.y}"
-                height = "${radius * 1.5}"
-                width = "${radius * 1.5}"
+                this.points = points.joinToString(" ") { "${it.x},${it.y}" }
+
                 fill = color
-                strokeWidth = "1.0"
+                strokeWidth = lineWidth
                 stroke = "black"
             }
-//            val points = angles(4, 0.deg).map { angle ->
-//                point(angle, radius, center)
-//            }
-//            points.forEachIndexed { index, it ->
-//                if (index == 0) {
-//                    moveTo(it.x, it.y)
-//                } else {
-//                    lineTo(it.x, it.y)
-//                }
-//            }
         }
         "triangle" -> {
-//            val points = angles(3, -90.deg).map { angle ->
-//                point(angle, radius, center)
-//            }
-//            points.forEachIndexed { index, it ->
-//                if (index == 0) {
-//                    moveTo(it.x, it.y)
-//                } else {
-//                    lineTo(it.x, it.y)
-//                }
-//            }
+            val points = angles(3, -90.deg).map { angle ->
+                point(angle, radius, center)
+            }
+            polygon {
+                id = piece.id
+                this.points = points.joinToString(" ") { "${it.x},${it.y}" }
+
+                fill = color
+                strokeWidth = lineWidth
+                stroke = "black"
+            }
         }
         "cross" -> {
-//
-//            val width = 15
-//
-//            val p1 = point((45 - width).deg, radius, center)
-//            val p2 = point((45 + width).deg, radius, center)
-//
-//            val c = sqrt((p2.x - p1.x).pow(2) + (p2.y - p1.y).pow(2))
-//
-//            val a = c / sqrt(2.0)
-//
-//            val points = listOf(
-//                point((45 - width).deg, radius, center),
-//                point((45 + width).deg, radius, center),
-//                point((90).deg, a, center),
-//                point((135 - width).deg, radius, center),
-//                point((135 + width).deg, radius, center),
-//                point((180).deg, a, center),
-//                point((45 + 180 - width).deg, radius, center),
-//                point((45 + 180 + width).deg, radius, center),
-//                point((270).deg, a, center),
-//                point((135 + 180 - width).deg, radius, center),
-//                point((135 + 180 + width).deg, radius, center),
-//                point((360).deg, a, center)
-//            )
-//            points.forEachIndexed { index, it ->
-//                if (index == 0) {
-//                    moveTo(it.x, it.y)
-//                } else {
-//                    lineTo(it.x, it.y)
-//                }
-//            }
+            val width = 15
+
+            val p1 = point((45 - width).deg, radius, center)
+            val p2 = point((45 + width).deg, radius, center)
+
+            val c = sqrt((p2.x - p1.x).pow(2) + (p2.y - p1.y).pow(2))
+
+            val a = c / sqrt(2.0)
+
+            val points = listOf(
+                point((45 - width).deg, radius, center),
+                point((45 + width).deg, radius, center),
+                point((90).deg, a, center),
+                point((135 - width).deg, radius, center),
+                point((135 + width).deg, radius, center),
+                point((180).deg, a, center),
+                point((45 + 180 - width).deg, radius, center),
+                point((45 + 180 + width).deg, radius, center),
+                point((270).deg, a, center),
+                point((135 + 180 - width).deg, radius, center),
+                point((135 + 180 + width).deg, radius, center),
+                point((360).deg, a, center)
+            )
+
+            polygon {
+                id = piece.id
+                this.points = points.joinToString(" ") { "${it.x},${it.y}" }
+
+                fill = color
+                strokeWidth = lineWidth
+                stroke = "black"
+            }
         }
         "circle" -> {
             circle {
                 id = piece.id
                 cx = "${center.x}"
                 cy = "${center.y}"
-                r = "${radius}"
+                r = "${radius * 0.8}"
                 fill = color
-                strokeWidth = "1.0"
+                strokeWidth = lineWidth
                 stroke = "black"
             }
-//            arc(center.x, center.y, radius, 0.0, 180.0, false)
         }
         else -> throw IllegalStateException("illegal figureId: '$figureId'")
     }
-
 }
 
 fun PathNode.drawPlayer(figureId: String, center: Point, radius: Double) {

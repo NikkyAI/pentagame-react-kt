@@ -1,20 +1,18 @@
 import components.app
-import penta.redux_rewrite.BoardState
 import react.dom.render
 import react.redux.provider
-import reducers.State.Companion.boardState
+import reducers.State
 import redux.RAction
 import redux.compose
 import redux.createStore
 import redux.rEnhancer
 import kotlin.browser.document
 
-//private val logger = KotlinLogging.logger {}
-
-val store = createStore<BoardState, RAction, dynamic>(
-//    State.combinedReducers(),
-    ::boardState,
-    BoardState.create(),
+val store = createStore<State, RAction, dynamic>(
+    State.combinedReducers(),
+//    ::boardState,
+//    BoardState.create(),
+    State(),
 //    rEnhancer()
     compose(
         rEnhancer(),

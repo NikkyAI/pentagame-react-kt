@@ -131,11 +131,11 @@ class PentaSvg(props: PentaSvgProps) : RComponent<PentaSvgProps, RState>(props) 
             document.getElementById(it.id)?.addEventListener("click", clickFields, true)
         }
         props.boardState.figures.forEach {
-            console.log("registering $it")
+//            console.log("registering $it")
             document.getElementById(it.id)?.let { el ->
-                console.log("registering onclick for ${it.id} $el")
-                    el.addEventListener("click", clickPieces, true)
-                }
+//                console.log("registering onclick for ${it.id} $el")
+                el.addEventListener("click", clickPieces, true)
+            }
         }
     }
 }
@@ -607,7 +607,8 @@ class PentaSvg(props: PentaSvgProps) : RComponent<PentaSvgProps, RState>(props) 
                 )
             }
             else -> {
-                kotlin.TODO("handle else case")
+                console.error("else case not handled")
+                return
             }
         }
         preProcessMove(move, svgProps)

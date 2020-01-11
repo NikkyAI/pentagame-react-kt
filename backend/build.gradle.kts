@@ -93,6 +93,30 @@ val shadowJar = tasks.getByName<ShadowJar>("shadowJar") {
     from(packageStatic)
 }
 
+task<DefaultTask>("depsize") {
+    group = "help"
+    description = "prints dependency sizes"
+    doLast {
+        val formatStr = "%,10.2f"
+        val configuration = kotlin.target.compilations.getByName("main").compileDependencyFiles as Configuration
+        val size = configuration.resolve()
+            .map { it.length() / (1024.0 * 1024.0) }.sum()
+
+        val out = buildString {
+            append("Total dependencies size:".padEnd(55))
+            append("${String.format(formatStr, size)} Mb\n\n")
+            configuration
+                .resolve()
+                .sortedWith(compareBy { -it.length() })
+                .forEach {
+                    append(it.name.padEnd(55))
+                    append("${String.format(formatStr, (it.length() / 1024.0))} kb\n")
+                }
+        }
+        println(out)
+    }
+}
+
 //val run = tasks.getByName<JavaExec>("run") {
 //    dependsOn(shadowJar)
 //}

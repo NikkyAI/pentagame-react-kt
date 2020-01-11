@@ -18,6 +18,7 @@ import react.dom.ol
 import react.dom.p
 import react.invoke
 import react.redux.rConnect
+import reducers.State
 import redux.WrapperAction
 
 interface TextBoardStateProps : StateProps, DispatchProps {
@@ -151,14 +152,14 @@ interface TextBoardsStateParameters : RProps {
 }
 
 val textBoardState =
-    rConnect<BoardState, Action<PentaMove>, WrapperAction, TextBoardsStateParameters, StateProps, DispatchProps, TextBoardStateProps>(
+    rConnect<State, Action<PentaMove>, WrapperAction, TextBoardsStateParameters, StateProps, DispatchProps, TextBoardStateProps>(
         { state, configProps ->
             console.log("TextBoardContainer.state")
             console.log("state: $state ")
             console.log("state: ${state::class.js}) ")
             console.log("configProps: $configProps ")
             console.log("configProps: ${configProps::class.js} ")
-            boardState = state
+            boardState = state.boardState
         },
         { dispatch, configProps ->
             // any kind of interactivity is linked to dispatching state changes here

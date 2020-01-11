@@ -11,6 +11,7 @@ import react.RClass
 import react.RProps
 import react.invoke
 import react.redux.rConnect
+import reducers.State
 import redux.WrapperAction
 
 interface PentaSvgParameters : RProps {
@@ -26,13 +27,13 @@ interface PentaSvgDispatchProps : RProps {
 }
 
 val pentaCanvas =
-    rConnect<BoardState, Action<PentaMove>, WrapperAction, PentaSvgParameters, PentaSvgStateProps, PentaSvgDispatchProps, PentaSvgProps>(
+    rConnect<State, Action<PentaMove>, WrapperAction, PentaSvgParameters, PentaSvgStateProps, PentaSvgDispatchProps, PentaSvgProps>(
         { state, configProps ->
             console.log("PentaViz update state")
 //            console.log("state: $state ")
-            console.log("lastMove: ${state.history.lastOrNull()} ")
+            console.log("lastMove: ${state.boardState.history.lastOrNull()} ")
             console.log("configProps: ${configProps::class.js} ")
-            boardState = state
+            boardState = state.boardState
 
             // todo: trigger redraw here
         },
