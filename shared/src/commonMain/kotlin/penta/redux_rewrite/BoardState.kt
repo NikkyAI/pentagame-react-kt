@@ -53,8 +53,6 @@ data class BoardState private constructor(
                 val blacks = (0 until 5).map { i ->
                     Piece.BlackBlocker(
                         "b$i",
-                        Point(0.0, 0.0),
-                        PentaMath.s / 2.5,
                         PentaColor.values()[i],
                         PentaBoard.j[i]
                     ).also {
@@ -64,8 +62,6 @@ data class BoardState private constructor(
                 val greys = (0 until 5).map { i ->
                     Piece.GrayBlocker(
                         "g$i",
-                        Point(0.0, 0.0),
-                        PentaMath.s / 2.5,
                         PentaColor.values()[i]
                     ).also {
                         it.position = null
@@ -513,8 +509,6 @@ data class BoardState private constructor(
                                     "p$p$i",
                                     nextState.players[p].id,
                                     nextState.players[p].figureId,
-                                    Point(0.0, 0.0),
-                                    PentaMath.s / 2.3,
                                     PentaColor.values()[i]
                                 ).also {
                                     it.position = PentaBoard.c[i]

@@ -77,8 +77,6 @@ val bundle = tasks.create<Copy>("bundle") {
     outputs.upToDateWhen { false }
     outputs.dir(bundleDir)
 
-//    val staticFolder = gen_resource.resolve("static").apply { mkdirs() }
-//
     doFirst {
         bundleDir.deleteRecursively()
         bundleDir.mkdirs()
@@ -91,8 +89,8 @@ val bundle = tasks.create<Copy>("bundle") {
 //    from(bundleTask)
 
     from(processResources)
-//            from(browserWebpack)
-//            from(buildDir.resolve("processedResources/js/main"))
+//    from(browserWebpack)
+//    from(buildDir.resolve("processedResources/js/main"))
 //    from(buildDir.resolve("bundle"))
     from(buildDir.resolve("distributions"))
     into(bundleDir)

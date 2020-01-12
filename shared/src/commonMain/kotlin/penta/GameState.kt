@@ -1,15 +1,9 @@
 package penta
 
-import PentaBoard
-import PentaMath
 import io.data2viz.geom.Point
 import mu.KotlinLogging
 import penta.logic.Piece
 import penta.logic.field.AbstractField
-import penta.logic.field.GoalField
-import penta.redux_rewrite.BoardState
-import penta.util.exhaustive
-import penta.util.requireMove
 
 open class GameState {
     companion object {
@@ -646,7 +640,7 @@ open class GameState {
 //        }
 //    }
 
-    protected open fun updatePiecePos(piece: Piece) {}
+    protected open fun updatePiecePos(piece: Piece): Point { return Point(.0,.0) }
     protected open fun updatePiecesAtPos(field: AbstractField?) {}
     protected open fun updateBoard() {}
 }

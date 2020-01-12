@@ -57,9 +57,7 @@ fun Appendable.toAttributeName(csq: CharSequence) {
     }
 }
 
-fun String.toAttributeName(): String = usingAppendable(Appendable::toAttributeName).also {
-//    println("$this -> $it")
-}
+fun String.toAttributeName(): String = usingAppendable(Appendable::toAttributeName)
 
 fun String.usingAppendable(function: Appendable.(CharSequence) -> Unit): String =
     StringBuilder().also { it.function(this) }.toString()

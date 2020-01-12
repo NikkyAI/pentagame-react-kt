@@ -20,6 +20,9 @@ js is bundled in the server automatically
 
 for dev:
 `./gradlew :frontend:run -t`
+alternative:
+`./gradlew :frontend:bundle`
+then open `frontend/build/bundle/index.html` in a browser (using idea as webserver)
 
 ### Recording a game
 

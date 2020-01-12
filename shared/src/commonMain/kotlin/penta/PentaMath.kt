@@ -4,10 +4,10 @@ import kotlin.math.sqrt
 object PentaMath {
     val PHI = (sqrt(5.0) + 1.0) / 2.0
     // distances
-    val k = 3
-    val l = 6
+    const val k = 3
+    const val l = 6
     // diameter of unit
-    val s = 1.0
+    const val s = 1.0
     // diameter
     val c = sqrt(5.0) // (2.0/PHI) + 1.0
     // diameters

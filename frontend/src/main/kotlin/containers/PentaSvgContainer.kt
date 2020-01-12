@@ -3,10 +3,8 @@ package containers
 import actions.Action
 import components.PentaSvg
 import components.PentaSvgProps
-import kotlinext.js.getOwnPropertyNames
 import penta.PentaMove
 import penta.redux_rewrite.BoardState
-import penta.util.json
 import react.RClass
 import react.RProps
 import react.invoke
@@ -23,11 +21,12 @@ interface PentaSvgStateProps : RProps {
 }
 
 interface PentaSvgDispatchProps : RProps {
-    var dispatch: (PentaMove) -> Unit
+    var dispatchBoardstate: (PentaMove) -> Unit
+    var dispatchConnection: (Any) -> Unit
 }
 
-val pentaCanvas =
-    rConnect<State, Action<PentaMove>, WrapperAction, PentaSvgParameters, PentaSvgStateProps, PentaSvgDispatchProps, PentaSvgProps>(
+val pentaSvg =
+    rConnect<State, Action<*>, WrapperAction, PentaSvgParameters, PentaSvgStateProps, PentaSvgDispatchProps, PentaSvgProps>(
         { state, configProps ->
             console.log("PentaViz update state")
 //            console.log("state: $state ")
@@ -42,9 +41,8 @@ val pentaCanvas =
             console.log("PentaViz update dispatch")
             console.log("dispatch: $dispatch ")
             console.log("configProps: $configProps ")
-//            startGameClick = { dispatch(Action(PentaMove.InitGame)) }
-//            addPlayerClick = { dispatch(Action(PentaMove.PlayerJoin(PlayerState("local2", "square")))) }
-            this@rConnect.dispatch = { dispatch(Action(it)) }
+            this@rConnect.dispatchBoardstate = { dispatch(Action(it)) }
+            this@rConnect.dispatchConnection = { dispatch(Action(it)) }
         }
     )(PentaSvg::class.js.unsafeCast<RClass<PentaSvgProps>>())
 

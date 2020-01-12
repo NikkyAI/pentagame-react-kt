@@ -51,8 +51,7 @@ tasks {
 val packageStatic = tasks.create("packageStatic") {
     group = "build"
     val frontend = project(":frontend")
-    dependsOn(":frontend:processResources")
-    dependsOn(":frontend:browserWebpack")
+    dependsOn(":frontend:bundle")
 
     outputs.upToDateWhen { false }
     outputs.dir(gen_resource)
@@ -64,22 +63,20 @@ val packageStatic = tasks.create("packageStatic") {
         staticFolder.mkdirs()
     }
 
-
-
     // TODO: readd terser and require.js for dev
 //    from(terserTask)
 //    from(bundleTask)
 
     doLast {
         copy {
-            from(frontend.tasks.get("processResources"))
-            from(frontend.buildDir.resolve("processedResources/js/main"))
+            from(frontend.tasks.get("bundle"))
+//            from(frontend.buildDir.resolve("processedResources/js/main"))
             into(staticFolder)
         }
-        copy {
-            from(frontend.buildDir.resolve("distributions"))
-            into(staticFolder.resolve("js"))
-        }
+//        copy {
+//            from(frontend.buildDir.resolve("distributions"))
+//            into(staticFolder.resolve("js"))
+//        }
     }
 }
 

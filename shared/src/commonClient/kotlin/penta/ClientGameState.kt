@@ -63,7 +63,7 @@ open class ClientGameState(localPlayerCount: Int = 1) : GameState() {
             initialize(localSymbols.subList(0, localPlayerCount).map { PlayerState("local+" + it, it) })
         }
 
-        boardState.figures.forEach(::updatePiecePos)
+//        boardState.figures.forEach(::updatePiecePos)
 //        boardState.figures.forEach(::updatePiecePos)
     }
 
@@ -87,9 +87,9 @@ open class ClientGameState(localPlayerCount: Int = 1) : GameState() {
         // only process received moves
     }
 
-    override fun updatePiecePos(piece: Piece) {
+    override fun updatePiecePos(piece: Piece): Point {
         val field: AbstractField? = boardState.positions[piece.id]
-        updatePiecePos(piece, field)
+        return updatePiecePos(piece, field)
     }
 
     fun updatePiecePos(piece: Piece, field: AbstractField?) = with(boardState){
@@ -155,12 +155,13 @@ open class ClientGameState(localPlayerCount: Int = 1) : GameState() {
                 pos.y + (0.55) * angle.sin
             )
         }
-        piece.pos = pos
+//        piece.pos = pos
         updatePiece(piece, boardState)
+        pos
     }
 
     fun findPiecesAtPos(mousePos: Point) = boardState.figures.filter {
-        (it.pos - mousePos).length < it.radius
+        (updatePiecePos(it) - mousePos).length < it.radius
     }
 
     /**

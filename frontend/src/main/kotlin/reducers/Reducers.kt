@@ -7,9 +7,11 @@ import penta.redux_rewrite.BoardState
 import penta.redux_rewrite.BoardState.Companion.processMove
 import redux.RAction
 import util.combineReducers
+import penta.ConnectionState
 
 data class State(
-    val boardState: BoardState = BoardState.create()
+    val boardState: BoardState = BoardState.create(),
+    val connection: ConnectionState = ConnectionState.Disconnected()
 //    val array: Array<String> = emptyArray()
 ) {
     companion object{
@@ -17,8 +19,8 @@ data class State(
 
         fun combinedReducers() = combineReducers(
             mapOf(
-                State::boardState to ::boardState
-//                State::array to ::array
+                State::boardState to ::boardState,
+                State::connection to ::connection
             )
         )
 
@@ -29,13 +31,16 @@ data class State(
                 console.log("action.js: ${action::class.js}")
             }
             return when(action) {
-                is Action<*> -> {
-                    BoardState.Companion.WithMutableState(state).processMove(action.action as PentaMove)
+                is Action<*> -> when(val pentaMove = action.action) {
+                    is PentaMove -> {
+                        BoardState.Companion.WithMutableState(state).processMove(pentaMove)
+                    }
+                    else -> state
                 }
                 else -> state
             }
         }
-        fun array(state: Array<String> = emptyArray(), action: RAction): Array<String> {
+        fun connection(state: ConnectionState = ConnectionState.Disconnected(), action: RAction): ConnectionState {
             console.log("state: $state")
             console.log("action: $action")
             return when(action) {

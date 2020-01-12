@@ -1,6 +1,7 @@
 package penta
 
 import com.github.nwillc.ksvg.elements.SVG
+import io.data2viz.color.Color
 import io.data2viz.geom.Point
 import io.data2viz.math.Angle
 import io.data2viz.math.deg
@@ -61,8 +62,23 @@ fun canClickPiece(clickedPiece: Piece, boardState: BoardState): Boolean {
     return false
 }
 
+fun SVG.drawFigure(figureId: String, center: Point, radius: Double, color: Color, selected: Boolean) {
+    drawPlayer(
+        figureId, center, radius, color, null, selected
+    )
+}
 
 fun SVG.drawPlayer(figureId: String, center: Point, radius: Double, piece: Piece.Player, selected: Boolean) {
+    val color = when {
+        selected -> piece.color.brighten(0.5)
+        else -> piece.color
+    }
+    drawPlayer(
+        figureId, center, radius, color, piece.id, selected
+    )
+}
+
+fun SVG.drawPlayer(figureId: String, center: Point, radius: Double, color: Color, pieceId: String?, selected: Boolean) {
     fun point(angle: Angle, radius: Double, center: Point = Point(0.0, 0.0)): Point {
         return Point(angle.cos * radius, angle.sin * radius) + center
     }
@@ -75,10 +91,7 @@ fun SVG.drawPlayer(figureId: String, center: Point, radius: Double, piece: Piece
         }
     }
 
-    val color = when {
-        selected -> piece.color.brighten(0.5)
-        else -> piece.color
-    }.rgbHex
+
     val lineWidth = when {
         selected -> "3.0"
         else -> "1.0"
@@ -91,10 +104,12 @@ fun SVG.drawPlayer(figureId: String, center: Point, radius: Double, piece: Piece
             }
 
             polygon {
-                id = piece.id
+                if(pieceId != null) {
+                    id = pieceId
+                }
                 this.points = points.joinToString(" ") { "${it.x},${it.y}" }
 
-                fill = color
+                fill = color.rgbHex
                 strokeWidth = lineWidth
                 stroke = "black"
             }
@@ -104,10 +119,12 @@ fun SVG.drawPlayer(figureId: String, center: Point, radius: Double, piece: Piece
                 point(angle, radius, center)
             }
             polygon {
-                id = piece.id
+                if(pieceId != null) {
+                    id = pieceId
+                }
                 this.points = points.joinToString(" ") { "${it.x},${it.y}" }
 
-                fill = color
+                fill = color.rgbHex
                 strokeWidth = lineWidth
                 stroke = "black"
             }
@@ -138,21 +155,25 @@ fun SVG.drawPlayer(figureId: String, center: Point, radius: Double, piece: Piece
             )
 
             polygon {
-                id = piece.id
+                if(pieceId != null) {
+                    id = pieceId
+                }
                 this.points = points.joinToString(" ") { "${it.x},${it.y}" }
 
-                fill = color
+                fill = color.rgbHex
                 strokeWidth = lineWidth
                 stroke = "black"
             }
         }
         "circle" -> {
             circle {
-                id = piece.id
+                if(pieceId != null) {
+                    id = pieceId
+                }
                 cx = "${center.x}"
                 cy = "${center.y}"
                 r = "${radius * 0.8}"
-                fill = color
+                fill = color.rgbHex
                 strokeWidth = lineWidth
                 stroke = "black"
             }
@@ -161,7 +182,7 @@ fun SVG.drawPlayer(figureId: String, center: Point, radius: Double, piece: Piece
     }
 }
 
-fun PathNode.drawPlayer(figureId: String, center: Point, radius: Double) {
+fun PathNode.drawFigure(figureId: String, center: Point, radius: Double) {
     clearPath()
 
     fun point(angle: Angle, radius: Double, center: Point = Point(0.0, 0.0)): Point {
