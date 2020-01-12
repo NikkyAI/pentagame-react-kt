@@ -6,7 +6,10 @@ import io.data2viz.geom.Point
 import io.data2viz.math.Angle
 import io.data2viz.math.deg
 import io.data2viz.viz.PathNode
+import mu.KotlinLogging
 import penta.logic.Piece
+import penta.logic.field.AbstractField
+import penta.logic.field.StartField
 import penta.redux_rewrite.BoardState
 import kotlin.math.pow
 import kotlin.math.sqrt
@@ -180,6 +183,83 @@ fun SVG.drawPlayer(figureId: String, center: Point, radius: Double, color: Color
         }
         else -> throw IllegalStateException("illegal figureId: '$figureId'")
     }
+}
+
+
+fun cornerPoint(index: Int, angleDelta: Angle = 0.deg, radius: Double = PentaMath.R_): Point {
+    val angle = (-45 + (index) * 90).deg + angleDelta
+
+    return Point(
+        radius * angle.cos,
+        radius * angle.sin
+    ) / 2 + (Point(0.5, 0.5) * PentaMath.R_)
+}
+
+fun calculatePiecePos(piece: Piece, field: AbstractField?, boardState: BoardState) = with(boardState) {
+    val logger = KotlinLogging.logger {}
+    var pos: Point = field?.pos ?: run {
+        val radius = when (piece) {
+            is Piece.GrayBlocker -> {
+                logger.debug {"piece: ${piece.id}"}
+                logger.debug {"selected: ${selectedGrayPiece?.id}"}
+                if (selectedGrayPiece == piece) {
+                    val index = players.indexOf(currentPlayer)
+                    val pos = cornerPoint(index, 10.deg, radius = (PentaMath.R_ + (3 * PentaMath.s)))
+                    return@run pos
+                }
+                PentaMath.inner_r * -0.2
+            }
+            is Piece.BlackBlocker -> {
+                if (selectedBlackPiece == piece) {
+                    val index = players.indexOf(currentPlayer)
+                    val pos = cornerPoint(index, (-10).deg, radius = (PentaMath.R_ + (3 * PentaMath.s)))
+                    logger.debug {"cornerPos: $pos" }
+                    return@run pos
+                }
+                throw IllegalStateException("black piece: $piece cannot be off the board")
+            }
+            is Piece.Player -> PentaMath.inner_r * -0.5
+//                else -> throw NotImplementedError("unhandled piece type: ${piece::class}")
+        }
+        val angle = (piece.pentaColor.ordinal * -72.0).deg
+
+        logger.debug { "pentaColor: ${piece.pentaColor.ordinal}" }
+
+        Point(
+            radius * angle.cos,
+            radius * angle.sin
+        ) / 2 + (Point(0.5, 0.5) * PentaMath.R_)
+    }
+    if (piece is Piece.Player && field is StartField) {
+        // find all pieces on field and order them
+        val pieceIds: List<String> = positions.filterValues { it == field }.keys
+            .sorted()
+        // find index of piece on field
+        val pieceNumber = pieceIds.indexOf(piece.id).toDouble()
+        val angle =
+            (((field.pentaColor.ordinal * -72.0) + (pieceNumber / pieceIds.size * 360.0) + 360.0) % 360.0).deg
+        pos = Point(
+            pos.x + (0.55) * angle.cos,
+            pos.y + (0.55) * angle.sin
+        )
+    }
+    if (piece is Piece.Player && field == null) {
+        // find all pieces on field and order them
+        val playerPieces = positions.filterValues { it == field }.keys
+            .map { id -> figures.find { it.id == id }!! }
+            .filterIsInstance<Piece.Player>()
+            .filter { it.pentaColor == piece.pentaColor }
+            .sortedBy { it.id }
+        // find index of piece on field
+        val pieceNumber = playerPieces.indexOf(piece).toDouble()
+        val angle =
+            (((piece.pentaColor.ordinal * -72.0) + (pieceNumber / playerPieces.size * 360.0) + 360.0 + 180.0) % 360.0).deg
+        pos = Point(
+            pos.x + (0.55) * angle.cos,
+            pos.y + (0.55) * angle.sin
+        )
+    }
+    pos
 }
 
 fun PathNode.drawFigure(figureId: String, center: Point, radius: Double) {

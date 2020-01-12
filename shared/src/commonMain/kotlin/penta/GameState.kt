@@ -5,6 +5,7 @@ import mu.KotlinLogging
 import penta.logic.Piece
 import penta.logic.field.AbstractField
 
+@Deprecated("old code")
 open class GameState {
     companion object {
         private val logger = KotlinLogging.logger {}

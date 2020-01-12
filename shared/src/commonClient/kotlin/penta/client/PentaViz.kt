@@ -5,7 +5,6 @@ import PentaMath
 import io.data2viz.color.Colors
 import io.data2viz.color.col
 import io.data2viz.geom.Point
-import io.data2viz.math.Angle
 import io.data2viz.math.deg
 import io.data2viz.viz.CircleNode
 import io.data2viz.viz.KPointerClick
@@ -19,6 +18,7 @@ import io.data2viz.viz.viz
 import mu.KotlinLogging
 import penta.ClientGameState
 import penta.ConnectionState
+import penta.calculatePiecePos
 import penta.canClickPiece
 import penta.drawFigure
 import penta.logic.Piece
@@ -393,79 +393,6 @@ object PentaViz {
         if (render) {
             viz.render()
         }
-    }
-    fun cornerPoint(index: Int, angleDelta: Angle = 0.deg, radius: Double = PentaMath.R_): Point {
-        val angle = (-45 + (index) * 90).deg + angleDelta
-
-        return Point(
-            radius * angle.cos,
-            radius * angle.sin
-        ) / 2 + (Point(0.5, 0.5) * PentaMath.R_)
-    }
-    fun calculatePiecePos(piece: Piece, field: AbstractField?, boardState: BoardState) = with(boardState) {
-        var pos: Point = field?.pos ?: run {
-            val radius = when (piece) {
-                is Piece.GrayBlocker -> {
-                    logger.info{"piece: ${piece.id}"}
-                        logger.info{"selected: ${selectedGrayPiece?.id}"}
-                    if (selectedGrayPiece == piece) {
-                        val index = players.indexOf(currentPlayer)
-                        val pos = cornerPoint(index, 10.deg, radius = (PentaMath.R_ + (3 * PentaMath.s)))
-                        return@run pos
-                    }
-                    PentaMath.inner_r * -0.2
-                }
-                is Piece.BlackBlocker -> {
-                    if (selectedBlackPiece == piece) {
-                        val index = players.indexOf(currentPlayer)
-                        val pos = cornerPoint(index, (-10).deg, radius = (PentaMath.R_ + (3 * PentaMath.s)))
-                        logger.info{"cornerPos: $pos"}
-                        return@run pos
-                    }
-                    throw kotlin.IllegalStateException("black piece: $piece cannot be off the board")
-                }
-                is Piece.Player -> PentaMath.inner_r * -0.5
-//                else -> throw NotImplementedError("unhandled piece type: ${piece::class}")
-            }
-            val angle = (piece.pentaColor.ordinal * -72.0).deg
-
-            logger.info{"pentaColor: ${piece.pentaColor.ordinal}"}
-
-            io.data2viz.geom.Point(
-                radius * angle.cos,
-                radius * angle.sin
-            ) / 2 + (io.data2viz.geom.Point(0.5, 0.5) * PentaMath.R_)
-        }
-        if (piece is Piece.Player && field is StartField) {
-            // find all pieces on field and order them
-            val pieceIds: List<String> = positions.filterValues { it == field }.keys
-                .sorted()
-            // find index of piece on field
-            val pieceNumber = pieceIds.indexOf(piece.id).toDouble()
-            val angle =
-                (((field.pentaColor.ordinal * -72.0) + (pieceNumber / pieceIds.size * 360.0) + 360.0) % 360.0).deg
-            pos = io.data2viz.geom.Point(
-                pos.x + (0.55) * angle.cos,
-                pos.y + (0.55) * angle.sin
-            )
-        }
-        if (piece is Piece.Player && field == null) {
-            // find all pieces on field and order them
-            val playerPieces = positions.filterValues { it == field }.keys
-                .map { id -> figures.find { it.id == id }!! }
-                .filterIsInstance<Piece.Player>()
-                .filter { it.pentaColor == piece.pentaColor }
-                .sortedBy { it.id }
-            // find index of piece on field
-            val pieceNumber = playerPieces.indexOf(piece).toDouble()
-            val angle =
-                (((piece.pentaColor.ordinal * -72.0) + (pieceNumber / playerPieces.size * 360.0) + 360.0 + 180.0) % 360.0).deg
-            pos = io.data2viz.geom.Point(
-                pos.x + (0.55) * angle.cos,
-                pos.y + (0.55) * angle.sin
-            )
-        }
-        pos
     }
     fun updatePiece(piece: Piece, boardState: BoardState) {
 //        val boardState = gameState.boardStore.state

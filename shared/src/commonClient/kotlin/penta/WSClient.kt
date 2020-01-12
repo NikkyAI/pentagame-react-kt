@@ -39,6 +39,7 @@ import io.ktor.http.cio.websocket.close
 import penta.client.PentaViz
 import penta.network.GameEvent
 
+@Deprecated("move code away")
 object WSClient {
     private val logger = KotlinLogging.logger {}
 
