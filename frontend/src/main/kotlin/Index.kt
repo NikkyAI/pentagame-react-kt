@@ -1,21 +1,30 @@
 import components.app
+import externals.ReduxLoggerOptionsImpl
+import externals.createLogger
 import react.dom.render
 import react.redux.provider
 import reducers.State
 import redux.RAction
+import redux.Store
+import redux.applyMiddleware
 import redux.compose
 import redux.createStore
 import redux.rEnhancer
 import kotlin.browser.document
 
-val store = createStore<State, RAction, dynamic>(
+val initialState = State()
+val store: Store<State, RAction, dynamic> = createStore<State, RAction, dynamic>(
     State.combinedReducers(),
-//    ::boardState,
-//    BoardState.create(),
-    State(),
-//    rEnhancer()
+    initialState,
     compose(
         rEnhancer(),
+        applyMiddleware<State, RAction, State, dynamic, dynamic>(
+            createLogger(
+                ReduxLoggerOptionsImpl(
+                    "verbose"
+                )
+            )
+        ),
 //        applyMiddleware<State, RAction, State, dynamic, dynamic>(
 //            createLogger(object: ReduxLoggerOptions {
 //                override var logger: Any?

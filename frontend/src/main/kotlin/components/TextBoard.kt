@@ -1,6 +1,6 @@
 package components
 
-import actions.Action
+import debug
 import kotlinx.html.js.onClickFunction
 import penta.PentaMove
 import penta.PlayerState
@@ -21,13 +21,13 @@ import react.redux.rConnect
 import reducers.State
 import redux.WrapperAction
 
-interface TextBoardStateProps : StateProps, DispatchProps {
+interface TextBoardPropsTextBoard : TextBoardStateProps, TextBoardDispatchProps {
 //    var boardState: BoardState
 //    var addPlayerClick: () -> Unit
 //    var startGameClick: () -> Unit
 }
 
-class TextBoardState(props: TextBoardStateProps) : RComponent<TextBoardStateProps, RState>(props) {
+class TextBoard(props: TextBoardPropsTextBoard) : RComponent<TextBoardPropsTextBoard, RState>(props) {
     override fun RBuilder.render() {
         if (props.boardState == undefined) {
             return
@@ -123,11 +123,11 @@ class TextBoardState(props: TextBoardStateProps) : RComponent<TextBoardStateProp
 //        console.log("componentWillUpdate")
 //    }
 
-    override fun componentDidUpdate(prevProps: TextBoardStateProps, prevState: RState, snapshot: Any) {
+    override fun componentDidUpdate(prevProps: TextBoardPropsTextBoard, prevState: RState, snapshot: Any) {
         console.log("componentDidUpdate")
     }
 
-    override fun shouldComponentUpdate(nextProps: TextBoardStateProps, nextState: RState): Boolean {
+    override fun shouldComponentUpdate(nextProps: TextBoardPropsTextBoard, nextState: RState): Boolean {
         console.log("shouldComponentUpdate")
         return true
     }
@@ -141,35 +141,38 @@ interface TextBoardsStateParameters : RProps {
 }
 
 //TODO: find a way to compose interface while keeping these private
-/*private*/ interface StateProps : RProps {
+interface TextBoardStateProps : RProps {
     var boardState: BoardState
 }
 
-/*private*/ interface DispatchProps : RProps {
+interface TextBoardDispatchProps : RProps {
     var addPlayerClick: (playerId: String, figureId: String) -> Unit
     var startGameClick: () -> Unit
     var relay: (PentaMove) -> Unit
 }
 
 val textBoardState =
-    rConnect<State, Action<PentaMove>, WrapperAction, TextBoardsStateParameters, StateProps, DispatchProps, TextBoardStateProps>(
+    rConnect<State, PentaMove, WrapperAction, TextBoardsStateParameters, TextBoardStateProps, TextBoardDispatchProps, TextBoardPropsTextBoard>(
         { state, configProps ->
-            console.log("TextBoardContainer.state")
-            console.log("state: $state ")
-            console.log("state: ${state::class.js}) ")
-            console.log("configProps: $configProps ")
-            console.log("configProps: ${configProps::class.js} ")
+            console.debug("TextBoardContainer.state")
+            console.debug("state: ", state)
+            console.debug("configProps: ", configProps)
             boardState = state.boardState
         },
         { dispatch, configProps ->
             // any kind of interactivity is linked to dispatching state changes here
-            console.log("TextBoardContainer.dispatch")
-            console.log("dispatch: $dispatch ")
-            console.log("configProps: $configProps ")
-            startGameClick = { dispatch(Action(PentaMove.InitGame)) }
+            console.debug("TextBoardContainer.dispatch")
+            console.debug("dispatch: ", dispatch)
+            console.debug("configProps: ", configProps)
+//            startGameClick = { dispatch(Action(PentaMove.InitGame)) }
+//            addPlayerClick = { playerId: String, figureId: String ->
+//                dispatch(Action(PentaMove.PlayerJoin(PlayerState(playerId, figureId))))
+//            }
+//            relay = { dispatch(Action(it)) }
+            startGameClick = { dispatch(PentaMove.InitGame) }
             addPlayerClick = { playerId: String, figureId: String ->
-                dispatch(Action(PentaMove.PlayerJoin(PlayerState(playerId, figureId))))
+                dispatch(PentaMove.PlayerJoin(PlayerState(playerId, figureId)))
             }
-            relay = { dispatch(Action(it)) }
+            relay = { dispatch(it) }
         }
-    )(TextBoardState::class.js.unsafeCast<RClass<TextBoardStateProps>>())
+    )(TextBoard::class.js.unsafeCast<RClass<TextBoardPropsTextBoard>>())

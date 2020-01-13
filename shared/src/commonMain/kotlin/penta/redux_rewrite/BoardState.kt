@@ -471,11 +471,13 @@ data class BoardState private constructor(
                     }
                     is PentaMove.SelectPlayerPiece -> {
                         with(originalState) {
-                            requireMove(currentPlayer.id == move.playerPiece.playerId) {
-                                PentaMove.IllegalMove(
-                                    "selected piece ${move.playerPiece} is not owned by current player ${currentPlayer.id}",
-                                    move
-                                )
+                            if(move.playerPiece != null) {
+                                requireMove(currentPlayer.id == move.playerPiece.playerId) {
+                                    PentaMove.IllegalMove(
+                                        "selected piece ${move.playerPiece} is not owned by current player ${currentPlayer.id}",
+                                        move
+                                    )
+                                }
                             }
                         }
                         nextState = nextState.copy(

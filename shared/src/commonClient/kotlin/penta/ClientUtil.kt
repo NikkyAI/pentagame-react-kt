@@ -2,6 +2,7 @@ package penta
 
 import com.github.nwillc.ksvg.elements.SVG
 import io.data2viz.color.Color
+import io.data2viz.color.Colors
 import io.data2viz.geom.Point
 import io.data2viz.math.Angle
 import io.data2viz.math.deg
@@ -67,22 +68,31 @@ fun canClickPiece(clickedPiece: Piece, boardState: BoardState): Boolean {
 
 fun SVG.drawFigure(figureId: String, center: Point, radius: Double, color: Color, selected: Boolean) {
     drawPlayer(
-        figureId, center, radius, color, null, selected
+        figureId, center, radius, color, null, selected, false
     )
 }
 
-fun SVG.drawPlayer(figureId: String, center: Point, radius: Double, piece: Piece.Player, selected: Boolean) {
+fun SVG.drawPlayer(figureId: String, center: Point, radius: Double, piece: Piece.Player, selected: Boolean, highlight: Boolean) {
     val color = when {
         selected -> piece.color.brighten(0.5)
         else -> piece.color
     }
     drawPlayer(
-        figureId, center, radius, color, piece.id, selected
+        figureId = figureId,
+        center = center,
+        radius = radius,
+        color = color,
+        pieceId = piece.id,
+        selected = selected,
+        highlight = highlight
     )
 }
 
-fun SVG.drawPlayer(figureId: String, center: Point, radius: Double, color: Color, pieceId: String?, selected: Boolean) {
-    fun point(angle: Angle, radius: Double, center: Point = Point(0.0, 0.0)): Point {
+fun SVG.drawPlayer(
+    figureId: String, center: Point, radius: Double, color: Color,
+    pieceId: String?, selected: Boolean, highlight: Boolean
+) {
+    fun point(angle: Angle, radius: Double, center: Point): Point {
         return Point(angle.cos * radius, angle.sin * radius) + center
     }
 
@@ -94,10 +104,18 @@ fun SVG.drawPlayer(figureId: String, center: Point, radius: Double, color: Color
         }
     }
 
-
     val lineWidth = when {
         selected -> "3.0"
+        highlight -> "4.0"
         else -> "1.0"
+    }
+    val fillColor = when {
+        selected -> color.brighten(1.0)
+        else -> color
+    }
+    val strokeColor = when {
+        highlight -> Colors.Web.gray
+        else -> Colors.Web.black
     }
 
     when (figureId) {
@@ -112,9 +130,9 @@ fun SVG.drawPlayer(figureId: String, center: Point, radius: Double, color: Color
                 }
                 this.points = points.joinToString(" ") { "${it.x},${it.y}" }
 
-                fill = color.rgbHex
+                fill = fillColor.rgbHex
                 strokeWidth = lineWidth
-                stroke = "black"
+                stroke = strokeColor.rgbHex
             }
         }
         "triangle" -> {
@@ -127,9 +145,9 @@ fun SVG.drawPlayer(figureId: String, center: Point, radius: Double, color: Color
                 }
                 this.points = points.joinToString(" ") { "${it.x},${it.y}" }
 
-                fill = color.rgbHex
+                fill = fillColor.rgbHex
                 strokeWidth = lineWidth
-                stroke = "black"
+                stroke = strokeColor.rgbHex
             }
         }
         "cross" -> {
@@ -163,9 +181,9 @@ fun SVG.drawPlayer(figureId: String, center: Point, radius: Double, color: Color
                 }
                 this.points = points.joinToString(" ") { "${it.x},${it.y}" }
 
-                fill = color.rgbHex
+                fill = fillColor.rgbHex
                 strokeWidth = lineWidth
-                stroke = "black"
+                stroke = strokeColor.rgbHex
             }
         }
         "circle" -> {
@@ -178,7 +196,7 @@ fun SVG.drawPlayer(figureId: String, center: Point, radius: Double, color: Color
                 r = "${radius * 0.8}"
                 fill = color.rgbHex
                 strokeWidth = lineWidth
-                stroke = "black"
+                stroke = strokeColor.rgbHex
             }
         }
         else -> throw IllegalStateException("illegal figureId: '$figureId'")

@@ -15,13 +15,16 @@ sealed class ConnectionState {
         private val logger = KotlinLogging.logger {}
     }
 
-    // tmp fix
-    val value: ConnectionState get() = this
-
     abstract val baseUrl: Url
     abstract val userId: String
 
     interface NotLoggedIn
+
+    class Unreachable(
+        override val baseUrl: Url = Url("https://pentagame.herokuapp.com"),
+        override val userId: String = ""
+    ) : ConnectionState(), NotLoggedIn
+
     data class Disconnected(
         override val baseUrl: Url = Url("https://pentagame.herokuapp.com"),
         override val userId: String = ""
@@ -83,4 +86,5 @@ sealed class ConnectionState {
 //            logger.info { "finished leaving game" }
         }
     }
+
 }

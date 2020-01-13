@@ -60,7 +60,7 @@ object PentagameClick {
             if (selectedPlayerPiece == null) {
                 logger.info { "selecting: $clickedPiece" }
                 // TODO: boardStateStore.dispatch(...)
-                dispatch(penta.PentaMove.SelectPlayerPiece(clickedPiece))
+                dispatch(PentaMove.SelectPlayerPiece(clickedPiece))
 //                boardStore.dispatch(PentaMove.SelectPlayerPiece(clickedPiece))
 //                selectedPlayerPiece = clickedPieceg
 //                client.PentaViz.updateBoard()
@@ -69,7 +69,7 @@ object PentagameClick {
             if (selectedPlayerPiece == clickedPiece) {
                 logger.info { "deselecting: $clickedPiece" }
 
-                dispatch(penta.PentaMove.SelectGrey(null))
+                dispatch(PentaMove.SelectPlayerPiece(null))
 //                boardStore.dispatch(PentaMove.SelectGrey(null))
 //                selectedPlayerPiece = null
 //                client.PentaViz.updateBoard()

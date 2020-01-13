@@ -37,11 +37,7 @@ class ServerGamestate(
 ) : GameState() {
     val boardStateStore: Store<BoardState> = createStore(
         BoardState.reducer,
-        BoardState.create(
-            // TODO: remove default users
-            listOf(PlayerState("alice", "cross"), PlayerState("bob", "triangle")),
-            BoardState.GameType.TWO
-        ),
+        BoardState.create(),
         applyMiddleware(loggingMiddleware(logger))
     )
 
@@ -138,14 +134,14 @@ class ServerGamestate(
 
             unsubscribe = boardStateStore.subscribe {
                 val history = historySelector(boardStateStore.state)
-                val moves = history - oldHistory
+                val moves = history.toList() - oldHistory
                 GlobalScope.launch(handler) {
                     moves.forEach { move ->
                         logger.info { "transmitting move $move" }
                         outgoing.send(Frame.Text(json.stringify(serializer, move.toSerializable())))
                     }
                 }
-                oldHistory = boardStateStore.state.history
+                oldHistory = boardStateStore.state.history.toList()
             }
 
             while (true) {

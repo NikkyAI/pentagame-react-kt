@@ -1,13 +1,14 @@
 package reducers
 
 import actions.Action
-import mu.KotlinLogging
+import initialState
 import penta.PentaMove
 import penta.redux_rewrite.BoardState
 import penta.redux_rewrite.BoardState.Companion.processMove
 import redux.RAction
 import util.combineReducers
 import penta.ConnectionState
+import penta.network.GameEvent
 
 data class State(
     val boardState: BoardState = BoardState.create(),
@@ -15,39 +16,51 @@ data class State(
 //    val array: Array<String> = emptyArray()
 ) {
     companion object{
-        val logger = KotlinLogging.logger {}
-
-        fun combinedReducers() = combineReducers(
+        fun combinedReducers(): (State, action: RAction) -> State = combineReducers(
             mapOf(
                 State::boardState to ::boardState,
                 State::connection to ::connection
             )
         )
 
-        fun boardState(state: BoardState = BoardState.create(), action: RAction): BoardState {
-            console.log("state: $state")
-            console.log("action: $action")
-            if(action != undefined) {
-                console.log("action.js: ${action::class.js}")
-            }
+        fun boardState(state: BoardState = initialState.boardState, action: Any): BoardState {
             return when(action) {
-                is Action<*> -> when(val pentaMove = action.action) {
+                is Action<*> -> when(val wrappedAction = action.action) {
                     is PentaMove -> {
-                        BoardState.Companion.WithMutableState(state).processMove(pentaMove)
+                        BoardState.Companion.WithMutableState(state).processMove(wrappedAction)
+                    }
+                    is GameEvent -> {
+                        val move = wrappedAction.asMove(state)
+                        BoardState.Companion.WithMutableState(state).processMove(move)
+                    }
+                    is BoardState -> {
+                        wrappedAction
                     }
                     else -> state
+                }
+                is PentaMove -> {
+                    BoardState.Companion.WithMutableState(state).processMove(action)
+                }
+                is GameEvent -> {
+                    val move = action.asMove(state)
+                    BoardState.Companion.WithMutableState(state).processMove(move)
+                }
+                is BoardState -> {
+                    action
                 }
                 else -> state
             }
         }
-        fun connection(state: ConnectionState = ConnectionState.Disconnected(), action: RAction): ConnectionState {
-            console.log("state: $state")
-            console.log("action: $action")
+        fun connection(inputState: ConnectionState = ConnectionState.Disconnected(), action: Any): ConnectionState {
             return when(action) {
-//        is Action<*> -> {
-//            // do stuff with array
-//        }
-                else -> state
+                is Action<*> -> when(val connectionState = action.action) {
+                    is ConnectionState -> {
+                        connectionState
+                    }
+                    else -> inputState
+                }
+                is ConnectionState -> action
+                else -> inputState
             }
         }
     }

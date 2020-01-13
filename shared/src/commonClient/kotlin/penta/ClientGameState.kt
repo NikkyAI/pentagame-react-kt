@@ -24,6 +24,10 @@ open class ClientGameState(localPlayerCount: Int = 1) : GameState() {
         private val logger = KotlinLogging.logger {}
     }
 
+    init {
+        TODO("REMOVE THIS CODE")
+    }
+
     val boardStore: Store<BoardState> = createStore(
         BoardState.reducer,
         BoardState.create(),

@@ -5,6 +5,7 @@ import PentaMath
 import com.github.nwillc.ksvg.elements.SVG
 import containers.PentaSvgDispatchProps
 import containers.PentaSvgStateProps
+import debug
 import io.data2viz.color.Colors
 import io.data2viz.color.col
 import io.data2viz.math.deg
@@ -25,7 +26,6 @@ import penta.logic.Piece
 import penta.logic.field.ConnectionField
 import penta.logic.field.GoalField
 import penta.logic.field.StartField
-import penta.redux_rewrite.BoardState
 import react.RBuilder
 import react.RComponent
 import react.RState
@@ -79,8 +79,8 @@ class PentaSvg(props: PentaSvgProps) : RComponent<PentaSvgProps, RState>(props) 
     override fun shouldComponentUpdate(nextProps: PentaSvgProps, nextState: RState): Boolean {
         // TODO update svg content here
         console.log("penta svg updating")
-        console.log("props: ${props.boardState}")
-        console.log("nextProps: ${nextProps.boardState}")
+//        console.log("props: ${props.boardState}")
+//        console.log("nextProps: ${nextProps.boardState}")
 
         redraw(nextProps)
 
@@ -88,7 +88,7 @@ class PentaSvg(props: PentaSvgProps) : RComponent<PentaSvgProps, RState>(props) 
     }
 
     private fun redraw(svgProps: PentaSvgProps) {
-        console.log("drawing...")
+        console.debug("drawing...")
 
         // does SVG stuff
         svgRef.current?.let { svg ->
@@ -171,7 +171,7 @@ private fun SVG.draw(scale: Int, svgProps: PentaSvgProps) {
 //        val lineWidth = (PentaMath.s / 5) / PentaMath.R_ * scale
     val lineWidth = 0.1 / PentaMath.R_ * scale
 
-    console.log("lineWidth: $lineWidth")
+    console.debug("lineWidth: $lineWidth")
 //        console.log("thinLineWidth: $thinLineWidth")
 
 //        style {
@@ -243,7 +243,7 @@ private fun SVG.draw(scale: Int, svgProps: PentaSvgProps) {
 
     // add corner fields
     svgProps.boardState.players.forEachIndexed { i, player ->
-        console.log("init face $player")
+        console.debug("init face $player")
         val centerPos = cornerPoint(
             index = i,
             angleDelta = 0.deg,
@@ -285,7 +285,7 @@ private fun SVG.draw(scale: Int, svgProps: PentaSvgProps) {
             r = "${blockerRadius * 2}"
             stroke = Colors.Web.grey.rgbHex
             strokeWidth = "2.0"
-            fill = Colors.Web.white.rgbHex
+            fill = bgColor
         }
         // draw grey blocker background
         circle {
@@ -294,7 +294,7 @@ private fun SVG.draw(scale: Int, svgProps: PentaSvgProps) {
             r = "${blockerRadius * 2}"
             stroke = Colors.Web.grey.rgbHex
             strokeWidth = "2.0"
-            fill = Colors.Web.white.rgbHex
+            fill = bgColor
         }
 
         // draw player face
@@ -325,7 +325,7 @@ private fun SVG.draw(scale: Int, svgProps: PentaSvgProps) {
     svgProps.boardState.figures.forEach { piece ->
         val pos = calculatePiecePos(piece, svgProps.boardState.positions[piece.id], svgProps.boardState)
         val field = svgProps.boardState.positions[piece.id]
-        console.log("drawing piece ${piece.id} on field $field")
+        console.debug("drawing piece ${piece.id} on field $field")
         val scaledPos = pos / PentaMath.R_ * scale
         val radius = (piece.radius / PentaMath.R_ * scale)
         when (piece) {
@@ -349,13 +349,15 @@ private fun SVG.draw(scale: Int, svgProps: PentaSvgProps) {
                 }
             }
             is Piece.Player -> {
-                console.log("playerPiece: $piece")
+                val isCurrentPlayer = piece.playerId == svgProps.boardState.currentPlayer.id
+                console.debug("playerPiece: $piece")
                 drawPlayer(
                     figureId = piece.figureId,
                     center = scaledPos,
                     radius = radius,
                     piece = piece,
-                    selected = svgProps.boardState.selectedPlayerPiece == piece
+                    selected = svgProps.boardState.selectedPlayerPiece == piece,
+                    highlight = isCurrentPlayer && svgProps.boardState.selectedPlayerPiece == null
                 )
             }
         }

@@ -141,7 +141,7 @@ sealed class PentaMove {
     }
 
     data class SelectPlayerPiece(
-        val playerPiece: Piece.Player
+        val playerPiece: Piece.Player?
     ): PentaMove() {
         override fun asNotation(): String = "select player ${playerPiece?.id}"
         override fun toSerializable(): GameEvent = TODO("add serializer class")

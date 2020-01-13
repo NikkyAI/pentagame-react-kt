@@ -4,13 +4,18 @@ import containers.pentaSvg
 import react.RBuilder
 import react.dom.div
 import react.dom.h1
+import react.dom.h2
 
 fun RBuilder.app() {
     div {
         h1 {
+            +"Pentagaame"
+        }
+        h2 {
             +"Kotlin React + React-Dom + Redux + React-Redux"
         }
         pentaSvg {}
+        textConnection {}
         textBoardState {}
 
 //        vizCanvas {
