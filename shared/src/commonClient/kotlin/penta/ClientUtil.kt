@@ -72,7 +72,7 @@ fun SVG.drawFigure(figureId: String, center: Point, radius: Double, color: Color
     )
 }
 
-fun SVG.drawPlayer(figureId: String, center: Point, radius: Double, piece: Piece.Player, selected: Boolean, highlight: Boolean) {
+fun SVG.drawPlayer(figureId: String, center: Point, radius: Double, piece: Piece.Player, selected: Boolean, highlight: Boolean, clickable: Boolean) {
     val color = when {
         selected -> piece.color.brighten(0.5)
         else -> piece.color
@@ -82,7 +82,7 @@ fun SVG.drawPlayer(figureId: String, center: Point, radius: Double, piece: Piece
         center = center,
         radius = radius,
         color = color,
-        pieceId = piece.id,
+        pieceId = if(clickable) piece.id else null,
         selected = selected,
         highlight = highlight
     )

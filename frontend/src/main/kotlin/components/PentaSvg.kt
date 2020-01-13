@@ -9,6 +9,8 @@ import debug
 import io.data2viz.color.Colors
 import io.data2viz.color.col
 import io.data2viz.math.deg
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import mu.KotlinLogging
 import org.w3c.dom.Element
 import org.w3c.dom.HTMLButtonElement
@@ -17,6 +19,8 @@ import org.w3c.dom.events.MouseEvent
 import org.w3c.dom.svg.SVGCircleElement
 import org.w3c.dom.svg.SVGElement
 import penta.PentaColors
+import penta.ConnectionState
+import penta.PentaMove
 import penta.PentagameClick
 import penta.drawFigure
 import penta.drawPlayer
@@ -40,6 +44,26 @@ interface PentaSvgProps : PentaSvgStateProps, PentaSvgDispatchProps
 class PentaSvg(props: PentaSvgProps) : RComponent<PentaSvgProps, RState>(props) {
     private val svgRef = createRef<SVGElement>()
     private val buttonRef = createRef<HTMLButtonElement>()
+
+    fun dispatchMove(move: PentaMove) {
+        when(val connection = props.connection) {
+            is ConnectionState.Observing -> {
+                when(move) {
+                    // unsupported by old backend
+                    is PentaMove.SelectGrey -> props.dispatchMoveLocal(move)
+                    is PentaMove.SelectPlayerPiece -> props.dispatchMoveLocal(move)
+                    else -> {
+                        GlobalScope.launch {
+                            connection.sendMove(move)
+                        }
+                    }
+                }
+            }
+            else -> {
+                props.dispatchMoveLocal(move)
+            }
+        }
+    }
     override fun RBuilder.render() {
         svg {
             ref = svgRef
@@ -129,7 +153,7 @@ class PentaSvg(props: PentaSvgProps) : RComponent<PentaSvgProps, RState>(props) 
                             console.log("clicked field ${target.id}")
                             PentagameClick.clickField(
                                 PentaBoard.fields.first { it.id == target.id },
-                                svgProps.dispatchBoardstate,
+                                ::dispatchMove,
                                 svgProps.boardState
                             )
                         }
@@ -148,7 +172,7 @@ class PentaSvg(props: PentaSvgProps) : RComponent<PentaSvgProps, RState>(props) 
                         console.log(target::class.js)
                         PentagameClick.clickPiece(
                             props.boardState.figures.first { it.id == target.id },
-                            svgProps.dispatchBoardstate,
+                            ::dispatchMove,
                             svgProps.boardState
                         )
                     }
@@ -180,6 +204,11 @@ private fun SVG.draw(scale: Int, svgProps: PentaSvgProps) {
 //            """.trimIndent()
 //        }
 
+    val isYourTurn = if(svgProps.connection is ConnectionState.Observing) {
+        svgProps.boardState.currentPlayer.id == svgProps.connection.userId
+    } else true
+    val selectedPieceIsCurrentPlayer = svgProps.boardState.selectedPlayerPiece?.playerId == svgProps.boardState.currentPlayer.id
+
     // background circle
     circle {
         cx = "${0.5 * scale}"
@@ -205,7 +234,10 @@ private fun SVG.draw(scale: Int, svgProps: PentaSvgProps) {
         when (field) {
             is StartField -> {
                 circle {
-                    id = field.id
+                    // TODO: add path checking, only make reachable pieces clickable
+                    if(isYourTurn && selectedPieceIsCurrentPlayer) {
+                        id = field.id
+                    }
                     cx = "${scaledPos.x}"
                     cy = "${scaledPos.y}"
                     r = "${radius - lineWidth}"
@@ -216,7 +248,10 @@ private fun SVG.draw(scale: Int, svgProps: PentaSvgProps) {
             }
             is GoalField -> {
                 circle {
-                    id = field.id
+                    // TODO: add path checking, only make reachable pieces clickable
+                    if(isYourTurn && selectedPieceIsCurrentPlayer) {
+                        id = field.id
+                    }
                     cx = "${scaledPos.x}"
                     cy = "${scaledPos.y}"
                     r = "${radius - (lineWidth / 2)}"
@@ -227,7 +262,10 @@ private fun SVG.draw(scale: Int, svgProps: PentaSvgProps) {
             }
             is ConnectionField -> {
                 circle {
-                    id = field.id
+                    // TODO: add path checking, only make reachable pieces clickable
+                    if(isYourTurn && selectedPieceIsCurrentPlayer) {
+                        id = field.id
+                    }
                     cx = "${scaledPos.x}"
                     cy = "${scaledPos.y}"
                     r = "${radius - (lineWidth / 10)}"
@@ -331,7 +369,10 @@ private fun SVG.draw(scale: Int, svgProps: PentaSvgProps) {
         when (piece) {
             is Piece.GrayBlocker -> {
                 circle {
-                    id = piece.id
+                    // TODO: add path checking, only make reachable pieces clickable
+                    if(isYourTurn && selectedPieceIsCurrentPlayer) {
+                        id = piece.id
+                    }
                     cx = "${scaledPos.x}"
                     cy = "${scaledPos.y}"
                     r = "$radius"
@@ -340,7 +381,10 @@ private fun SVG.draw(scale: Int, svgProps: PentaSvgProps) {
             }
             is Piece.BlackBlocker -> {
                 circle {
-                    id = piece.id
+                    // TODO: add path checking, only make reachable pieces clickable
+                    if(isYourTurn && selectedPieceIsCurrentPlayer) {
+                        id = piece.id
+                    }
                     cx = "${scaledPos.x}"
                     cy = "${scaledPos.y}"
 
@@ -351,13 +395,17 @@ private fun SVG.draw(scale: Int, svgProps: PentaSvgProps) {
             is Piece.Player -> {
                 val isCurrentPlayer = piece.playerId == svgProps.boardState.currentPlayer.id
                 console.debug("playerPiece: $piece")
+                val selectable = isYourTurn && isCurrentPlayer && svgProps.boardState.selectedPlayerPiece == null
+                val swappable = isYourTurn && selectedPieceIsCurrentPlayer
+                console.info("playerPiece: ", piece, "selectable: ", selectable, "swappable", swappable)
                 drawPlayer(
                     figureId = piece.figureId,
                     center = scaledPos,
                     radius = radius,
                     piece = piece,
                     selected = svgProps.boardState.selectedPlayerPiece == piece,
-                    highlight = isCurrentPlayer && svgProps.boardState.selectedPlayerPiece == null
+                    highlight = selectable,
+                    clickable = selectable || swappable
                 )
             }
         }

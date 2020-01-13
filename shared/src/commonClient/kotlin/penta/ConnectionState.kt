@@ -6,7 +6,6 @@ import io.ktor.http.cio.websocket.CloseReason
 import io.ktor.http.cio.websocket.Frame
 import io.ktor.http.cio.websocket.close
 import mu.KotlinLogging
-import penta.network.GameEvent
 import penta.network.GameSessionInfo
 import penta.util.json
 
@@ -71,7 +70,7 @@ sealed class ConnectionState {
     ) : ConnectionState(), HasSession, HasGameSession {
         suspend fun sendMove(move: PentaMove) {
             websocketSession.outgoing.send(
-                Frame.Text(json.stringify(GameEvent.serializer(), move.toSerializable()))
+                Frame.Text(json.stringify(SerialNotation.serializer(), move.toSerializable()))
             )
         }
 

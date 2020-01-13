@@ -19,11 +19,12 @@ interface PentaSvgParameters : RProps {
 
 interface PentaSvgStateProps : RProps {
     var boardState: BoardState
+    var connection: penta.ConnectionState
 }
 
 interface PentaSvgDispatchProps : RProps {
-    var dispatchBoardstate: (PentaMove) -> Unit
-    var dispatchConnection: (Any) -> Unit
+    var dispatchMoveLocal: (PentaMove) -> Unit
+    var dispatchConnection: (penta.ConnectionState) -> Unit
 }
 
 val pentaSvg =
@@ -33,7 +34,7 @@ val pentaSvg =
             console.debug("state:", state)
             console.debug("configProps: ", configProps)
             boardState = state.boardState
-
+            connection = state.multiplayerState.connectionState
             // todo: trigger redraw here
         },
         { dispatch, configProps ->
@@ -41,7 +42,7 @@ val pentaSvg =
             console.debug("PentaSvg update dispatch")
             console.debug("dispatch: ", dispatch)
             console.debug("configProps: ", configProps)
-            this@rConnect.dispatchBoardstate = { dispatch(Action(it)) }
+            this@rConnect.dispatchMoveLocal = { dispatch(Action(it)) }
             this@rConnect.dispatchConnection = { dispatch(Action(it)) }
         }
     )(PentaSvg::class.js.unsafeCast<RClass<PentaSvgProps>>())

@@ -1,4 +1,4 @@
-package penta.network
+package penta
 
 import PentaBoard
 import kotlinx.serialization.Polymorphic
@@ -6,15 +6,15 @@ import kotlinx.serialization.PolymorphicSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModuleBuilder
 import mu.KotlinLogging
-import penta.PentaMove
-import penta.PlayerState
 import penta.logic.Piece
 import penta.redux_rewrite.BoardState
 import penta.util.ObjectSerializer
 
+//TODO: refactor to penta.network.GameEvent
+
 @Polymorphic
 @Serializable(PolymorphicSerializer::class)
-sealed class GameEvent {
+sealed class SerialNotation {
     // TODO: move into abstract class SerializedMove
     abstract fun asMove(boardState: BoardState): PentaMove
 
@@ -24,7 +24,7 @@ sealed class GameEvent {
         val piece: String,
         val from: String,
         val to: String
-    ) : GameEvent() {
+    ) : SerialNotation() {
         override fun asMove(boardState: BoardState) =
             PentaMove.MovePlayer(
                 playerPiece = boardState.figures.filterIsInstance<Piece.Player>().first { it.playerId == player && it.id == piece },
@@ -39,7 +39,7 @@ sealed class GameEvent {
         val piece: String,
         val from: String,
         val to: String
-    ) : GameEvent() {
+    ) : SerialNotation() {
         override fun asMove(boardState: BoardState) =
             PentaMove.ForcedPlayerMove(
                 playerPiece = boardState.figures.filterIsInstance<Piece.Player>().first { it.playerId == player && it.id == piece },
@@ -55,7 +55,7 @@ sealed class GameEvent {
         val otherPiece: String,
         val from: String,
         val to: String
-    ) : GameEvent() {
+    ) : SerialNotation() {
         override fun asMove(boardState: BoardState) =
             PentaMove.SwapOwnPiece(
                 playerPiece = boardState.figures.filterIsInstance<Piece.Player>().first { it.playerId == player && it.id == piece },
@@ -73,7 +73,7 @@ sealed class GameEvent {
         val otherPiece: String,
         val from: String,
         val to: String
-    ) : GameEvent() {
+    ) : SerialNotation() {
         override fun asMove(boardState: BoardState): PentaMove =
             PentaMove.SwapHostilePieces(
                 playerPiece = boardState.figures.filterIsInstance<Piece.Player>().first { it.playerId == player && it.id == piece },
@@ -91,7 +91,7 @@ sealed class GameEvent {
         val otherPiece: String,
         val from: String,
         val to: String
-    ) : GameEvent() {
+    ) : SerialNotation() {
         override fun asMove(boardState: BoardState): PentaMove {
             TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
         }
@@ -102,7 +102,7 @@ sealed class GameEvent {
         val id: String,
         val from: String?,
         val to: String
-    ) : GameEvent() {
+    ) : SerialNotation() {
         override fun asMove(boardState: BoardState) =
             PentaMove.SetGrey(
                 piece = boardState.figures.filterIsInstance<Piece.GrayBlocker>().first { it.id == id },
@@ -116,7 +116,7 @@ sealed class GameEvent {
         val id: String,
         val from: String,
         val to: String
-    ) : GameEvent() {
+    ) : SerialNotation() {
         override fun asMove(boardState: BoardState) =
             PentaMove.SetBlack(
                 piece = boardState.figures.filterIsInstance<Piece.BlackBlocker>().first { it.id == id },
@@ -128,14 +128,14 @@ sealed class GameEvent {
     @Serializable
     data class PlayerJoin(
         val player: PlayerState
-    ) : GameEvent() {
+    ) : SerialNotation() {
         override fun asMove(boardState: BoardState) =
             PentaMove.PlayerJoin(
                 player = player
             )
     }
 
-    object InitGame : GameEvent() {
+    object InitGame : SerialNotation() {
         override fun asMove(boardState: BoardState) =
             PentaMove.InitGame
     }
@@ -143,7 +143,7 @@ sealed class GameEvent {
     @Serializable
     data class Win(
         val players: List<String>
-    ) : GameEvent() {
+    ) : SerialNotation() {
         override fun asMove(boardState: BoardState) = PentaMove.Win(
             players = players
         )
@@ -152,8 +152,8 @@ sealed class GameEvent {
     @Serializable
     data class IllegalMove(
         val message: String,
-        val move: GameEvent
-    ) : GameEvent() {
+        val move: SerialNotation
+    ) : SerialNotation() {
         override fun asMove(boardState: BoardState): PentaMove {
             TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
         }
@@ -162,7 +162,7 @@ sealed class GameEvent {
     companion object {
         private val logger = KotlinLogging.logger {}
         fun install(builder: SerializersModuleBuilder) {
-            builder.polymorphic<GameEvent> {
+            builder.polymorphic<SerialNotation> {
                 MovePlayer::class with MovePlayer.serializer()
                 ForcedMovePlayer::class with ForcedMovePlayer.serializer()
                 SwapOwnPiece::class with SwapOwnPiece.serializer()

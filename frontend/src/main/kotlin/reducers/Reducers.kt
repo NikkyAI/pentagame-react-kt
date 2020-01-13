@@ -8,18 +8,19 @@ import penta.redux_rewrite.BoardState.Companion.processMove
 import redux.RAction
 import util.combineReducers
 import penta.ConnectionState
-import penta.network.GameEvent
+import penta.SerialNotation
+import penta.redux.MultiplayerState
 
 data class State(
     val boardState: BoardState = BoardState.create(),
-    val connection: ConnectionState = ConnectionState.Disconnected()
+    val multiplayerState: MultiplayerState = MultiplayerState()
 //    val array: Array<String> = emptyArray()
 ) {
     companion object{
         fun combinedReducers(): (State, action: RAction) -> State = combineReducers(
             mapOf(
                 State::boardState to ::boardState,
-                State::connection to ::connection
+                State::multiplayerState to ::multiplayerState
             )
         )
 
@@ -29,7 +30,7 @@ data class State(
                     is PentaMove -> {
                         BoardState.Companion.WithMutableState(state).processMove(wrappedAction)
                     }
-                    is GameEvent -> {
+                    is SerialNotation -> {
                         val move = wrappedAction.asMove(state)
                         BoardState.Companion.WithMutableState(state).processMove(move)
                     }
@@ -41,7 +42,7 @@ data class State(
                 is PentaMove -> {
                     BoardState.Companion.WithMutableState(state).processMove(action)
                 }
-                is GameEvent -> {
+                is SerialNotation -> {
                     val move = action.asMove(state)
                     BoardState.Companion.WithMutableState(state).processMove(move)
                 }
@@ -51,15 +52,16 @@ data class State(
                 else -> state
             }
         }
-        fun connection(inputState: ConnectionState = ConnectionState.Disconnected(), action: Any): ConnectionState {
+        fun multiplayerState(inputState: MultiplayerState = MultiplayerState(), action: Any): MultiplayerState {
             return when(action) {
-                is Action<*> -> when(val connectionState = action.action) {
-                    is ConnectionState -> {
-                        connectionState
-                    }
-                    else -> inputState
+                is ConnectionState -> {
+                    inputState.copy(
+                        connectionState = action
+                    )
                 }
-                is ConnectionState -> action
+                is MultiplayerState.Companion.Actions -> {
+                    MultiplayerState.reducer(inputState, action)
+                }
                 else -> inputState
             }
         }

@@ -18,13 +18,10 @@ import io.ktor.http.content.TextContent
 import io.ktor.http.fullPath
 import io.ktor.http.setCookie
 import io.ktor.util.KtorExperimentalAPI
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
-import kotlinx.coroutines.withContext
 import kotlinx.serialization.list
 import kotlinx.serialization.serializer
 import mu.KotlinLogging
-import penta.network.GameEvent
 import penta.network.GameSessionInfo
 import penta.network.GlobalEvent
 import penta.network.LoginRequest
@@ -243,7 +240,7 @@ object WSClient {
     suspend fun createGameAndConnect(
         state: ConnectionState.Authenticated,
         dispatchConnection: (ConnectionState) -> Unit,
-        dispatchNotation: (GameEvent) -> Unit,
+        dispatchNotation: (SerialNotation) -> Unit,
         dispatchNewBoardState: (BoardState) -> Unit
     ) {
         val createGameUrl = URLBuilder(state.baseUrl)
@@ -265,7 +262,7 @@ object WSClient {
         state: ConnectionState.Authenticated,
         game: GameSessionInfo,
         dispatchConnection: (ConnectionState) -> Unit,
-        dispatchNotation: (GameEvent) -> Unit,
+        dispatchNotation: (SerialNotation) -> Unit,
         dispatchNewBoardState: (BoardState) -> Unit
     ) {
         val wsUrl = URLBuilder(state.baseUrl)
@@ -317,14 +314,14 @@ object WSClient {
 
                 val notationListJson = (incoming.receive() as Frame.Text).readText()
                 logger.info { "receiving notation $notationListJson" }
-                val history = json.parse(GameEvent.serializer().list, notationListJson)
+                val history = json.parse(SerialNotation.serializer().list, notationListJson)
                 // TODO: dispatch action to store
 //                penta.client.PentaViz.gameState.isPlayback = true
-                withContext(Dispatchers.Main) {
+//                withContext(Dispatchers.Main) {
                     history.forEach { notation ->
                         dispatchNotation(notation)
                     }
-                }
+//                }
                 // TODO: dispatch action to store
 //                penta.client.PentaViz.gameState.isPlayback = false
 
@@ -345,7 +342,7 @@ object WSClient {
                         is Frame.Text -> {
                             val notationJson = frame.readText()
                             logger.info { "receiving notation $notationJson" }
-                            val notation = json.parse(GameEvent.serializer(), notationJson)
+                            val notation = json.parse(SerialNotation.serializer(), notationJson)
                             dispatchNotation(notation)
                         }
                     }
@@ -367,7 +364,7 @@ object WSClient {
 
         // connection closed "normally" ?
         dispatchConnection(
-            ConnectionState.Lobby(
+            ConnectionState.Authenticated(
                 baseUrl = state.baseUrl,
                 userId = state.userId,
                 session = state.session

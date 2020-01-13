@@ -12,7 +12,6 @@ import kotlinx.io.IOException
 import kotlinx.serialization.list
 import kotlinx.serialization.serializer
 import mu.KotlinLogging
-import org.reduxkotlin.Reducer
 import org.reduxkotlin.SelectorBuilder
 import org.reduxkotlin.Store
 import org.reduxkotlin.StoreSubscription
@@ -21,7 +20,7 @@ import org.reduxkotlin.createStore
 import penta.GameState
 import penta.PentaMove
 import penta.PlayerState
-import penta.network.GameEvent
+import penta.SerialNotation
 import penta.network.GameSessionInfo
 import penta.redux_rewrite.BoardState
 import penta.util.handler
@@ -97,7 +96,7 @@ class ServerGamestate(
             )
         }
 
-    private val serializer = GameEvent.serializer()
+    private val serializer = SerialNotation.serializer()
 
     suspend fun handle(websocketSession: DefaultWebSocketServerSession, session: UserSession) = with(websocketSession) {
         var unsubscribe: StoreSubscription = {}
@@ -159,7 +158,7 @@ class ServerGamestate(
                             outgoing.send(
                                 Frame.Text(
                                     json.stringify(
-                                        GameEvent.serializer(),
+                                        SerialNotation.serializer(),
                                         illegalMove.toSerializable()
                                     )
                                 )
