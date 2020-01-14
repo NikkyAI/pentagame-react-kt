@@ -1,23 +1,84 @@
 package components
 
 import containers.pentaSvg
+import kotlinx.css.Align
+import kotlinx.css.Display
+import kotlinx.css.FlexDirection
+import kotlinx.css.Overflow
+import kotlinx.css.TextOverflow
+import kotlinx.css.alignSelf
+import kotlinx.css.display
+import kotlinx.css.flexDirection
+import kotlinx.css.flexGrow
+import kotlinx.css.flexShrink
+import kotlinx.css.height
+import kotlinx.css.maxHeight
+import kotlinx.css.maxWidth
+import kotlinx.css.overflow
+import kotlinx.css.overflowY
+import kotlinx.css.pct
+import kotlinx.css.textOverflow
+import kotlinx.css.vh
+import kotlinx.css.width
 import react.RBuilder
-import react.dom.div
-import react.dom.h1
-import react.dom.h2
+import styled.css
+import styled.styledDiv
 
 fun RBuilder.app() {
-    div {
-        h1 {
-            +"Pentagaame"
+    styledDiv {
+        css {
+            maxWidth = 100.pct
+            display = Display.flex
+            flexDirection = FlexDirection.row
         }
-        h2 {
-            +"Kotlin React + React-Dom + Redux + React-Redux"
+        styledDiv {
+            css {
+                maxWidth = 100.pct
+                maxHeight = 100.vh
+                flexGrow = 0.5
+                flexShrink = 0.5
+//                alignSelf = Align.stretch
+                width = 100.pct
+                height = 100.pct
+            }
+            pentaSvg {}
         }
-        pentaSvg {}
-        textConnection {}
-        textBoardState {}
+//        h1 {
+//            +"Pentagame"
+//        }
+//        h2 {
+//            +"Kotlin React + React-Dom + Redux + React-Redux"
+//        }
 
+        styledDiv {
+            css {
+                maxWidth = 100.pct
+                display = Display.flex
+                flexDirection = FlexDirection.column
+//                flexGrow = 0.5
+//                flexShrink = 0.5
+
+                // make scrolling possible
+                maxHeight = 100.vh
+                overflow = Overflow.auto
+            }
+            styledDiv {
+                css {
+                    maxWidth = 100.pct
+                    flexGrow = 0.0
+                    flexShrink = 0.0
+                }
+                textConnection {}
+            }
+            styledDiv {
+                css {
+                    maxWidth = 100.pct
+                    flexGrow = 0.0
+                    flexShrink = 0.0
+                }
+                textBoardState {}
+            }
+        }
 //        vizCanvas {
 //            attrs.id = "demo_viz"
 //            attrs.viz = viz {

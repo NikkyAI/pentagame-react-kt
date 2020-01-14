@@ -56,14 +56,15 @@ class TextBoard(props: TextBoardPropsTextBoard) : RComponent<TextBoardPropsTextB
                 div {
                     when (val conn = props.connection) {
                         is ConnectionState.Observing -> {
-                            val localSymbols = listOf("triangle", "square", "cross", "circle")
-                            localSymbols.forEach { symbol ->
-                                if(props.boardState.players.none { it.figureId == symbol }) {
-                                    button {
-                                        +"Join as $symbol"
-                                        attrs.onClickFunction = {
-                                            val playerCount = props.boardState.players.size
-                                            props.dispatchMove(PentaMove.PlayerJoin(PlayerState(conn.userId, symbol)))
+                            if(props.boardState.players.none { it.id == conn.userId }) {
+                                val localSymbols = listOf("triangle", "square", "cross", "circle")
+                                localSymbols.forEach { symbol ->
+                                    if(props.boardState.players.none { it.figureId == symbol }) {
+                                        button {
+                                            +"Join as $symbol"
+                                            attrs.onClickFunction = {
+                                                props.dispatchMove(PentaMove.PlayerJoin(PlayerState(conn.userId, symbol)))
+                                            }
                                         }
                                     }
                                 }

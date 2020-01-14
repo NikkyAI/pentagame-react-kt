@@ -18,14 +18,7 @@ import org.w3c.dom.events.Event
 import org.w3c.dom.events.MouseEvent
 import org.w3c.dom.svg.SVGCircleElement
 import org.w3c.dom.svg.SVGElement
-import penta.PentaColors
-import penta.ConnectionState
-import penta.PentaMove
-import penta.PentagameClick
-import penta.drawFigure
-import penta.drawPlayer
-import penta.calculatePiecePos
-import penta.cornerPoint
+import penta.*
 import penta.logic.Piece
 import penta.logic.field.ConnectionField
 import penta.logic.field.GoalField
@@ -35,7 +28,8 @@ import react.RComponent
 import react.RState
 import react.createRef
 import react.dom.button
-import react.dom.svg
+import styled.css
+import styled.styledSvg
 import kotlin.browser.document
 import kotlin.dom.clear
 
@@ -65,8 +59,16 @@ class PentaSvg(props: PentaSvgProps) : RComponent<PentaSvgProps, RState>(props) 
         }
     }
     override fun RBuilder.render() {
-        svg {
+        styledSvg {
             ref = svgRef
+            attrs {
+                attributes["preserveAspectRatio"] = "xMidYMid meet"
+//                attributes["width"] = "100vw"
+//                attributes["height"] = "100vh"
+            }
+            css {
+
+            }
         }
         button {
             +"svg file"
@@ -135,10 +137,7 @@ class PentaSvg(props: PentaSvgProps) : RComponent<PentaSvgProps, RState>(props) 
                 }
             }
             svg.innerHTML = svgInline
-            svg.setAttribute("width", "100%")
-            svg.setAttribute("height", "100%")
             svg.setAttribute("viewBox", newSVG.viewBox!!)
-            svg.setAttribute("preserveAspectRatio", "xMidYMid meet")
         }
 
         val clickFields = { event: Event ->
@@ -203,11 +202,18 @@ private fun SVG.draw(scale: Int, svgProps: PentaSvgProps) {
 //             svg .black-stroke { stroke: black; stroke-width: 2; }
 //            """.trimIndent()
 //        }
+    val boardState = svgProps.boardState
 
     val isYourTurn = if(svgProps.connection is ConnectionState.Observing) {
         svgProps.boardState.currentPlayer.id == svgProps.connection.userId
     } else true
-    val selectedPieceIsCurrentPlayer = svgProps.boardState.selectedPlayerPiece?.playerId == svgProps.boardState.currentPlayer.id
+    val selectedPieceIsCurrentPlayer = boardState.selectedPlayerPiece?.playerId == svgProps.boardState.currentPlayer.id
+    val selectedPlayerPieceField = if(selectedPieceIsCurrentPlayer){
+        svgProps.boardState.positions[boardState.selectedPlayerPiece?.id] ?: run {
+            throw IllegalStateException("cannot find field for ${boardState.selectedPlayerPiece}")
+        }
+    } else null
+    val hasBlockerSelected = isYourTurn && (boardState.selectedBlackPiece != null || boardState.selectedBlackPiece != null)
 
     // background circle
     circle {
@@ -228,14 +234,22 @@ private fun SVG.draw(scale: Int, svgProps: PentaSvgProps) {
         fill = PentaColors.BACKGROUND.rgbHex
     }
 
+    val emptyFields = PentaBoard.fields - svgProps.boardState.positions.mapNotNull { (_, field) -> field }
+
     PentaBoard.fields.forEach { field ->
+        val canMoveToField = if(selectedPlayerPieceField != null) {
+            svgProps.boardState.canMove(selectedPlayerPieceField, field)
+        } else false
+
+        val canPlaceBlocker = hasBlockerSelected && field in emptyFields
+
         val scaledPos = field.pos / PentaMath.R_ * scale
         val radius = (field.radius / PentaMath.R_ * scale)
         when (field) {
             is StartField -> {
                 circle {
                     // TODO: add path checking, only make reachable pieces clickable
-                    if(isYourTurn && selectedPieceIsCurrentPlayer) {
+                    if(isYourTurn && (selectedPieceIsCurrentPlayer || canPlaceBlocker)) {
                         id = field.id
                     }
                     cx = "${scaledPos.x}"
@@ -243,19 +257,27 @@ private fun SVG.draw(scale: Int, svgProps: PentaSvgProps) {
                     r = "${radius - lineWidth}"
                     stroke = field.color.rgbHex
                     strokeWidth = lineWidth.toString()
-                    fill = PentaColors.FOREGROUND.rgbHex
+                    fill = if(canMoveToField || canPlaceBlocker) {
+                        PentaColors.FOREGROUND.brighten()
+                    } else {
+                        PentaColors.FOREGROUND
+                    }.rgbHex
                 }
             }
             is GoalField -> {
                 circle {
                     // TODO: add path checking, only make reachable pieces clickable
-                    if(isYourTurn && selectedPieceIsCurrentPlayer) {
+                    if(isYourTurn && (selectedPieceIsCurrentPlayer || canPlaceBlocker)) {
                         id = field.id
                     }
                     cx = "${scaledPos.x}"
                     cy = "${scaledPos.y}"
                     r = "${radius - (lineWidth / 2)}"
-                    fill = field.color.rgbHex
+                    fill = if(canMoveToField || canPlaceBlocker) {
+                        field.color.brighten()
+                    } else {
+                        field.color
+                    }.rgbHex
 //                    strokeWidth = "${scaledLineWidth / 10}"
 //                    stroke = "#28292b"
                 }
@@ -263,13 +285,17 @@ private fun SVG.draw(scale: Int, svgProps: PentaSvgProps) {
             is ConnectionField -> {
                 circle {
                     // TODO: add path checking, only make reachable pieces clickable
-                    if(isYourTurn && selectedPieceIsCurrentPlayer) {
+                    if(isYourTurn && (selectedPieceIsCurrentPlayer || canPlaceBlocker)) {
                         id = field.id
                     }
                     cx = "${scaledPos.x}"
                     cy = "${scaledPos.y}"
                     r = "${radius - (lineWidth / 10)}"
-                    fill = field.color.rgbHex
+                    fill = if(canMoveToField || canPlaceBlocker) {
+                        field.color.brighten()
+                    } else {
+                        field.color
+                    }.rgbHex
                     strokeWidth = "${lineWidth / 2}"
                     stroke = PentaColors.BACKGROUND.rgbHex
                     asDynamic().onclick = { it: Any -> console.log("clicked $it ") }
@@ -277,7 +303,6 @@ private fun SVG.draw(scale: Int, svgProps: PentaSvgProps) {
             }
         }
     }
-
 
     // add corner fields
     svgProps.boardState.players.forEachIndexed { i, player ->
@@ -366,8 +391,12 @@ private fun SVG.draw(scale: Int, svgProps: PentaSvgProps) {
         console.debug("drawing piece ${piece.id} on field $field")
         val scaledPos = pos / PentaMath.R_ * scale
         val radius = (piece.radius / PentaMath.R_ * scale)
+        val canMoveToFigure = if(selectedPlayerPieceField != null && field != null && selectedPlayerPieceField != field) {
+            svgProps.boardState.canMove(selectedPlayerPieceField, field)
+        } else false
         when (piece) {
             is Piece.GrayBlocker -> {
+                // TODO replace with 5-pointed shape
                 circle {
                     // TODO: add path checking, only make reachable pieces clickable
                     if(isYourTurn && selectedPieceIsCurrentPlayer) {
@@ -376,10 +405,15 @@ private fun SVG.draw(scale: Int, svgProps: PentaSvgProps) {
                     cx = "${scaledPos.x}"
                     cy = "${scaledPos.y}"
                     r = "$radius"
-                    fill = piece.color.rgbHex
+                    fill = if(canMoveToFigure) {
+                        piece.color.brighten()
+                    } else {
+                        piece.color
+                    }.rgbHex
                 }
             }
             is Piece.BlackBlocker -> {
+                //TODO: replace with 7-pointed shape
                 circle {
                     // TODO: add path checking, only make reachable pieces clickable
                     if(isYourTurn && selectedPieceIsCurrentPlayer) {
@@ -389,7 +423,11 @@ private fun SVG.draw(scale: Int, svgProps: PentaSvgProps) {
                     cy = "${scaledPos.y}"
 
                     r = "$radius"
-                    fill = piece.color.rgbHex
+                    fill = if(canMoveToFigure) {
+                        piece.color.brighten()
+                    } else {
+                        piece.color
+                    }.rgbHex
                 }
             }
             is Piece.Player -> {
@@ -404,7 +442,7 @@ private fun SVG.draw(scale: Int, svgProps: PentaSvgProps) {
                     radius = radius,
                     piece = piece,
                     selected = svgProps.boardState.selectedPlayerPiece == piece,
-                    highlight = selectable,
+                    highlight = selectable && !hasBlockerSelected,
                     clickable = selectable || swappable
                 )
             }

@@ -33,36 +33,28 @@ tasks.withType(AbstractKotlinCompile::class.java).all {
     dependsOn(generateConstantsTask)
 }
 
-repositories {
-    mavenCentral()
-    jcenter()
-    maven(url = "https://dl.bintray.com/kotlin/kotlinx") {
-        name = "kotlinx"
-    }
-    // TODO: do we need that here ?
-    maven(url = "https://dl.bintray.com/kotlin/ktor") {
-        name = "ktor"
-    }
-    maven(url = "https://dl.bintray.com/data2viz/data2viz/") {
-        name = "d2v"
-    }
-    // TODO: remove
-    if (project.gradle.startParameter.taskNames.contains("bundleLocalDependencies")) {
-        mavenLocal()
-    } else {
-        maven(url = uri("${project.rootDir}/mvn")) {
-            name = "bundled local"
-        }
-    }
-}
-
-repositories {
-//    mavenLocal()
-//    jcenter()
-    maven("https://dl.bintray.com/kotlin/kotlin-js-wrappers")
-//    maven("https://dl.bintray.com/kotlin/kotlinx")
+//repositories {
 //    mavenCentral()
-}
+//    jcenter()
+//    maven(url = "https://dl.bintray.com/kotlin/kotlinx") {
+//        name = "kotlinx"
+//    }
+//    // TODO: do we need that here ?
+//    maven(url = "https://dl.bintray.com/kotlin/ktor") {
+//        name = "ktor"
+//    }
+//    maven(url = "https://dl.bintray.com/data2viz/data2viz/") {
+//        name = "d2v"
+//    }
+//    // TODO: remove
+//    if (project.gradle.startParameter.taskNames.contains("bundleLocalDependencies")) {
+//        mavenLocal()
+//    } else {
+//        maven(url = uri("${project.rootDir}/mvn")) {
+//            name = "bundled local"
+//        }
+//    }
+//}
 
 kotlin {
     jvm()

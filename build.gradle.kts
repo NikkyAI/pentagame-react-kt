@@ -9,11 +9,13 @@ allprojects {
 
     // TODO: remove
     repositories {
+        maven(url="https://dl.bintray.com/kotlin/kotlin-eap")
         mavenCentral()
         jcenter()
         maven(url = "https://dl.bintray.com/kotlin/kotlinx") {
             name = "kotlinx"
         }
+        maven("https://dl.bintray.com/kotlin/kotlin-js-wrappers")
         // TODO: do we need that here ?
         maven(url = "https://dl.bintray.com/kotlin/ktor") {
             name = "ktor"

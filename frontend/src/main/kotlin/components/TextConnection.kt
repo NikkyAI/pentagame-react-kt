@@ -21,15 +21,7 @@ import react.RComponent
 import react.RProps
 import react.RState
 import react.createRef
-import react.dom.br
-import react.dom.button
-import react.dom.div
-import react.dom.form
-import react.dom.input
-import react.dom.li
-import react.dom.ol
-import react.dom.p
-import react.dom.span
+import react.dom.*
 import react.invoke
 import react.redux.rConnect
 import reducers.State
@@ -94,9 +86,11 @@ class TextConnection(props: TextConnectionProps) : RComponent<TextConnectionProp
                     }
                     input(type = InputType.url) {
                         ref = urlRef
+                        attrs.defaultValue = props.connection.baseUrl.toString()
                     }
                     input {
                         ref = idRef
+                        attrs.defaultValue = props.connection.userId
                     }
                     if (props.connection is ConnectionState.RequiresPassword) {
                         input(type = InputType.password) {
@@ -271,8 +265,8 @@ class TextConnection(props: TextConnectionProps) : RComponent<TextConnectionProp
 
     override fun componentDidMount() {
         console.log("setting values of inputs")
-        urlRef.current?.value = props.connection.baseUrl.toString()
-        idRef.current?.value = props.connection.userId
+//        urlRef.current?.value = props.connection.baseUrl.toString()
+//        idRef.current?.value = props.connection.userId
 
         // update game list
 

@@ -51,7 +51,7 @@ tasks {
 val packageStatic = tasks.create("packageStatic") {
     group = "build"
     val frontend = project(":frontend")
-    dependsOn(":frontend:bundle")
+    dependsOn(":frontend:browserProductionWebpack") // TODO: add back
 
     outputs.upToDateWhen { false }
     outputs.dir(gen_resource)
@@ -69,8 +69,8 @@ val packageStatic = tasks.create("packageStatic") {
 
     doLast {
         copy {
-            from(frontend.tasks.get("bundle"))
-//            from(frontend.buildDir.resolve("processedResources/js/main"))
+//            from(frontend.tasks.get("browserProductionWebpack"))
+            from(frontend.buildDir.resolve("distributions"))
             into(staticFolder)
         }
 //        copy {

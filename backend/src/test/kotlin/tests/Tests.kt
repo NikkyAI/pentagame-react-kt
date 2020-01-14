@@ -15,11 +15,7 @@ class Tests {
     fun test() {
         val boardStore: org.reduxkotlin.Store<BoardState> = createStore(
             BoardState.reducer,
-            BoardState.create(
-                // TODO: remove default users
-                listOf(PlayerState("alice", "cross"), PlayerState("bob", "triangle")),
-                BoardState.GameType.TWO
-            ),
+            BoardState.create(),
             applyMiddleware(/*loggingMiddleware(logger)*/)
         )
         logger.info { "initialized" }
