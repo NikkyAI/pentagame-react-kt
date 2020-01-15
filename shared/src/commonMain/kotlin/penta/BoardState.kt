@@ -5,8 +5,8 @@ import actions.Action
 import mu.KotlinLogging
 import org.reduxkotlin.Reducer
 import penta.logic.Piece
-import penta.logic.field.AbstractField
-import penta.logic.field.GoalField
+import penta.logic.Field
+import penta.logic.Field.Goal
 import penta.util.exhaustive
 import penta.util.requireMove
 
@@ -16,7 +16,7 @@ data class BoardState private constructor(
     val gameType: GameType = GameType.TWO,
     val scoringColors: Map<String, Array<PentaColor>> = mapOf(),
     val figures: Array<Piece> = arrayOf(),
-    val positions: Map<String, AbstractField?> = mapOf(),
+    val positions: Map<String, Field?> = mapOf(),
     val history: Array<PentaMove> = arrayOf(),
     val gameStarted: Boolean = false,
     val turn: Int = 0,
@@ -69,7 +69,7 @@ data class BoardState private constructor(
 
         data class WithMutableState(var nextState: BoardState) {
             val originalState = nextState
-            var Piece.position: AbstractField?
+            var Piece.position: Field?
                 get() = nextState.positions[id]
                 set(value) {
                     logger.debug { "move $id to ${value?.id}" }
@@ -217,7 +217,7 @@ data class BoardState private constructor(
                             }
                         }
                         val sourceField = move.from
-                        if (sourceField is GoalField && move.playerPiece.pentaColor == sourceField.pentaColor) {
+                        if (sourceField is Goal && move.playerPiece.pentaColor == sourceField.pentaColor) {
                             postProcess(move)
                         } else {
                             requireMove(false) {
@@ -646,13 +646,13 @@ data class BoardState private constructor(
             val targetField = move.to
             logger.debug { "playerColor = ${move.playerPiece.pentaColor}" }
             logger.debug {
-                if (targetField is GoalField) {
+                if (targetField is Goal) {
                     "pentaColor = ${targetField.pentaColor}"
                 } else {
                     "not a JointField"
                 }
             }
-            if (targetField is GoalField && targetField.pentaColor == move.playerPiece.pentaColor) {
+            if (targetField is Goal && targetField.pentaColor == move.playerPiece.pentaColor) {
                 // take piece off the board
                 move.playerPiece.position = null
 
@@ -690,7 +690,7 @@ data class BoardState private constructor(
                 val playerPieces =
                     figures.filterIsInstance<Piece.Player>().filter { it.playerId == player.id }
                 for (playerPiece in playerPieces) {
-                    val field = playerPiece.position as? GoalField ?: continue
+                    val field = playerPiece.position as? Goal ?: continue
                     if (field.pentaColor != playerPiece.pentaColor) continue
 
                     // TODO: use extra move type to signal forced move ?
@@ -727,9 +727,9 @@ data class BoardState private constructor(
         }
     }
 
-    fun canMove(start: AbstractField, end: AbstractField): Boolean {
-        val backtrack = mutableSetOf<AbstractField>()
-        val next = mutableSetOf<AbstractField>(start)
+    fun canMove(start: Field, end: Field): Boolean {
+        val backtrack = mutableSetOf<Field>()
+        val next = mutableSetOf<Field>(start)
         while (next.isNotEmpty()) {
             val toIterate = next.toList()
             next.clear()

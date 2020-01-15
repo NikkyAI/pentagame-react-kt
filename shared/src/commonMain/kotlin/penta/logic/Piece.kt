@@ -3,7 +3,7 @@ package penta.logic
 import io.data2viz.color.Color
 import penta.PentaColor
 import penta.PentaColors
-import penta.logic.field.GoalField
+import penta.logic.Field.Goal
 
 sealed class Piece {
     abstract val id: String
@@ -22,7 +22,7 @@ sealed class Piece {
     data class BlackBlocker(
         override val id: String,
         override val pentaColor: PentaColor,
-        val originalPosition: GoalField
+        val originalPosition: Goal
     ) : Piece(), Blocker {
         override val radius get() = Blocker.RADIUS
         override val color: Color get() = PentaColors.BLACK

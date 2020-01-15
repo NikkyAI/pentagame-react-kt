@@ -1,20 +1,20 @@
 import io.data2viz.geom.Point
 import io.data2viz.math.DEG_TO_RAD
 import penta.PentaColor
-import penta.logic.field.AbstractField
-import penta.logic.field.ConnectionField
-import penta.logic.field.StartField
-import penta.logic.field.IntersectionField
-import penta.logic.field.GoalField
+import penta.logic.Field
+import penta.logic.Field.ConnectionField
+import penta.logic.Field.Start
+import penta.logic.Field.Intersection
+import penta.logic.Field.Goal
 import penta.util.interpolate
 import penta.util.length
 import kotlin.math.cos
 import kotlin.math.sin
 
 object PentaBoard {
-    val fields: List<AbstractField>
-    val c: Array<StartField>
-    val j: Array<GoalField>
+    val fields: List<Field>
+    val c: Array<Start>
+    val j: Array<Goal>
 
     init {
         val corners = PentaColor.values().map { color ->
@@ -25,7 +25,7 @@ object PentaBoard {
                 sin(angle * DEG_TO_RAD)
             ) * PentaMath.r
 //            val id = color.ordinal * 2
-            StartField(
+            Start(
 //                id.toString()
                 id = "${'A' + color.ordinal}",
                 pos = pos / 2 + (Point(0.5, 0.5) * PentaMath.R_),
@@ -41,7 +41,7 @@ object PentaBoard {
                 cos(angle * DEG_TO_RAD),
                 sin(angle * DEG_TO_RAD)
             ) * -PentaMath.inner_r
-            GoalField(
+            Goal(
                 id = "${'a' + color.ordinal}",
 //                id.toString(),
                 pos = pos / 2 + (Point(0.5, 0.5) * PentaMath.R_),
@@ -92,7 +92,7 @@ object PentaBoard {
 
     operator fun get(id: String) = fieldMap[id]
 
-    private fun connect(current: IntersectionField, next: IntersectionField, steps: Int): List<ConnectionField> {
+    private fun connect(current: Intersection, next: Intersection, steps: Int): List<ConnectionField> {
         current.connectIntersection(next)
         val interpolatedPos = current.pos.interpolate(
             next.pos, steps,
@@ -117,7 +117,7 @@ object PentaBoard {
         return connectingNodes
     }
 
-    fun findFieldAtPos(mousePos: Point): AbstractField? = fields.find {
+    fun findFieldAtPos(mousePos: Point): Field? = fields.find {
         (it.pos - mousePos).length < it.radius
     }
 }

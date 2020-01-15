@@ -2,7 +2,7 @@ package penta
 
 import mu.KotlinLogging
 import penta.logic.Piece
-import penta.logic.field.AbstractField
+import penta.logic.Field
 
 /**
  * determines what action to take when clicking on fields or pieces
@@ -148,7 +148,7 @@ object PentagameClick {
         logger.info {"no action on click"}
     }
 
-    fun canClickField(targetField: AbstractField, dispatch: (PentaMove) -> Unit, boardState: BoardState): Boolean {
+    fun canClickField(targetField: Field, dispatch: (PentaMove) -> Unit, boardState: BoardState): Boolean {
         with(boardState) {
             if (winner != null) {
                 return false
@@ -207,7 +207,7 @@ object PentagameClick {
         return true
     }
 
-    fun clickField(targetField: AbstractField, dispatch: (PentaMove) -> Unit, boardState: BoardState) =
+    fun clickField(targetField: Field, dispatch: (PentaMove) -> Unit, boardState: BoardState) =
         with(boardState) {
             if (!canClickField(targetField, dispatch, boardState)) return
             logger.info {"currentPlayer: $currentPlayer"}

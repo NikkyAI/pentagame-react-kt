@@ -18,11 +18,18 @@ import org.w3c.dom.events.Event
 import org.w3c.dom.events.MouseEvent
 import org.w3c.dom.svg.SVGCircleElement
 import org.w3c.dom.svg.SVGElement
-import penta.*
+import penta.ConnectionState
+import penta.PentaColors
+import penta.PentaMove
+import penta.PentagameClick
+import penta.calculatePiecePos
+import penta.cornerPoint
+import penta.drawFigure
+import penta.drawPlayer
+import penta.logic.Field.ConnectionField
+import penta.logic.Field.Goal
+import penta.logic.Field.Start
 import penta.logic.Piece
-import penta.logic.field.ConnectionField
-import penta.logic.field.GoalField
-import penta.logic.field.StartField
 import react.RBuilder
 import react.RComponent
 import react.RState
@@ -40,9 +47,9 @@ class PentaSvg(props: PentaSvgProps) : RComponent<PentaSvgProps, RState>(props) 
     private val buttonRef = createRef<HTMLButtonElement>()
 
     fun dispatchMove(move: PentaMove) {
-        when(val connection = props.connection) {
+        when (val connection = props.connection) {
             is ConnectionState.Observing -> {
-                when(move) {
+                when (move) {
                     // unsupported by old backend
                     is PentaMove.SelectGrey -> props.dispatchMoveLocal(move)
                     is PentaMove.SelectPlayerPiece -> props.dispatchMoveLocal(move)
@@ -58,6 +65,7 @@ class PentaSvg(props: PentaSvgProps) : RComponent<PentaSvgProps, RState>(props) 
             }
         }
     }
+
     override fun RBuilder.render() {
         styledSvg {
             ref = svgRef
@@ -204,16 +212,17 @@ private fun SVG.draw(scale: Int, svgProps: PentaSvgProps) {
 //        }
     val boardState = svgProps.boardState
 
-    val isYourTurn = if(svgProps.connection is ConnectionState.Observing) {
+    val isYourTurn = if (svgProps.connection is ConnectionState.Observing) {
         svgProps.boardState.currentPlayer.id == svgProps.connection.userId
     } else true
     val selectedPieceIsCurrentPlayer = boardState.selectedPlayerPiece?.playerId == svgProps.boardState.currentPlayer.id
-    val selectedPlayerPieceField = if(selectedPieceIsCurrentPlayer){
+    val selectedPlayerPieceField = if (selectedPieceIsCurrentPlayer) {
         svgProps.boardState.positions[boardState.selectedPlayerPiece?.id] ?: run {
             throw IllegalStateException("cannot find field for ${boardState.selectedPlayerPiece}")
         }
     } else null
-    val hasBlockerSelected = isYourTurn && (boardState.selectedBlackPiece != null || boardState.selectedBlackPiece != null)
+    val hasBlockerSelected =
+        isYourTurn && (boardState.selectedBlackPiece != null || boardState.selectedBlackPiece != null)
 
     // background circle
     circle {
@@ -237,7 +246,7 @@ private fun SVG.draw(scale: Int, svgProps: PentaSvgProps) {
     val emptyFields = PentaBoard.fields - svgProps.boardState.positions.mapNotNull { (_, field) -> field }
 
     PentaBoard.fields.forEach { field ->
-        val canMoveToField = if(selectedPlayerPieceField != null) {
+        val canMoveToField = if (selectedPlayerPieceField != null) {
             svgProps.boardState.canMove(selectedPlayerPieceField, field)
         } else false
 
@@ -246,10 +255,10 @@ private fun SVG.draw(scale: Int, svgProps: PentaSvgProps) {
         val scaledPos = field.pos / PentaMath.R_ * scale
         val radius = (field.radius / PentaMath.R_ * scale)
         when (field) {
-            is StartField -> {
+            is Start -> {
                 circle {
                     // TODO: add path checking, only make reachable pieces clickable
-                    if(isYourTurn && (selectedPieceIsCurrentPlayer || canPlaceBlocker)) {
+                    if (isYourTurn && (selectedPieceIsCurrentPlayer || canPlaceBlocker)) {
                         id = field.id
                     }
                     cx = "${scaledPos.x}"
@@ -257,23 +266,23 @@ private fun SVG.draw(scale: Int, svgProps: PentaSvgProps) {
                     r = "${radius - lineWidth}"
                     stroke = field.color.rgbHex
                     strokeWidth = lineWidth.toString()
-                    fill = if(canMoveToField || canPlaceBlocker) {
+                    fill = if (canMoveToField || canPlaceBlocker) {
                         PentaColors.FOREGROUND.brighten()
                     } else {
                         PentaColors.FOREGROUND
                     }.rgbHex
                 }
             }
-            is GoalField -> {
+            is Goal -> {
                 circle {
                     // TODO: add path checking, only make reachable pieces clickable
-                    if(isYourTurn && (selectedPieceIsCurrentPlayer || canPlaceBlocker)) {
+                    if (isYourTurn && (selectedPieceIsCurrentPlayer || canPlaceBlocker)) {
                         id = field.id
                     }
                     cx = "${scaledPos.x}"
                     cy = "${scaledPos.y}"
                     r = "${radius - (lineWidth / 2)}"
-                    fill = if(canMoveToField || canPlaceBlocker) {
+                    fill = if (canMoveToField || canPlaceBlocker) {
                         field.color.brighten()
                     } else {
                         field.color
@@ -285,13 +294,13 @@ private fun SVG.draw(scale: Int, svgProps: PentaSvgProps) {
             is ConnectionField -> {
                 circle {
                     // TODO: add path checking, only make reachable pieces clickable
-                    if(isYourTurn && (selectedPieceIsCurrentPlayer || canPlaceBlocker)) {
+                    if (isYourTurn && (selectedPieceIsCurrentPlayer || canPlaceBlocker)) {
                         id = field.id
                     }
                     cx = "${scaledPos.x}"
                     cy = "${scaledPos.y}"
                     r = "${radius - (lineWidth / 10)}"
-                    fill = if(canMoveToField || canPlaceBlocker) {
+                    fill = if (canMoveToField || canPlaceBlocker) {
                         field.color.brighten()
                     } else {
                         field.color
@@ -391,21 +400,22 @@ private fun SVG.draw(scale: Int, svgProps: PentaSvgProps) {
         console.debug("drawing piece ${piece.id} on field $field")
         val scaledPos = pos / PentaMath.R_ * scale
         val radius = (piece.radius / PentaMath.R_ * scale)
-        val canMoveToFigure = if(selectedPlayerPieceField != null && field != null && selectedPlayerPieceField != field) {
-            svgProps.boardState.canMove(selectedPlayerPieceField, field)
-        } else false
+        val canMoveToFigure =
+            if (selectedPlayerPieceField != null && field != null && selectedPlayerPieceField != field) {
+                svgProps.boardState.canMove(selectedPlayerPieceField, field)
+            } else false
         when (piece) {
             is Piece.GrayBlocker -> {
                 // TODO replace with 5-pointed shape
                 circle {
                     // TODO: add path checking, only make reachable pieces clickable
-                    if(isYourTurn && selectedPieceIsCurrentPlayer) {
+                    if (isYourTurn && selectedPieceIsCurrentPlayer) {
                         id = piece.id
                     }
                     cx = "${scaledPos.x}"
                     cy = "${scaledPos.y}"
                     r = "$radius"
-                    fill = if(canMoveToFigure) {
+                    fill = if (canMoveToFigure) {
                         piece.color.brighten()
                     } else {
                         piece.color
@@ -416,14 +426,14 @@ private fun SVG.draw(scale: Int, svgProps: PentaSvgProps) {
                 //TODO: replace with 7-pointed shape
                 circle {
                     // TODO: add path checking, only make reachable pieces clickable
-                    if(isYourTurn && selectedPieceIsCurrentPlayer) {
+                    if (isYourTurn && selectedPieceIsCurrentPlayer) {
                         id = piece.id
                     }
                     cx = "${scaledPos.x}"
                     cy = "${scaledPos.y}"
 
                     r = "$radius"
-                    fill = if(canMoveToFigure) {
+                    fill = if (canMoveToFigure) {
                         piece.color.brighten()
                     } else {
                         piece.color

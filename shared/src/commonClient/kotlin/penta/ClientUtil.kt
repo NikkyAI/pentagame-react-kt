@@ -9,8 +9,8 @@ import io.data2viz.math.deg
 import io.data2viz.viz.PathNode
 import mu.KotlinLogging
 import penta.logic.Piece
-import penta.logic.field.AbstractField
-import penta.logic.field.StartField
+import penta.logic.Field
+import penta.logic.Field.Start
 import kotlin.math.pow
 import kotlin.math.sqrt
 
@@ -212,7 +212,7 @@ fun cornerPoint(index: Int, angleDelta: Angle = 0.deg, radius: Double = PentaMat
     ) / 2 + (Point(0.5, 0.5) * PentaMath.R_)
 }
 
-fun calculatePiecePos(piece: Piece, field: AbstractField?, boardState: BoardState) = with(boardState) {
+fun calculatePiecePos(piece: Piece, field: Field?, boardState: BoardState) = with(boardState) {
     val logger = KotlinLogging.logger {}
     var pos: Point = field?.pos ?: run {
         val radius = when (piece) {
@@ -247,7 +247,7 @@ fun calculatePiecePos(piece: Piece, field: AbstractField?, boardState: BoardStat
             radius * angle.sin
         ) / 2 + (Point(0.5, 0.5) * PentaMath.R_)
     }
-    if (piece is Piece.Player && field is StartField) {
+    if (piece is Piece.Player && field is Start) {
         // find all pieces on field and order them
         val pieceIds: List<String> = positions.filterValues { it == field }.keys
             .sorted()
