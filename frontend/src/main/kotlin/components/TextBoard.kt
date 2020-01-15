@@ -7,7 +7,7 @@ import kotlinx.html.js.onClickFunction
 import kotlinx.serialization.list
 import penta.PentaMove
 import penta.PlayerState
-import penta.redux_rewrite.BoardState
+import penta.BoardState
 import react.RBuilder
 import react.RClass
 import react.RComponent

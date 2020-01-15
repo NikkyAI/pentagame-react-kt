@@ -5,7 +5,7 @@ import components.PentaSvg
 import components.PentaSvgProps
 import debug
 import penta.PentaMove
-import penta.redux_rewrite.BoardState
+import penta.BoardState
 import react.RClass
 import react.RProps
 import react.invoke

@@ -36,7 +36,7 @@ dependencies {
     implementation("io.ktor:ktor-serialization:$ktorVersion")
     implementation("ch.qos.logback:logback-classic:$logbackVersion")
 
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-runtime:0.13.0")
+    testImplementation(kotlin("test-junit"))
 }
 
 tasks {

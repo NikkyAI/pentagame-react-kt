@@ -7,7 +7,7 @@ import org.reduxkotlin.applyMiddleware
 import org.reduxkotlin.createStore
 import penta.PentaMove
 import penta.PlayerState
-import penta.redux_rewrite.BoardState
+import penta.BoardState
 
 class Tests {
     private val logger = KotlinLogging.logger {}

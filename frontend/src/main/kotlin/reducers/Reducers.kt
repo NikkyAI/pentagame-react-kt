@@ -3,8 +3,8 @@ package reducers
 import actions.Action
 import initialState
 import penta.PentaMove
-import penta.redux_rewrite.BoardState
-import penta.redux_rewrite.BoardState.Companion.processMove
+import penta.BoardState
+import penta.BoardState.Companion.processMove
 import redux.RAction
 import util.combineReducers
 import penta.ConnectionState

@@ -27,7 +27,6 @@ import penta.network.GlobalEvent
 import penta.network.LoginRequest
 import penta.network.LoginResponse
 import penta.network.ServerStatus
-import penta.redux_rewrite.BoardState
 import penta.util.authenticateWith
 import penta.util.authenticatedRequest
 import penta.util.exhaustive

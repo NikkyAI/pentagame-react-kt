@@ -3,7 +3,6 @@ package penta
 import mu.KotlinLogging
 import penta.logic.Piece
 import penta.logic.field.AbstractField
-import penta.redux_rewrite.BoardState
 
 /**
  * determines what action to take when clicking on fields or pieces

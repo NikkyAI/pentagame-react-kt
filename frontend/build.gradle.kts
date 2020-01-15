@@ -54,12 +54,19 @@ dependencies {
 
     implementation(npm("redux-logger"))
 
+// material UI components
+//    implementation(npm("@material-ui/core", "^4.4.2"))
+//    implementation(npm("@material-ui/icons", "^4.4.1"))
+////                api(npm("core-js", "^3.1.4"))
+//    implementation(npm("react-jss"))
+//    implementation(npm("core-js"))
+//    implementation("com.ccfraser.muirwik:muirwik-components:0.2.2")
+
     // temp fix ?
     implementation(npm("text-encoding"))
 
-
-    api(npm("react-bootstrap"))
-    api(npm("@types/react-bootstrap"))
+//    api(npm("react-bootstrap"))
+//    api(npm("@types/react-bootstrap"))
 }
 
 //val JsJar = tasks.getByName<Jar>("JsJar")

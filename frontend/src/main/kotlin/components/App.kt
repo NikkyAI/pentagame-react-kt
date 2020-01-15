@@ -1,12 +1,9 @@
 package components
 
 import containers.pentaSvg
-import kotlinx.css.Align
 import kotlinx.css.Display
 import kotlinx.css.FlexDirection
 import kotlinx.css.Overflow
-import kotlinx.css.TextOverflow
-import kotlinx.css.alignSelf
 import kotlinx.css.display
 import kotlinx.css.flexDirection
 import kotlinx.css.flexGrow
@@ -15,14 +12,13 @@ import kotlinx.css.height
 import kotlinx.css.maxHeight
 import kotlinx.css.maxWidth
 import kotlinx.css.overflow
-import kotlinx.css.overflowY
 import kotlinx.css.pct
-import kotlinx.css.textOverflow
 import kotlinx.css.vh
 import kotlinx.css.width
 import react.RBuilder
 import styled.css
 import styled.styledDiv
+//import com.ccfraser.muirwik.components.*
 
 fun RBuilder.app() {
     styledDiv {
@@ -48,6 +44,14 @@ fun RBuilder.app() {
 //        }
 //        h2 {
 //            +"Kotlin React + React-Dom + Redux + React-Redux"
+//        }
+//        mTabs {
+//            mTab {
+//                +"content1"
+//            }
+//            mTab {
+//                +"content2"
+//            }
 //        }
 
         styledDiv {
@@ -90,7 +94,6 @@ fun RBuilder.app() {
 //                }
 //            }
 //        }
-
 
 //        pentaViz{
 //            +"hallo"

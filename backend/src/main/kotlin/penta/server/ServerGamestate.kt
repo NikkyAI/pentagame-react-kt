@@ -17,12 +17,11 @@ import org.reduxkotlin.Store
 import org.reduxkotlin.StoreSubscription
 import org.reduxkotlin.applyMiddleware
 import org.reduxkotlin.createStore
-import penta.GameState
 import penta.PentaMove
 import penta.PlayerState
 import penta.SerialNotation
 import penta.network.GameSessionInfo
-import penta.redux_rewrite.BoardState
+import penta.BoardState
 import penta.util.handler
 import penta.util.json
 import penta.util.loggingMiddleware
@@ -33,7 +32,7 @@ import penta.util.loggingMiddleware
 class ServerGamestate(
     val id: String,
     var owner: User
-) : GameState() {
+) {
     val boardStateStore: Store<BoardState> = createStore(
         BoardState.reducer,
         BoardState.create(),

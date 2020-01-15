@@ -11,7 +11,6 @@ import mu.KotlinLogging
 import penta.logic.Piece
 import penta.logic.field.AbstractField
 import penta.logic.field.StartField
-import penta.redux_rewrite.BoardState
 import kotlin.math.pow
 import kotlin.math.sqrt
 

@@ -1,15 +1,9 @@
-package penta.redux_rewrite
+package penta
 
 import PentaBoard
-import PentaMath
 import actions.Action
-import io.data2viz.geom.Point
 import mu.KotlinLogging
 import org.reduxkotlin.Reducer
-import penta.IllegalMoveException
-import penta.PentaColor
-import penta.PentaMove
-import penta.PlayerState
 import penta.logic.Piece
 import penta.logic.field.AbstractField
 import penta.logic.field.GoalField
@@ -518,11 +512,11 @@ data class BoardState private constructor(
                             }
                         }
 
-                        val removedPositions = originalState.positions.entries - nextState.positions.entries
-                        val addedPositions = nextState.positions.entries - originalState.positions.entries
-                        val changed = originalState.positions.entries.map {
-                            it.key to "${it.value?.id} -> ${nextState.positions[it.key]?.id}"
-                        }.toMap()
+//                        val removedPositions = originalState.positions.entries - nextState.positions.entries
+//                        val addedPositions = nextState.positions.entries - originalState.positions.entries
+//                        val changed = originalState.positions.entries.map {
+//                            it.key to "${it.value?.id} -> ${nextState.positions[it.key]?.id}"
+//                        }.toMap()
 //                        logger.info { "removed pos" }
 //                        removedPositions.forEach {
 //                            logger.warn { "-  pos ${it.key} : ${it.value?.id}" }
@@ -730,10 +724,6 @@ data class BoardState private constructor(
                 )
                 processMove(PentaMove.Win(winners.map { it.id }))
             }
-        }
-
-        protected open fun resetPlayers() {
-            // TODO: somehow trigger update in client
         }
     }
 

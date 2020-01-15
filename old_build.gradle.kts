@@ -101,7 +101,7 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 api(kotlin("stdlib-common"))
-                api(Data2Viz.common_dep) {
+                api(Data2Viz.viz) {
                     exclude(mapOf("group" to Data2Viz.group, "module" to "geojson-common"))
                     exclude(mapOf("group" to Data2Viz.group, "module" to "d2v-geo-common"))
                 }
@@ -125,7 +125,7 @@ kotlin {
             dependsOn(commonMain)
             dependencies {
                 api(kotlin("stdlib-common"))
-                api(Data2Viz.common_dep) {
+                api(Data2Viz.viz) {
                     exclude(mapOf("group" to Data2Viz.group, "module" to "geojson-common"))
                     exclude(mapOf("group" to Data2Viz.group, "module" to "d2v-geo-common"))
                 }

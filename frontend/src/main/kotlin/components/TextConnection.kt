@@ -14,7 +14,7 @@ import penta.PentaMove
 import penta.SerialNotation
 import penta.network.GameSessionInfo
 import penta.redux.MultiplayerState
-import penta.redux_rewrite.BoardState
+import penta.BoardState
 import react.RBuilder
 import react.RClass
 import react.RComponent
@@ -72,7 +72,7 @@ class TextConnection(props: TextConnectionProps) : RComponent<TextConnectionProp
                         event.preventDefault()
                         GlobalScope.launch {
                             penta.WSClient.login(
-                                urlInput = urlRef.current!!.value ?: "",
+                                urlInput = urlRef.current?.value ?: "",
                                 userIdInput = idRef.current?.value ?: "",
                                 passwordInput = passwordRef.current?.value ?: "",
                                 dispatch = props.dispatchConnection

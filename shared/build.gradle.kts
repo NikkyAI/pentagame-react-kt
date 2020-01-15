@@ -28,6 +28,8 @@ val generateConstantsTask = tasks.create("generateConstants") {
         }
     }
 }
+val depSize = tasks.create("depSize")
+
 tasks.withType(AbstractKotlinCompile::class.java).all {
     logger.info("registered generating constants to $this")
     dependsOn(generateConstantsTask)
@@ -59,7 +61,15 @@ tasks.withType(AbstractKotlinCompile::class.java).all {
 kotlin {
     jvm()
     js {
-        nodejs()
+        useCommonJs()
+        browser {
+            runTask {
+                sourceMaps = true
+            }
+            webpackTask {
+                sourceMaps = true
+            }
+        }
     }
 
     /* Targets configuration omitted.
@@ -69,22 +79,19 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                api(kotlin("stdlib-common"))
+                api(kotlin("stdlib"))
                 api("org.jetbrains.kotlinx:kotlinx-serialization-runtime-common:${Serialization.version}")
                 api("org.jetbrains.kotlinx:kotlinx-coroutines-core-common:${Coroutines.version}")
 
-                api(Data2Viz.common_dep) {
-                    exclude(mapOf("group" to Data2Viz.group, "module" to "geojson-common"))
-                    exclude(mapOf("group" to Data2Viz.group, "module" to "d2v-geo-common"))
-                }
+                api(d2v("core"))
+                api(d2v("color"))
 
                 // logging
                 api("io.github.microutils:kotlin-logging-common:${KotlinLogging.version}")
 
                 // Redux
                 api("org.reduxkotlin:redux-kotlin:0.2.9")
-                api("org.reduxkotlin:redux-kotlin-reselect-metadata:0.2.9")
-
+                api("org.reduxkotlin:redux-kotlin-reselect:0.2.9")
             }
 
             kotlin.srcDirs(genCommonSrcKt.path)
@@ -92,9 +99,8 @@ kotlin {
 
         val commonTest by getting {
             dependencies {
-                implementation(kotlin("test-common"))
-                implementation(kotlin("test-annotations-common"))
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-runtime-common:${Serialization.version}")
+                api(kotlin("test-common"))
+                api(kotlin("test-annotations-common"))
             }
         }
 
@@ -107,12 +113,6 @@ kotlin {
                 api(ktor("websockets", Ktor.version))
                 api(ktor("jackson", Ktor.version))
 
-                // required because data2viz is referenced in common code
-                // TODO: improve situation
-                api(Data2Viz.jfx_dep) {
-                    exclude(mapOf("group" to Data2Viz.group, "module" to "geojson-jvm"))
-                    exclude(mapOf("group" to Data2Viz.group, "module" to "d2v-geo-jvm"))
-                }
 
                 // serialization
                 api("org.jetbrains.kotlinx:kotlinx-serialization-runtime:${Serialization.version}")
@@ -125,10 +125,6 @@ kotlin {
                 api("ch.qos.logback:logback-classic:${Logback.version}")
                 api("io.github.microutils:kotlin-logging:${KotlinLogging.version}")
 
-                // redux
-                api("org.reduxkotlin:redux-kotlin-jvm:0.2.9")
-                api("org.reduxkotlin:redux-kotlin-reselect-jvm:0.2.9")
-
                 // mongodb
 //                    implementation("org.litote.kmongo:kmongo-serialization:3.11.1")
                 api("org.litote.kmongo:kmongo-coroutine-serialization:3.11.1")
@@ -139,22 +135,19 @@ kotlin {
 
         jvm().compilations["test"].defaultSourceSet {
             dependencies {
-                implementation(kotlin("test"))
-                implementation(kotlin("test-junit"))
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-runtime:${Serialization.version}")
+                api(kotlin("test"))
+                api(kotlin("test-junit"))
             }
         }
 
         val commonClient by creating {
             dependsOn(commonMain)
             dependencies {
-                api(kotlin("stdlib-common"))
-                api(Data2Viz.common_dep) {
-                    exclude(mapOf("group" to Data2Viz.group, "module" to "geojson-common"))
-                    exclude(mapOf("group" to Data2Viz.group, "module" to "d2v-geo-common"))
-                }
-                api(org.gradle.kotlin.dsl.ktor("client-core"))
-                api(org.gradle.kotlin.dsl.ktor("client-json"))
+                api(d2v("viz"))
+
+                api(ktor("client-core"))
+                api(ktor("client-json"))
+                api(ktor("client-serialization"))
 
 //                api(ktor("client-websocket"))
             }
@@ -163,13 +156,6 @@ kotlin {
         js().compilations["main"].defaultSourceSet {
             dependsOn(commonClient)
             dependencies {
-                api(kotlin("stdlib-js"))
-
-                api(Data2Viz.js_dep) {
-                    exclude(mapOf("group" to Data2Viz.group, "module" to "geojson-js"))
-                    exclude(mapOf("group" to Data2Viz.group, "module" to "d2v-geo-js"))
-                }
-
                 // coroutines
                 api("org.jetbrains.kotlinx:kotlinx-coroutines-core-js:${Coroutines.version}")
 
@@ -179,9 +165,11 @@ kotlin {
                 // logging
                 api("io.github.microutils:kotlin-logging-js:${KotlinLogging.version}")
 
-                // redux
-                api("org.reduxkotlin:redux-kotlin-js:0.2.9")
-//                api("org.reduxkotlin:redux-kotlin-reselect-js:0.2.9")
+                // material UI components
+//                api(npm("react-jss"))
+//                api(npm("@material-ui/core", "^4.4.2"))
+//                api(npm("@material-ui/icons", "^4.4.1"))
+//                api("com.ccfraser.muirwik:muirwik-components:0.2.2")
 
                 // ktor client
                 api(ktor("client-core-js"))
@@ -197,7 +185,6 @@ kotlin {
                 api(npm("css-in-js-utils", "^3.0.2"))
                 api(npm("redux", "^4.0.0"))
                 api(npm("react-redux", "^5.0.7"))
-//                api(npm("@types/redux-logger"))
 
                 val kotlinWrappersVersion = "pre.89-kotlin-1.3.60"
                 api("org.jetbrains:kotlin-react:16.9.0-${kotlinWrappersVersion}")
@@ -214,8 +201,7 @@ kotlin {
 
         js().compilations["test"].defaultSourceSet {
             dependencies {
-                api(kotlin("test-js"))
-                implementation(kotlin("stdlib-js"))
+//                api(kotlin("test"))
             }
         }
     }

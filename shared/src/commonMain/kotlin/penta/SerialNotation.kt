@@ -7,7 +7,6 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModuleBuilder
 import mu.KotlinLogging
 import penta.logic.Piece
-import penta.redux_rewrite.BoardState
 import penta.util.ObjectSerializer
 
 //TODO: refactor to penta.network.GameEvent
