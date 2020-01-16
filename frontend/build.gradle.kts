@@ -17,9 +17,9 @@ kotlin {
         compilations.all {
             kotlinOptions {
                 sourceMap = true
-//                metaInfo = true
-                moduleKind = "amd"
-                sourceMapEmbedSources = "always"
+                metaInfo = true
+//                moduleKind = "amd"
+//                sourceMapEmbedSources = "always"
             }
         }
     }
@@ -41,14 +41,14 @@ kotlin {
 
         val test by getting {
             dependencies {
-                implementation(kotlin("stdlib-js"))
+                implementation(kotlin("stdlib"))
             }
         }
     }
 }
 
 dependencies {
-    implementation(kotlin("stdlib-js"))
+    implementation(kotlin("stdlib"))
 
     implementation(project(":shared"))
 

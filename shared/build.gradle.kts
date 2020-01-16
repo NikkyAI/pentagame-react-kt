@@ -35,39 +35,25 @@ tasks.withType(AbstractKotlinCompile::class.java).all {
     dependsOn(generateConstantsTask)
 }
 
-//repositories {
-//    mavenCentral()
-//    jcenter()
-//    maven(url = "https://dl.bintray.com/kotlin/kotlinx") {
-//        name = "kotlinx"
-//    }
-//    // TODO: do we need that here ?
-//    maven(url = "https://dl.bintray.com/kotlin/ktor") {
-//        name = "ktor"
-//    }
-//    maven(url = "https://dl.bintray.com/data2viz/data2viz/") {
-//        name = "d2v"
-//    }
-//    // TODO: remove
-//    if (project.gradle.startParameter.taskNames.contains("bundleLocalDependencies")) {
-//        mavenLocal()
-//    } else {
-//        maven(url = uri("${project.rootDir}/mvn")) {
-//            name = "bundled local"
-//        }
-//    }
-//}
-
 kotlin {
     jvm()
     js {
-        useCommonJs()
-        browser {
-            runTask {
-                sourceMaps = true
-            }
-            webpackTask {
-                sourceMaps = true
+        nodejs()
+//        useCommonJs()
+//        browser {
+//            runTask {
+//                sourceMaps = true
+//            }
+//            webpackTask {
+//                sourceMaps = true
+//            }
+//        }
+
+        compilations.all {
+            kotlinOptions {
+                sourceMap = true
+                metaInfo = true
+//                moduleKind = "amd"
             }
         }
     }
@@ -115,7 +101,7 @@ kotlin {
 
 
                 // serialization
-                api("org.jetbrains.kotlinx:kotlinx-serialization-runtime:${Serialization.version}")
+//                api("org.jetbrains.kotlinx:kotlinx-serialization-runtime:${Serialization.version}")
 
                 // Jackson
                 api("com.fasterxml.jackson.core:jackson-databind:2.9.5")
@@ -157,10 +143,10 @@ kotlin {
             dependsOn(commonClient)
             dependencies {
                 // coroutines
-                api("org.jetbrains.kotlinx:kotlinx-coroutines-core-js:${Coroutines.version}")
+//                api("org.jetbrains.kotlinx:kotlinx-coroutines-core-js:${Coroutines.version}")
 
                 // serialization
-                api("org.jetbrains.kotlinx:kotlinx-serialization-runtime-js:${Serialization.version}")
+//                api("org.jetbrains.kotlinx:kotlinx-serialization-runtime-js:${Serialization.version}")
 
                 // logging
                 api("io.github.microutils:kotlin-logging-js:${KotlinLogging.version}")
