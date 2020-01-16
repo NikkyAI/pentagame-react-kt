@@ -2,6 +2,10 @@ package components
 
 import PentaBoard
 import PentaMath
+import com.ccfraser.muirwik.components.MColor
+import com.ccfraser.muirwik.components.button.MButtonProps
+import com.ccfraser.muirwik.components.button.MButtonVariant
+import com.ccfraser.muirwik.components.button.mButton
 import com.github.nwillc.ksvg.elements.SVG
 import containers.PentaSvgDispatchProps
 import containers.PentaSvgStateProps
@@ -30,10 +34,7 @@ import penta.logic.Field.ConnectionField
 import penta.logic.Field.Goal
 import penta.logic.Field.Start
 import penta.logic.Piece
-import react.RBuilder
-import react.RComponent
-import react.RState
-import react.createRef
+import react.*
 import react.dom.button
 import styled.css
 import styled.styledSvg
@@ -44,7 +45,7 @@ interface PentaSvgProps : PentaSvgStateProps, PentaSvgDispatchProps
 
 class PentaSvg(props: PentaSvgProps) : RComponent<PentaSvgProps, RState>(props) {
     private val svgRef = createRef<SVGElement>()
-    private val buttonRef = createRef<HTMLButtonElement>()
+    private val buttonRef = createRef<ReactElement>()
 
     fun dispatchMove(move: PentaMove) {
         when (val connection = props.connection) {
@@ -78,8 +79,7 @@ class PentaSvg(props: PentaSvgProps) : RComponent<PentaSvgProps, RState>(props) 
 
             }
         }
-        button {
-            +"svg file"
+        mButton(caption = "svg file", variant = MButtonVariant.contained, color = MColor.primary) {
             ref = buttonRef
         }
     }
@@ -91,7 +91,7 @@ class PentaSvg(props: PentaSvgProps) : RComponent<PentaSvgProps, RState>(props) 
     override fun componentDidMount() {
         console.log("penta svg mounted")
 
-        buttonRef.current?.onclick = {
+        buttonRef.current?.asDynamic().onclick = {
             val scale = 1000
 
             val svg = SVG.svg {
@@ -222,7 +222,7 @@ private fun SVG.draw(scale: Int, svgProps: PentaSvgProps) {
         }
     } else null
     val hasBlockerSelected =
-        isYourTurn && (boardState.selectedBlackPiece != null || boardState.selectedBlackPiece != null)
+        isYourTurn && (boardState.selectedBlackPiece != null || boardState.selectedGrayPiece != null)
 
     // background circle
     circle {

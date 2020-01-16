@@ -1,5 +1,8 @@
 package components
 
+import com.ccfraser.muirwik.components.*
+import com.ccfraser.muirwik.components.button.mButton
+import com.ccfraser.muirwik.components.styles.Breakpoint
 import containers.pentaSvg
 import kotlinx.css.Display
 import kotlinx.css.FlexDirection
@@ -16,73 +19,99 @@ import kotlinx.css.pct
 import kotlinx.css.vh
 import kotlinx.css.width
 import react.RBuilder
+import react.dom.h1
+import react.dom.h2
 import styled.css
 import styled.styledDiv
+
 //import com.ccfraser.muirwik.components.*
 
 fun RBuilder.app() {
-    styledDiv {
+
+    mGridContainer(spacing = MGridSpacing.spacing2) {
         css {
-            maxWidth = 100.pct
-            display = Display.flex
-            flexDirection = FlexDirection.row
+            flexGrow = 1.0
         }
-        styledDiv {
-            css {
-                maxWidth = 100.pct
-                maxHeight = 100.vh
-                flexGrow = 0.5
-                flexShrink = 0.5
-//                alignSelf = Align.stretch
-                width = 100.pct
-                height = 100.pct
-            }
+        mGridItem(xs = MGridSize.cells6) {
             pentaSvg {}
         }
-//        h1 {
-//            +"Pentagame"
-//        }
-//        h2 {
-//            +"Kotlin React + React-Dom + Redux + React-Redux"
-//        }
-//        mTabs {
-//            mTab {
-//                +"content1"
+        mGridItem(xs = MGridSize.cells6) {
+            h1 {
+                +"Pentagame"
+            }
+            h2 {
+                +"Kotlin React + React-Dom + Redux + React-Redux"
+            }
+            mDivider()
+            textConnection {}
+            mDivider()
+            textBoardState {}
+        }
+    }
+//
+//    mContainer {
+//
+//
+//        mContainer {
+//
+//            mPaper {
+//
 //            }
-//            mTab {
-//                +"content2"
-//            }
+//
 //        }
+//    }
 
-        styledDiv {
-            css {
-                maxWidth = 100.pct
-                display = Display.flex
-                flexDirection = FlexDirection.column
+
+
+//
+//    styledDiv {
+//        css {
+//            maxWidth = 100.pct
+//            display = Display.flex
+//            flexDirection = FlexDirection.row
+//        }
+//        styledDiv {
+//            css {
+//                maxWidth = 100.pct
+//                maxHeight = 100.vh
 //                flexGrow = 0.5
 //                flexShrink = 0.5
+////                alignSelf = Align.stretch
+//                width = 100.pct
+//                height = 100.pct
+//            }
+//        }
 
-                // make scrolling possible
-                maxHeight = 100.vh
-                overflow = Overflow.auto
-            }
-            styledDiv {
-                css {
-                    maxWidth = 100.pct
-                    flexGrow = 0.0
-                    flexShrink = 0.0
-                }
-                textConnection {}
-            }
-            styledDiv {
-                css {
-                    maxWidth = 100.pct
-                    flexGrow = 0.0
-                    flexShrink = 0.0
-                }
-                textBoardState {}
-            }
-        }
+//        styledDiv {
+//            css {
+//                maxWidth = 100.pct
+//                display = Display.flex
+//                flexDirection = FlexDirection.column
+////                flexGrow = 0.5
+////                flexShrink = 0.5
+//
+//                // make scrolling possible
+//                maxHeight = 100.vh
+//                overflow = Overflow.auto
+//            }
+//            styledDiv {
+//                css {
+//                    maxWidth = 100.pct
+//                    flexGrow = 0.0
+//                    flexShrink = 0.0
+//                }
+//
+//
+//            }
+//            styledDiv {
+//                css {
+//                    maxWidth = 100.pct
+//                    flexGrow = 0.0
+//                    flexShrink = 0.0
+//                }
+//                textBoardState {}
+//            }
+//        }
 //        vizCanvas {
 //            attrs.id = "demo_viz"
 //            attrs.viz = viz {
@@ -102,5 +131,5 @@ fun RBuilder.app() {
 //                    navLink(TODO_LIST_PATH) {
 //                        +"Go to todo list"
 //                    }
-    }
+//    }
 }

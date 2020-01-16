@@ -1,5 +1,10 @@
 package components
 
+import com.ccfraser.muirwik.components.MColor
+import com.ccfraser.muirwik.components.button.MButtonVariant
+import com.ccfraser.muirwik.components.button.mButton
+import com.ccfraser.muirwik.components.mTextField
+import com.ccfraser.muirwik.components.persist
 import debug
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -9,46 +14,26 @@ import kotlinx.html.InputType
 import kotlinx.html.js.onClickFunction
 import kotlinx.html.js.onSubmitFunction
 import org.w3c.dom.HTMLInputElement
+import org.w3c.dom.events.Event
 import penta.ConnectionState
 import penta.PentaMove
 import penta.SerialNotation
 import penta.network.GameSessionInfo
 import penta.redux.MultiplayerState
 import penta.BoardState
-import react.RBuilder
-import react.RClass
-import react.RComponent
-import react.RProps
-import react.RState
-import react.createRef
+import react.*
 import react.dom.*
-import react.invoke
 import react.redux.rConnect
 import reducers.State
 import redux.WrapperAction
 
-interface TextConnectionProps : TextConnectionStateProps, TextConnectionDispatchProps {
-}
+interface TextConnectionProps : TextConnectionStateProps, TextConnectionDispatchProps
 
 class TextConnection(props: TextConnectionProps) : RComponent<TextConnectionProps, RState>(props) {
-    val urlRef = createRef<HTMLInputElement>()
-    val idRef = createRef<HTMLInputElement>()
-    val passwordRef = createRef<HTMLInputElement>()
+    var urlValue =props.connection.baseUrl.toString()
+    var idValue = ""
+    var passwordValue = ""
 
-//    fun dispatchNotationLocal(notation: SerialNotation) {
-//        console.info("received notation: ", notation)
-//        val move = notation.asMove(props.boardState)
-//        when (val c = props.connection) {
-//            is ConnectionState.Observing -> {
-//                GlobalScope.launch {
-//                    c.sendMove(move)
-//                }
-//            }
-//            else -> {
-//                props.dispatchMoveLocal(move)
-//            }
-//        }
-//    }
     fun requestGameList(connection: ConnectionState.Authenticated) {
         GlobalScope.promise {
             penta.WSClient.listGames(
@@ -72,41 +57,61 @@ class TextConnection(props: TextConnectionProps) : RComponent<TextConnectionProp
                         event.preventDefault()
                         GlobalScope.launch {
                             penta.WSClient.login(
-                                urlInput = urlRef.current?.value ?: "",
-                                userIdInput = idRef.current?.value ?: "",
-                                passwordInput = passwordRef.current?.value ?: "",
+                                urlInput = urlValue,
+                                userIdInput = idValue,
+                                passwordInput = passwordValue,
                                 dispatch = props.dispatchConnection
                             )
                         }
-//                            launch({
-//
-//                            }) { throwable ->
-//                                console.error("error; $throwable")
-//                            }
                     }
-                    input(type = InputType.url) {
-                        ref = urlRef
-                        attrs.defaultValue = props.connection.baseUrl.toString()
-                    }
-                    input {
-                        ref = idRef
-                        attrs.defaultValue = props.connection.userId
-                    }
-                    if (props.connection is ConnectionState.RequiresPassword) {
-                        input(type = InputType.password) {
-                            ref = passwordRef
+                    mTextField(
+                        type = InputType.url,
+                        label = "Url",
+                        defaultValue = props.connection.baseUrl.toString(),
+                        onChange = { event ->
+                            urlValue = (event.target as HTMLInputElement).value
                         }
+                    )
+                    mTextField(
+                        label = "user id",
+                        defaultValue = props.connection.userId,
+                        onChange = { event ->
+                            idValue = (event.target as HTMLInputElement).value
+                        }
+                    )
+                    if (props.connection is ConnectionState.RequiresPassword) {
+                        mTextField(
+                            label = "password",
+                            type = InputType.password,
+                            onChange = { event ->
+                                passwordValue = (event.target as HTMLInputElement).value
+                            }
+                        )
                     }
-                    button(type = ButtonType.submit) {
-                        +"Connect"
-                    }
+                    mButton(
+                        caption = "Submit",
+                        variant = MButtonVariant.contained,
+                        color = MColor.primary,
+                        onClick = { event ->
+                            GlobalScope.launch {
+                                penta.WSClient.login(
+                                    urlInput = urlValue,
+                                    userIdInput = idValue,
+                                    passwordInput = passwordValue,
+                                    dispatch = props.dispatchConnection
+                                )
+                            }
+                        }
+                    )
                 }
             }
 
             fun disconnectButton() {
-                button {
-                    +"Disconnect"
-                    attrs.onClickFunction = {
+                mButton(
+                    caption = "Disconnect",
+                    variant = MButtonVariant.contained,
+                    color = MColor.secondary,
+                    onClick = { event ->
                         // TODO: kill current connections to server
 
                         props.dispatchConnection(
@@ -116,7 +121,8 @@ class TextConnection(props: TextConnectionProps) : RComponent<TextConnectionProp
                             )
                         )
                     }
-                }
+
+                )
             }
 
             when (val state = props.connection) {

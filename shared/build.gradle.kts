@@ -152,10 +152,13 @@ kotlin {
                 api("io.github.microutils:kotlin-logging-js:${KotlinLogging.version}")
 
                 // material UI components
-//                api(npm("react-jss"))
-//                api(npm("@material-ui/core", "^4.4.2"))
-//                api(npm("@material-ui/icons", "^4.4.1"))
-//                api("com.ccfraser.muirwik:muirwik-components:0.2.2")
+//                api(npm("react", "^16.9.0"))
+//                api(npm("react-dom", "^16.9.0"))
+//                api(npm("inline-style-prefixer", "^5.1.0"))
+//                api(npm("styled-components", "^4.3.2"))
+                api(npm("@material-ui/core", "^4.4.2"))
+                api(npm("@material-ui/icons", "^4.4.1"))
+                api("com.ccfraser.muirwik:muirwik-components:0.4.0-dev")
 
                 // ktor client
                 api(ktor("client-core-js"))
