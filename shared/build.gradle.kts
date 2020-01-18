@@ -142,12 +142,6 @@ kotlin {
         js().compilations["main"].defaultSourceSet {
             dependsOn(commonClient)
             dependencies {
-                // coroutines
-//                api("org.jetbrains.kotlinx:kotlinx-coroutines-core-js:${Coroutines.version}")
-
-                // serialization
-//                api("org.jetbrains.kotlinx:kotlinx-serialization-runtime-js:${Serialization.version}")
-
                 // logging
                 api("io.github.microutils:kotlin-logging-js:${KotlinLogging.version}")
 
@@ -166,6 +160,11 @@ kotlin {
                 api(npm("redux", "^4.0.0"))
                 api(npm("react-redux", "^5.0.7"))
 
+                // temp fix ?
+                api(npm("text-encoding"))
+
+                api(npm("redux-logger"))
+
                 val kotlinWrappersVersion = "pre.89-kotlin-1.3.60"
                 api("org.jetbrains:kotlin-react:16.9.0-${kotlinWrappersVersion}")
                 api("org.jetbrains:kotlin-react-dom:16.9.0-${kotlinWrappersVersion}")
@@ -178,10 +177,9 @@ kotlin {
                 api("org.jetbrains:kotlin-react-redux:5.0.7-${kotlinWrappersVersion}")
 
                 // material UI components
-                api(npm("@material-ui/core", "^4.4.2"))
-                api(npm("@material-ui/icons", "^4.4.1"))
+//                api(npm("@material-ui/core", "^4.8.3"))
+//                api(npm("@material-ui/icons", "^4.5.1"))
                 api(project(":muirwik"))
-//                api("com.ccfraser.muirwik:muirwik-components:0.4.0-dev")
             }
         }
 

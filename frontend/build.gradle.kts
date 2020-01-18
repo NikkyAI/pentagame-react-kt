@@ -27,16 +27,9 @@ kotlin {
 
     sourceSets {
         val main by getting {
-//            dependencies {
-//                implementation(kotlin("stdlib-js"))
-//
-//                implementation(project(":shared"))
-//
-//                api(npm("redux-logger"))
-//
-//                // temp fix ?
-//                implementation(npm("text-encoding"))
-//            }
+            dependencies {
+
+            }
         }
 
         val test by getting {
@@ -52,33 +45,8 @@ dependencies {
 
     implementation(project(":shared"))
 
-    implementation(npm("redux-logger"))
-// material UI components
-//    implementation(npm("@material-ui/core", "^4.4.2"))
-//    implementation(npm("@material-ui/icons", "^4.4.1"))
-////                api(npm("core-js", "^3.1.4"))
-//    implementation(npm("react-jss"))
-//    implementation(npm("core-js"))
-//    implementation("com.ccfraser.muirwik:muirwik-components:0.2.2")
-
-    api(npm("react", "^16.9.0"))
-    api(npm("react-dom", "^16.9.0"))
-//                api(npm("react-router-dom"))
-    api(npm("styled-components", "^4.4.1"))
-    api(npm("inline-style-prefixer", "^5.1.0"))
-    api(npm("core-js", "^3.4.7"))
-    api(npm("css-in-js-utils", "^3.0.2"))
-    api(npm("redux", "^4.0.0"))
-    api(npm("react-redux", "^5.0.7"))
-
-    api(npm("@material-ui/core", "^4.4.2"))
-    api(npm("@material-ui/icons", "^4.4.1"))
-
     // temp fix ?
-    implementation(npm("text-encoding"))
-
-//    api(npm("react-bootstrap"))
-//    api(npm("@types/react-bootstrap"))
+//    implementation(npm("text-encoding"))
 }
 
 //val JsJar = tasks.getByName<Jar>("JsJar")
