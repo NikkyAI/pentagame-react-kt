@@ -1,3 +1,4 @@
+import com.ccfraser.muirwik.components.styles.mStylesProvider
 import components.app
 import externals.ReduxLoggerOptionsImpl
 import externals.createLogger
@@ -60,8 +61,10 @@ fun main() {
 
     val rootDiv = document.getElementById("container")
     render(rootDiv) {
-        provider(store) {
-            app()
+        mStylesProvider("jss-insertion-point") {
+            provider(store) {
+                app()
+            }
         }
     }
 }

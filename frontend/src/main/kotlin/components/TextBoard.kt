@@ -1,31 +1,37 @@
 package components
 
+import com.ccfraser.muirwik.components.button.MButtonVariant
+import com.ccfraser.muirwik.components.button.mButton
+import com.ccfraser.muirwik.components.button.mButtonGroup
+import com.ccfraser.muirwik.components.list.mList
+import com.ccfraser.muirwik.components.list.mListItem
+import com.ccfraser.muirwik.components.list.mListItemText
+import com.ccfraser.muirwik.components.mTypography
+import com.ccfraser.muirwik.components.table.mTable
+import com.ccfraser.muirwik.components.table.mTableBody
+import com.ccfraser.muirwik.components.table.mTableCell
+import com.ccfraser.muirwik.components.table.mTableHead
+import com.ccfraser.muirwik.components.table.mTableRow
 import debug
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import kotlinx.html.js.onClickFunction
 import kotlinx.serialization.list
+import penta.BoardState
+import penta.ConnectionState
 import penta.PentaMove
 import penta.PlayerState
-import penta.BoardState
+import penta.SerialNotation
+import penta.util.json
 import react.RBuilder
 import react.RClass
 import react.RComponent
 import react.RProps
 import react.RState
-import react.dom.br
-import react.dom.button
 import react.dom.div
-import react.dom.li
-import react.dom.ol
-import react.dom.p
 import react.invoke
 import react.redux.rConnect
 import reducers.State
 import redux.WrapperAction
-import penta.ConnectionState
-import penta.SerialNotation
-import penta.util.json
 
 interface TextBoardPropsTextBoard : TextBoardStateProps, TextBoardDispatchProps {
 //    var boardState: BoardState
@@ -35,7 +41,7 @@ interface TextBoardPropsTextBoard : TextBoardStateProps, TextBoardDispatchProps 
 
 class TextBoard(props: TextBoardPropsTextBoard) : RComponent<TextBoardPropsTextBoard, RState>(props) {
     fun TextBoardPropsTextBoard.dispatchMove(move: PentaMove) {
-        when(val c = connection) {
+        when (val c = connection) {
             is ConnectionState.Observing -> {
                 GlobalScope.launch {
                     c.sendMove(move)
@@ -46,26 +52,35 @@ class TextBoard(props: TextBoardPropsTextBoard) : RComponent<TextBoardPropsTextB
             }
         }
     }
+
     override fun RBuilder.render() {
         if (props.boardState == undefined) {
             return
         }
-        div {
 
-            if(!props.boardState.gameStarted){
-                div {
+        div {
+            mButtonGroup {
+                if (!props.boardState.gameStarted) {
                     when (val conn = props.connection) {
                         is ConnectionState.Observing -> {
-                            if(props.boardState.players.none { it.id == conn.userId }) {
+                            if (props.boardState.players.none { it.id == conn.userId }) {
                                 val localSymbols = listOf("triangle", "square", "cross", "circle")
                                 localSymbols.forEach { symbol ->
-                                    if(props.boardState.players.none { it.figureId == symbol }) {
-                                        button {
-                                            +"Join as $symbol"
-                                            attrs.onClickFunction = {
-                                                props.dispatchMove(PentaMove.PlayerJoin(PlayerState(conn.userId, symbol)))
+                                    if (props.boardState.players.none { it.figureId == symbol }) {
+                                        mButton(
+                                            caption = "Join as $symbol",
+                                            variant = MButtonVariant.outlined,
+                                            onClick = {
+                                                props.dispatchMove(
+                                                    PentaMove.PlayerJoin(
+                                                        PlayerState(
+                                                            conn.userId,
+                                                            symbol
+                                                        )
+                                                    )
+                                                )
                                             }
-                                        }
+                                        )
                                     }
                                 }
                             }
@@ -73,10 +88,11 @@ class TextBoard(props: TextBoardPropsTextBoard) : RComponent<TextBoardPropsTextB
                         else -> {
                             val localSymbols = listOf("triangle", "square", "cross", "circle")
                             localSymbols.forEach { symbol ->
-                                if(props.boardState.players.none { it.figureId == symbol }) {
-                                    button {
-                                        +"add $symbol"
-                                        attrs.onClickFunction = {
+                                if (props.boardState.players.none { it.figureId == symbol }) {
+                                    mButton(
+                                        caption = "Add $symbol",
+                                        variant = MButtonVariant.outlined,
+                                        onClick = {
                                             val playerCount = props.boardState.players.size
                                             props.dispatchMove(
                                                 PentaMove.PlayerJoin(
@@ -87,24 +103,22 @@ class TextBoard(props: TextBoardPropsTextBoard) : RComponent<TextBoardPropsTextB
                                                 )
                                             )
                                         }
-                                    }
+                                    )
                                 }
                             }
                         }
                     }
+                    mButton(
+                        caption = "Start Game",
+                        variant = MButtonVariant.outlined,
+                        onClick = { props.dispatchMove(PentaMove.InitGame) }
+                    )
                 }
-                div {
-                    button {
-                        +"start game"
-                        attrs.onClickFunction = { props.dispatchMove(PentaMove.InitGame) }
-                    }
-                }
-            }
 
-            div {
-                button {
-                    +"export history"
-                    attrs.onClickFunction = {
+                mButton(
+                    caption = "Export History",
+                    variant = MButtonVariant.outlined,
+                    onClick = {
                         val serializable = props.boardState.history.map { it.toSerializable() }
                         val serialized = json.toJson(SerialNotation.serializer().list, serializable)
                         console.info("history: ", serialized.toString())
@@ -112,70 +126,59 @@ class TextBoard(props: TextBoardPropsTextBoard) : RComponent<TextBoardPropsTextB
                             console.info(it, json.toJson(SerialNotation.serializer(), it).toString())
                         }
                     }
-                }
+                )
             }
-
-            div {
-                with(props.boardState) {
-                    div {
-                        +"players: "
-                        ol {
-                            players.forEach {
-                                li {
-                                    +it.toString()
-                                }
-                            }
+            with(props.boardState) {
+                mTypography("Players")
+                mList {
+                    players.forEach {
+                        mListItem(it.id, it.figureId)
+                    }
+                }
+                mTypography("currentPlayer: $currentPlayer")
+                mTypography("selectedPlayerPiece: $selectedPlayerPiece")
+                mTypography("selectedBlackPiece: $selectedBlackPiece")
+                mTypography("selectedGrayPiece: $selectedGrayPiece")
+                mTypography("selectingGrayPiece: $selectingGrayPiece")
+                mTypography("gameStarted: $gameStarted")
+                mTypography("Figures")
+                mTable {
+                    mTableHead {
+                        mTableRow {
+                            mTableCell { +"id" }
+                            mTableCell { +"color" }
+                            mTableCell { +"type" }
+                            mTableCell { +"position" }
                         }
                     }
-                    p {
-                        +"currentPlayer: $currentPlayer"
-                        br {}
-                        +"selectedPlayerPiece: $selectedPlayerPiece"
-                        br {}
-                        +"selectedBlackPiece: $selectedBlackPiece"
-                        br {}
-                        +"selectedGrayPiece: $selectedGrayPiece"
-                        br {}
-                        +"selectingGrayPiece: $selectingGrayPiece"
-                        br {}
-                        +"gameStarted: $gameStarted"
-                    }
-                    div {
-                        +"figures: "
-                        ol {
-                            figures.forEach {
-                                li {
-                                    +it.toString()
-                                }
-                            }
-                        }
-                    }
-
-                    div {
-                        +"history: "
-                        ol {
-                            history.forEach {
-                                li {
-                                    +it.asNotation()
-                                }
-                            }
-                        }
-                    }
-                    div {
-                        +"positions: "
-                        ol {
-                            positions.forEach { (id, field) ->
-                                li {
-                                    +"$id : ${field?.id}"
-                                }
+                    mTableBody {
+                        figures.forEach {
+                            mTableRow {
+                                mTableCell { +it.id }
+                                mTableCell { +it.color.toString() }
+                                mTableCell { +it::class.simpleName.toString() }
+                                mTableCell { +positions[it.id]?.id.toString() }
                             }
                         }
                     }
                 }
+                mList {
+                    figures.forEach {
+                        mListItem("id", it.id) {
+                            mListItemText("color", it.color.toString())
+                            mListItemText("type", it::class.simpleName)
+                            mListItemText("position", positions[it.id]?.id.toString())
+                        }
+                    }
+                }
+//                mTypography("Positions")
+//                mList {
+//                    positions.forEach { (id, field) ->
+//                        mListItem(id, field?.id.toString())
+//                    }
+//                }
             }
-            div {
-                +props.boardState.toString()
-            }
+            mTypography(props.boardState.toString())
 
             children()
         }

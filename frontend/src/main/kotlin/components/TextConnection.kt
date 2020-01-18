@@ -1,40 +1,61 @@
 package components
 
 import com.ccfraser.muirwik.components.MColor
+import com.ccfraser.muirwik.components.MGridJustify
+import com.ccfraser.muirwik.components.MGridSize
 import com.ccfraser.muirwik.components.button.MButtonVariant
 import com.ccfraser.muirwik.components.button.mButton
+import com.ccfraser.muirwik.components.button.mIconButton
+import com.ccfraser.muirwik.components.form.MFormControlVariant
+import com.ccfraser.muirwik.components.form.mFormControl
+import com.ccfraser.muirwik.components.list.mList
+import com.ccfraser.muirwik.components.list.mListItem
+import com.ccfraser.muirwik.components.list.mListItemIcon
+import com.ccfraser.muirwik.components.list.mListItemSecondaryAction
+import com.ccfraser.muirwik.components.list.mListItemText
+import com.ccfraser.muirwik.components.mDivider
+import com.ccfraser.muirwik.components.mGridContainer
+import com.ccfraser.muirwik.components.mGridItem
 import com.ccfraser.muirwik.components.mTextField
-import com.ccfraser.muirwik.components.persist
+import com.ccfraser.muirwik.components.mTypography
 import debug
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.promise
+import kotlinx.css.flexGrow
+import kotlinx.css.pct
+import kotlinx.css.width
 import kotlinx.html.ButtonType
 import kotlinx.html.InputType
-import kotlinx.html.js.onClickFunction
 import kotlinx.html.js.onSubmitFunction
 import org.w3c.dom.HTMLInputElement
 import org.w3c.dom.events.Event
+import penta.BoardState
 import penta.ConnectionState
 import penta.PentaMove
 import penta.SerialNotation
 import penta.network.GameSessionInfo
 import penta.redux.MultiplayerState
-import penta.BoardState
-import react.*
-import react.dom.*
+import react.RBuilder
+import react.RClass
+import react.RComponent
+import react.RProps
+import react.RState
+import react.dom.form
+import react.invoke
 import react.redux.rConnect
 import reducers.State
 import redux.WrapperAction
+import styled.css
 
 interface TextConnectionProps : TextConnectionStateProps, TextConnectionDispatchProps
 
 class TextConnection(props: TextConnectionProps) : RComponent<TextConnectionProps, RState>(props) {
-    var urlValue =props.connection.baseUrl.toString()
+    var urlValue = props.connection.baseUrl.toString()
     var idValue = ""
     var passwordValue = ""
 
-    fun requestGameList(connection: ConnectionState.Authenticated) {
+    private fun requestGameList(connection: ConnectionState.Authenticated) {
         GlobalScope.promise {
             penta.WSClient.listGames(
                 connection,
@@ -46,227 +67,248 @@ class TextConnection(props: TextConnectionProps) : RComponent<TextConnectionProp
         }
     }
 
+    private fun RBuilder.urlInput() {
+        mTextField(
+            type = InputType.url,
+            label = "Url",
+            variant = MFormControlVariant.filled,
+            defaultValue = props.connection.baseUrl.toString(),
+            onChange = { event ->
+                urlValue = (event.target as HTMLInputElement).value
+            }
+        ) {
+            css {
+                width = 100.pct
+            }
+        }
+    }
+
+    private fun RBuilder.userIdInput() {
+        mTextField(
+            label = "user id",
+            variant = MFormControlVariant.filled,
+            defaultValue = props.connection.userId,
+            onChange = { event ->
+                idValue = (event.target as HTMLInputElement).value
+            }
+        ) {
+            css {
+                width = 100.pct
+            }
+        }
+    }
+
+    private fun RBuilder.passwordInput() {
+        mTextField(
+            label = "password",
+            type = InputType.password,
+            variant = MFormControlVariant.filled,
+            onChange = { event ->
+                passwordValue = (event.target as HTMLInputElement).value
+            }
+        ) {
+            css {
+                width = 100.pct
+            }
+        }
+    }
+
+    private fun login() {
+        GlobalScope.launch {
+            val returnedState = penta.WSClient.login(
+                urlInput = urlValue,
+                userIdInput = idValue,
+                passwordInput = passwordValue,
+                dispatch = props.dispatchConnection
+            )
+            when (val nextState = returnedState) {
+                is ConnectionState.Authenticated -> requestGameList(connection = nextState)
+            }
+        }
+    }
+
+    private fun RBuilder.loginSubmitButton() {
+        mButton(
+            caption = "Login",
+            variant = MButtonVariant.outlined,
+            type = ButtonType.submit,
+            color = MColor.primary
+        )
+    }
+
+    private fun RBuilder.disconnectButton() {
+        mButton(
+            caption = "Disconnect",
+            variant = MButtonVariant.outlined,
+            color = MColor.secondary,
+            onClick = { event ->
+                // TODO: kill current connections to server
+                props.dispatchConnection(
+                    ConnectionState.Disconnected(
+                        baseUrl = props.connection.baseUrl,
+                        userId = props.connection.userId
+                    )
+                )
+            }
+
+        )
+    }
+
+    private fun loginFunction(event: Event) {
+        event.preventDefault()
+        GlobalScope.launch {
+            val returnedState = penta.WSClient.login(
+                urlInput = urlValue,
+                userIdInput = idValue,
+                passwordInput = passwordValue,
+                dispatch = props.dispatchConnection
+            )
+            when (val nextState = returnedState) {
+                is ConnectionState.Authenticated -> requestGameList(connection = nextState)
+            }
+        }
+    }
+
     override fun RBuilder.render() {
         if (props.connection == undefined) {
             return
         }
-        div {
-            fun loginForm() {
-                form {
-                    attrs.onSubmitFunction = { event ->
-                        event.preventDefault()
-                        GlobalScope.launch {
-                            penta.WSClient.login(
-                                urlInput = urlValue,
-                                userIdInput = idValue,
-                                passwordInput = passwordValue,
-                                dispatch = props.dispatchConnection
-                            )
-                        }
-                    }
-                    mTextField(
-                        type = InputType.url,
-                        label = "Url",
-                        defaultValue = props.connection.baseUrl.toString(),
-                        onChange = { event ->
-                            urlValue = (event.target as HTMLInputElement).value
-                        }
-                    )
-                    mTextField(
-                        label = "user id",
-                        defaultValue = props.connection.userId,
-                        onChange = { event ->
-                            idValue = (event.target as HTMLInputElement).value
-                        }
-                    )
-                    if (props.connection is ConnectionState.RequiresPassword) {
-                        mTextField(
-                            label = "password",
-                            type = InputType.password,
-                            onChange = { event ->
-                                passwordValue = (event.target as HTMLInputElement).value
+        when (val state = props.connection) {
+            is ConnectionState.NotLoggedIn -> {
+                mFormControl {
+                    form {
+                        attrs.onSubmitFunction = ::loginFunction
+                        mGridContainer(
+                            justify = MGridJustify.center
+                        ) {
+                            css {
+                                flexGrow = 1.0
                             }
-                        )
-                    }
-                    mButton(
-                        caption = "Submit",
-                        variant = MButtonVariant.contained,
-                        color = MColor.primary,
-                        onClick = { event ->
-                            GlobalScope.launch {
-                                penta.WSClient.login(
-                                    urlInput = urlValue,
-                                    userIdInput = idValue,
-                                    passwordInput = passwordValue,
-                                    dispatch = props.dispatchConnection
-                                )
+                            mGridItem(xs = MGridSize.cells12) {
+                                urlInput()
+                            }
+                            mGridItem(xs = MGridSize.cells12) {
+                                userIdInput()
+                            }
+                            mGridItem(xs = MGridSize.cells12) {
+                                loginSubmitButton()
                             }
                         }
-                    )
+                    }
                 }
             }
-
-            fun disconnectButton() {
-                mButton(
-                    caption = "Disconnect",
-                    variant = MButtonVariant.contained,
-                    color = MColor.secondary,
-                    onClick = { event ->
-                        // TODO: kill current connections to server
-
-                        props.dispatchConnection(
-                            ConnectionState.Disconnected(
-                                baseUrl = props.connection.baseUrl,
-                                userId = props.connection.userId
-                            )
-                        )
-                    }
-
-                )
-            }
-
-            when (val state = props.connection) {
-                is ConnectionState.NotLoggedIn -> {
-                    loginForm()
-                }
-                is ConnectionState.RequiresPassword -> {
-                    loginForm()
-                }
-                is ConnectionState.Authenticated -> {
-//                    button {
-//                        +"Connect to lobby"
-//                        attrs.onClickFunction = {
-//                            GlobalScope.launch {
-//                                penta.WSClient.connectToLobby(
-//                                    state = state,
-//                                    dispatch = props.dispatchConnection
-//                                )
-//                            }
-//                        }
-//                    }
-                    disconnectButton()
-                    button {
-                        +"Create Game"
-                        attrs.onClickFunction = {
-                            GlobalScope.launch {
-                                penta.WSClient.createGameAndConnect(
-                                    state,
-                                    props.dispatchConnection,
-                                    props.dispatchNotationLocal,
-                                    props.dispatchNewBoardstate
-                                )
+            is ConnectionState.RequiresPassword -> {
+                mFormControl {
+                    form {
+                        attrs.onSubmitFunction = ::loginFunction
+                        mGridContainer(
+                            justify = MGridJustify.center
+                        ) {
+                            mGridItem(xs = MGridSize.cells12) {
+                                urlInput()
+                            }
+                            mGridItem(xs = MGridSize.cells12) {
+                                userIdInput()
+                            }
+                            mGridItem(xs = MGridSize.cells12) {
+                                passwordInput()
+                            }
+                            mGridItem(xs = MGridSize.cells12) {
+                                loginSubmitButton()
                             }
                         }
                     }
-
-                    +"Games:"
-                    br {}
-                    ol {
-                        props.games.forEachIndexed { index, gameSessionInfo ->
-                            li {
-                                span {
-                                    +"id: ${gameSessionInfo.id} "
-                                    +"owner: ${gameSessionInfo.owner} "
-                                    +"players: ${gameSessionInfo.players} "
-                                    +"observers: ${gameSessionInfo.observers} "
-                                    +"running: ${gameSessionInfo.running} "
-                                    button {
-                                        +"Join"
-                                        attrs.onClickFunction = {
-                                            GlobalScope.launch {
-                                                penta.WSClient.connectToGame(
-                                                    state,
-                                                    gameSessionInfo,
-                                                    props.dispatchConnection,
-                                                    props.dispatchNotationLocal,
-                                                    props.dispatchNewBoardstate
-                                                )
-                                            }
-                                        }
-                                    }
+                }
+            }
+            is ConnectionState.Authenticated -> {
+                mGridContainer {
+                    mGridItem(xs = MGridSize.cells4) {
+                        disconnectButton()
+                    }
+                    mGridItem(xs = MGridSize.cells4) {
+                        mButton(
+                            caption = "Create Game",
+                            variant = MButtonVariant.contained,
+                            color = MColor.primary,
+                            onClick = { event ->
+                                GlobalScope.launch {
+                                    penta.WSClient.createGameAndConnect(
+                                        state,
+                                        props.dispatchConnection,
+                                        props.dispatchNotationLocal,
+                                        props.dispatchNewBoardstate
+                                    )
                                 }
                             }
-                        }
-                    }
-                    br{}
-                    button {
-                        +"Update List"
-                        attrs.onClickFunction = {
-                            requestGameList(connection = state)
-                        }
+                        )
                     }
                 }
-//                is ConnectionState.Lobby -> {
-//                    // TODO: store list of games in store/section
-//                    val games = GlobalScope.promise {
-//                         penta.WSClient.listGames(
-//                            state,
-//                            props.dispatchConnection
-//                        )
-//                    }
-//                    games.then {
-//                        ol {
-//                            it.forEachIndexed { index, gameSessionInfo ->
-//                                li {
-//                                    div {
-//                                        +"id: ${gameSessionInfo.id}"
-//                                        +"owner: ${gameSessionInfo.owner}"
-//                                        +"players: ${gameSessionInfo.players}"
-//                                        +"observers: ${gameSessionInfo.observers}"
-//                                        +"running: ${gameSessionInfo.running}"
-//                                        button {
-//                                            +"Join"
-//                                            attrs.onClickFunction = {
-//                                                GlobalScope.launch {
-//                                                    penta.WSClient.connectToGame(
-//                                                        state,
-//                                                        gameSessionInfo,
-//                                                        props.dispatchConnection,
-//                                                        props.dispatchNotation,
-//                                                        props.dispatchNewBoardstate
-//                                                    )
-//                                                }
-//
-//                                            }
-//                                        }
-//                                    }
-//                                }
-//                            }
-//
-//                        }
-//                    }
-//                }
-                is ConnectionState.Observing -> {
-                    disconnectButton()
-                    button {
-                        +"Leave"
-                        attrs.onClickFunction = {
-                            GlobalScope.launch {
-                                state.leave()
+
+                mList {
+                    mListItem("Games")
+                    mDivider()
+                    props.games.forEach { gameSessionInfo ->
+                        mListItem("id", gameSessionInfo.id) {
+                            mListItemText("owner", gameSessionInfo.owner)
+                            mListItemText("players", "${gameSessionInfo.players}")
+                            mListItemText("observers", "${gameSessionInfo.observers}")
+                            mListItemText("running", "${gameSessionInfo.running}")
+                            mListItemSecondaryAction {
+                                mIconButton(
+                                    iconName = "send",
+                                    onClick = { event ->
+                                        // join
+                                        GlobalScope.launch {
+                                            penta.WSClient.connectToGame(
+                                                state,
+                                                gameSessionInfo,
+                                                props.dispatchConnection,
+                                                props.dispatchNotationLocal,
+                                                props.dispatchNewBoardstate
+                                            )
+                                        }
+                                    }
+                                )
                             }
                         }
-
                     }
-                    div {
-                        +"connected to ${state.game}"
-                    }
-                }
-                else -> {
-                    div {
-                        +"TODO: Add Disconnect button"
-                        //                    button {
-                        //                        +"Disconnect"
-                        //                        attrs.onClickFunction = {
-                        //
-                        //                        }
-                        //                    }
+                    mDivider()
+                    mListItem(
+                        button = true,
+                        onClick = { requestGameList(connection = state) }
+                    ) {
+                        mListItemIcon(iconName = "refresh")
+                        mListItemText("Update Games List")
                     }
                 }
             }
-            div {
-                +props.connection.toString()
+            is ConnectionState.Observing -> {
+                mGridContainer {
+                    mGridItem(xs = MGridSize.cells3) {
+                        disconnectButton()
+                    }
+                    mGridItem(xs = MGridSize.cells3) {
+                        mButton(
+                            caption = "Leave",
+                            variant = MButtonVariant.outlined,
+                            color = MColor.secondary,
+                            onClick = {
+                                GlobalScope.launch {
+                                    state.leave()
+                                }
+                            }
+                        )
+                    }
+                    mGridItem(xs = MGridSize.cells12) {
+                        mTypography("Connected to ...${state.game}")
+                    }
+                }
+            }
+            else -> {
+                mTypography("TODO: Add Disconnect button")
             }
         }
+        mTypography(props.connection.toString())
     }
 
     override fun componentDidMount() {
@@ -290,8 +332,7 @@ class TextConnection(props: TextConnectionProps) : RComponent<TextConnectionProp
 /**
  * parameter on callsite
  */
-interface TextConnectionParameters : RProps {
-}
+interface TextConnectionParameters : RProps
 
 //TODO: find a way to compose interface while keeping these private
 interface TextConnectionStateProps : TextConnectionParameters {

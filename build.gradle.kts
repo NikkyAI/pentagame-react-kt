@@ -23,7 +23,7 @@ allprojects {
         maven(url = "https://dl.bintray.com/data2viz/data2viz/") {
             name = "d2v"
         }
-        mavenLocal()
+//        mavenLocal()
         // TODO: remove
 //        if (project.gradle.startParameter.taskNames.contains("bundleLocalDependencies")) {
 //            mavenLocal()

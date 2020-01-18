@@ -25,3 +25,6 @@ rootProject.name = "penta"
 include("backend")
 include("frontend")
 include("shared")
+include(":muirwik")
+
+project(":muirwik").projectDir = rootDir.resolve("muirwik/muirwik-components")

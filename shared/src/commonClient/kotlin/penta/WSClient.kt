@@ -56,7 +56,7 @@ object WSClient {
         userIdInput: String,
         passwordInput: String?,
         dispatch: (ConnectionState) -> Unit
-    ) {
+    ): ConnectionState {
         val baseURL = Url(urlInput)
         return login(baseURL, userIdInput, passwordInput, dispatch)
     }
@@ -66,7 +66,7 @@ object WSClient {
         userIdInput: String,
         passwordInput: String?,
         dispatch: (ConnectionState) -> Unit
-    ) {
+    ): ConnectionState {
         val status = status(baseURL)
 
         logger.info { "status: $status" }
@@ -120,13 +120,14 @@ object WSClient {
 //            dispatch(connectionState)
 
             dispatch(connectionState)
+            return connectionState
         } else {
-            dispatch(
-                ConnectionState.Unreachable(
-                    baseUrl = baseURL,
-                    userId = userIdInput
-                )
-            )
+            return ConnectionState.Unreachable(
+                baseUrl = baseURL,
+                userId = userIdInput
+            ).also {
+                dispatch(it)
+            }
         }
     }
 
