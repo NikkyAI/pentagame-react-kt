@@ -43,7 +43,7 @@ sealed class Piece {
         override val pentaColor: PentaColor
     ) : Piece() {
         override val radius: Double get() = RADIUS
-        override val color: Color get() = pentaColor.color.brighten(1.0)
+        override val color: Color get() = pentaColor.color.brighten(0.5)
         companion object {
             const val RADIUS = PentaMath.s / 2.3
         }

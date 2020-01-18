@@ -15,6 +15,8 @@ import com.ccfraser.muirwik.components.table.mTableRow
 import debug
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import kotlinx.css.Color
+import kotlinx.css.backgroundColor
 import kotlinx.serialization.list
 import penta.BoardState
 import penta.ConnectionState
@@ -32,6 +34,7 @@ import react.invoke
 import react.redux.rConnect
 import reducers.State
 import redux.WrapperAction
+import styled.css
 
 interface TextBoardPropsTextBoard : TextBoardStateProps, TextBoardDispatchProps {
 //    var boardState: BoardState
@@ -155,28 +158,18 @@ class TextBoard(props: TextBoardPropsTextBoard) : RComponent<TextBoardPropsTextB
                         figures.forEach {
                             mTableRow {
                                 mTableCell { +it.id }
-                                mTableCell { +it.color.toString() }
+                                mTableCell {
+                                    css {
+                                        backgroundColor = Color(it.color.rgbHex)
+                                    }
+                                    mTypography(it.color.rgbHex)
+                                }
                                 mTableCell { +it::class.simpleName.toString() }
                                 mTableCell { +positions[it.id]?.id.toString() }
                             }
                         }
                     }
                 }
-                mList {
-                    figures.forEach {
-                        mListItem("id", it.id) {
-                            mListItemText("color", it.color.toString())
-                            mListItemText("type", it::class.simpleName)
-                            mListItemText("position", positions[it.id]?.id.toString())
-                        }
-                    }
-                }
-//                mTypography("Positions")
-//                mList {
-//                    positions.forEach { (id, field) ->
-//                        mListItem(id, field?.id.toString())
-//                    }
-//                }
             }
             mTypography(props.boardState.toString())
 
