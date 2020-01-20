@@ -3,7 +3,6 @@ package components
 import PentaBoard
 import PentaMath
 import com.ccfraser.muirwik.components.MColor
-import com.ccfraser.muirwik.components.button.MButtonProps
 import com.ccfraser.muirwik.components.button.MButtonVariant
 import com.ccfraser.muirwik.components.button.mButton
 import com.github.nwillc.ksvg.elements.SVG
@@ -15,9 +14,10 @@ import io.data2viz.color.col
 import io.data2viz.math.deg
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import mu.KotlinLogging
+import kotlinx.css.maxHeight
+import kotlinx.css.maxWidth
+import kotlinx.css.vh
 import org.w3c.dom.Element
-import org.w3c.dom.HTMLButtonElement
 import org.w3c.dom.events.Event
 import org.w3c.dom.events.MouseEvent
 import org.w3c.dom.svg.SVGCircleElement
@@ -34,9 +34,12 @@ import penta.logic.Field.ConnectionField
 import penta.logic.Field.Goal
 import penta.logic.Field.Start
 import penta.logic.Piece
-import react.*
-import react.dom.button
+import react.RBuilder
+import react.RComponent
+import react.RState
+import react.createRef
 import styled.css
+import styled.styledDiv
 import styled.styledSvg
 import kotlin.browser.document
 import kotlin.dom.clear
@@ -45,7 +48,6 @@ interface PentaSvgProps : PentaSvgStateProps, PentaSvgDispatchProps
 
 class PentaSvg(props: PentaSvgProps) : RComponent<PentaSvgProps, RState>(props) {
     private val svgRef = createRef<SVGElement>()
-    private val buttonRef = createRef<ReactElement>()
 
     fun dispatchMove(move: PentaMove) {
         when (val connection = props.connection) {
@@ -68,44 +70,45 @@ class PentaSvg(props: PentaSvgProps) : RComponent<PentaSvgProps, RState>(props) 
     }
 
     override fun RBuilder.render() {
-        styledSvg {
-            ref = svgRef
-            attrs {
-                attributes["preserveAspectRatio"] = "xMidYMid meet"
+        styledDiv {
+            css {
+                maxHeight = 100.vh
+                maxWidth = 100.vh
+            }
+            styledSvg {
+                ref = svgRef
+                attrs {
+                    attributes["preserveAspectRatio"] = "xMidYMid meet"
 //                attributes["width"] = "100vw"
 //                attributes["height"] = "100vh"
+                }
             }
-            css {
+            mButton(
+                caption = "svg file",
+                variant = MButtonVariant.contained,
+                color = MColor.primary,
+                onClick = {
+                    val scale = 1000
 
-            }
-        }
-        mButton(caption = "svg file", variant = MButtonVariant.contained, color = MColor.primary) {
-            ref = buttonRef
-        }
-    }
+                    val svg = SVG.svg {
+                        viewBox = "0 0 $scale $scale"
 
-    companion object {
-        private val logger = KotlinLogging.logger {}
+                        draw(scale, props)
+                    }
+
+                    val svgFile = buildString {
+                        svg.render(this, SVG.RenderMode.FILE)
+                    }
+
+                    console.log(svgFile)
+                }
+            )
+
+        }
     }
 
     override fun componentDidMount() {
         console.log("penta svg mounted")
-
-        buttonRef.current?.asDynamic().onclick = {
-            val scale = 1000
-
-            val svg = SVG.svg {
-                viewBox = "0 0 $scale $scale"
-
-                draw(scale, props)
-            }
-
-            val svgFile = buildString {
-                svg.render(this, SVG.RenderMode.FILE)
-            }
-
-            console.log(svgFile)
-        }
 
         redraw(props)
     }

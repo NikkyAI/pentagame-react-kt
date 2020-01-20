@@ -299,6 +299,9 @@ object WSClient {
                 game = game,
                 websocketSession = this@webSocket,
                 running = true
+//                closeFun = {
+//                    close(CloseReason(CloseReason.Codes.GOING_AWAY, "closing"))
+//                }
             )
             logger.info { "setting connectionStatus to $observingState" }
             dispatchConnection(observingState)

@@ -136,13 +136,20 @@ class TextConnection(props: TextConnectionProps) : RComponent<TextConnectionProp
         )
     }
 
-    private fun RBuilder.disconnectButton() {
+    private fun RBuilder.disconnectButton(connection: ConnectionState) {
         mButton(
             caption = "Disconnect",
             variant = MButtonVariant.outlined,
             color = MColor.secondary,
             onClick = { event ->
                 // TODO: kill current connections to server
+                when (connection) {
+                    is ConnectionState.Observing -> {
+                        GlobalScope.launch {
+                            connection.leave()
+                        }
+                    }
+                }
                 props.dispatchConnection(
                     ConnectionState.Disconnected(
                         baseUrl = props.connection.baseUrl,
@@ -223,7 +230,7 @@ class TextConnection(props: TextConnectionProps) : RComponent<TextConnectionProp
             is ConnectionState.Authenticated -> {
                 mGridContainer {
                     mGridItem(xs = MGridSize.cells4) {
-                        disconnectButton()
+                        disconnectButton(state)
                     }
                     mGridItem(xs = MGridSize.cells4) {
                         mButton(
@@ -284,9 +291,9 @@ class TextConnection(props: TextConnectionProps) : RComponent<TextConnectionProp
             }
             is ConnectionState.Observing -> {
                 mGridContainer {
-                    mGridItem(xs = MGridSize.cells3) {
-                        disconnectButton()
-                    }
+//                    mGridItem(xs = MGridSize.cells3) {
+//                        disconnectButton(state)
+//                    }
                     mGridItem(xs = MGridSize.cells3) {
                         mButton(
                             caption = "Leave",

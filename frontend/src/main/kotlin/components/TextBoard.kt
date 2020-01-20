@@ -1,11 +1,7 @@
 package components
 
-import com.ccfraser.muirwik.components.button.MButtonVariant
-import com.ccfraser.muirwik.components.button.mButton
-import com.ccfraser.muirwik.components.button.mButtonGroup
 import com.ccfraser.muirwik.components.list.mList
 import com.ccfraser.muirwik.components.list.mListItem
-import com.ccfraser.muirwik.components.list.mListItemText
 import com.ccfraser.muirwik.components.mTypography
 import com.ccfraser.muirwik.components.table.mTable
 import com.ccfraser.muirwik.components.table.mTableBody
@@ -17,13 +13,9 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.css.Color
 import kotlinx.css.backgroundColor
-import kotlinx.serialization.list
 import penta.BoardState
 import penta.ConnectionState
 import penta.PentaMove
-import penta.PlayerState
-import penta.SerialNotation
-import penta.util.json
 import react.RBuilder
 import react.RClass
 import react.RComponent
@@ -36,14 +28,14 @@ import reducers.State
 import redux.WrapperAction
 import styled.css
 
-interface TextBoardPropsTextBoard : TextBoardStateProps, TextBoardDispatchProps {
+interface TextBoardProps : TextBoardStateProps, TextBoardDispatchProps {
 //    var boardState: BoardState
 //    var addPlayerClick: () -> Unit
 //    var startGameClick: () -> Unit
 }
 
-class TextBoard(props: TextBoardPropsTextBoard) : RComponent<TextBoardPropsTextBoard, RState>(props) {
-    fun TextBoardPropsTextBoard.dispatchMove(move: PentaMove) {
+class TextBoard(props: TextBoardProps) : RComponent<TextBoardProps, RState>(props) {
+    fun TextBoardProps.dispatchMove(move: PentaMove) {
         when (val c = connection) {
             is ConnectionState.Observing -> {
                 GlobalScope.launch {
@@ -62,75 +54,6 @@ class TextBoard(props: TextBoardPropsTextBoard) : RComponent<TextBoardPropsTextB
         }
 
         div {
-            mButtonGroup {
-                if (!props.boardState.gameStarted) {
-                    when (val conn = props.connection) {
-                        is ConnectionState.Observing -> {
-                            if (props.boardState.players.none { it.id == conn.userId }) {
-                                val localSymbols = listOf("triangle", "square", "cross", "circle")
-                                localSymbols.forEach { symbol ->
-                                    if (props.boardState.players.none { it.figureId == symbol }) {
-                                        mButton(
-                                            caption = "Join as $symbol",
-                                            variant = MButtonVariant.outlined,
-                                            onClick = {
-                                                props.dispatchMove(
-                                                    PentaMove.PlayerJoin(
-                                                        PlayerState(
-                                                            conn.userId,
-                                                            symbol
-                                                        )
-                                                    )
-                                                )
-                                            }
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                        else -> {
-                            val localSymbols = listOf("triangle", "square", "cross", "circle")
-                            localSymbols.forEach { symbol ->
-                                if (props.boardState.players.none { it.figureId == symbol }) {
-                                    mButton(
-                                        caption = "Add $symbol",
-                                        variant = MButtonVariant.outlined,
-                                        onClick = {
-                                            val playerCount = props.boardState.players.size
-                                            props.dispatchMove(
-                                                PentaMove.PlayerJoin(
-                                                    PlayerState(
-                                                        "local$playerCount",
-                                                        symbol
-                                                    )
-                                                )
-                                            )
-                                        }
-                                    )
-                                }
-                            }
-                        }
-                    }
-                    mButton(
-                        caption = "Start Game",
-                        variant = MButtonVariant.outlined,
-                        onClick = { props.dispatchMove(PentaMove.InitGame) }
-                    )
-                }
-
-                mButton(
-                    caption = "Export History",
-                    variant = MButtonVariant.outlined,
-                    onClick = {
-                        val serializable = props.boardState.history.map { it.toSerializable() }
-                        val serialized = json.toJson(SerialNotation.serializer().list, serializable)
-                        console.info("history: ", serialized.toString())
-                        serializable.forEach {
-                            console.info(it, json.toJson(SerialNotation.serializer(), it).toString())
-                        }
-                    }
-                )
-            }
             with(props.boardState) {
                 mTypography("Players")
                 mList {
@@ -176,19 +99,6 @@ class TextBoard(props: TextBoardPropsTextBoard) : RComponent<TextBoardPropsTextB
             children()
         }
     }
-
-//    override fun componentWillUpdate(nextProps: TextBoardStateProps, nextState: RState) {
-//        console.log("componentWillUpdate")
-//    }
-
-    override fun componentDidUpdate(prevProps: TextBoardPropsTextBoard, prevState: RState, snapshot: Any) {
-        console.log("componentDidUpdate")
-    }
-
-    override fun shouldComponentUpdate(nextProps: TextBoardPropsTextBoard, nextState: RState): Boolean {
-        console.log("shouldComponentUpdate")
-        return true
-    }
 }
 
 /**
@@ -209,7 +119,7 @@ interface TextBoardDispatchProps : RProps {
 }
 
 val textBoardState =
-    rConnect<State, PentaMove, WrapperAction, TextBoardsStateParameters, TextBoardStateProps, TextBoardDispatchProps, TextBoardPropsTextBoard>(
+    rConnect<State, PentaMove, WrapperAction, TextBoardsStateParameters, TextBoardStateProps, TextBoardDispatchProps, TextBoardProps>(
         { state, configProps ->
             console.debug("TextBoardContainer.state")
             console.debug("state: ", state)
@@ -229,4 +139,4 @@ val textBoardState =
 //            relay = { dispatch(Action(it)) }
             dispatchMoveLocal = { dispatch(it) }
         }
-    )(TextBoard::class.js.unsafeCast<RClass<TextBoardPropsTextBoard>>())
+    )(TextBoard::class.js.unsafeCast<RClass<TextBoardProps>>())

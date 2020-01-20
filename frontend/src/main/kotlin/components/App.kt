@@ -2,6 +2,7 @@ package components
 
 import com.ccfraser.muirwik.components.MGridSize
 import com.ccfraser.muirwik.components.MGridSpacing
+import com.ccfraser.muirwik.components.MGridWrap
 import com.ccfraser.muirwik.components.MTabIndicatorColor
 import com.ccfraser.muirwik.components.MTabOrientation
 import com.ccfraser.muirwik.components.MTabTextColor
@@ -25,11 +26,11 @@ import react.setState
 import styled.css
 
 enum class Tabs {
-    game, help, multiplayer, about
+    help, multiplayer, about, debug_game
 }
 
 class App : RComponent<RProps, RState>() {
-    var tabValue: Any = Tabs.game
+    var tabValue: Any = Tabs.help
 
     override fun RBuilder.render() {
         mGridContainer(spacing = MGridSpacing.spacing2) {
@@ -40,16 +41,17 @@ class App : RComponent<RProps, RState>() {
                 pentaSvg {}
             }
             mGridItem(xs = MGridSize.cells6) {
-                mTypography("Pentagame", variant = MTypographyVariant.h1)
+                mTypography("Pentagame", variant = MTypographyVariant.h2)
+                gameSetupControls {}
 //            mTypography("Kotlin React + React-Dom + Redux + React-Redux", variant = MTypographyVariant.h2)
-                mGridContainer {
+                mGridContainer(wrap = MGridWrap.noWrap) {
                     css {
                         marginTop = 3.spacingUnits
                         flexGrow = 1.0
                         /*backgroundColor = Color(theme.palette.background.paper)*/
                     }
 
-                    mGridItem(xs = MGridSize.cells9) {
+                    mGridItem(xs = MGridSize.cellsTrue) {
                         when (tabValue as Tabs) {
                             Tabs.help -> {
                                 mTypography("Rules")
@@ -60,12 +62,12 @@ class App : RComponent<RProps, RState>() {
                             Tabs.about ->  {
                                 mTypography("About")
                             }
-                            Tabs.game -> {
+                            Tabs.debug_game -> {
                                 textBoardState {}
                             }
                         }
                     }
-                    mGridItem(xs = MGridSize.cells3) {
+                    mGridItem(xs = MGridSize.cellsAuto) {
                         mTabs(
                             tabValue,
                             variant = MTabVariant.scrollable,
@@ -78,13 +80,14 @@ class App : RComponent<RProps, RState>() {
                                 }
                             }
                         ) {
+                            // TODO: add conditional tabs (game list)
                             mTab("Rules", Tabs.help, icon = mIcon("help", addAsChild = false))
                             mTab("Multiplayer", Tabs.multiplayer, icon = mIcon("people", addAsChild = false))
                             mTab("About", Tabs.about, icon = mIcon("info", addAsChild = false))
 //                            mTab("Item Five", 4, icon = mIcon("shopping_basket", addAsChild = false))
 //                            mTab("Item Six", 5, icon = mIcon("thumb_down", addAsChild = false))
 //                            mTab("Item Seven", 6, icon = mIcon("thumb_up", addAsChild = false))
-                            mTab("Game", Tabs.game, icon = mIcon("developer_mode", addAsChild = false))
+                            mTab("Debug Game", Tabs.debug_game, icon = mIcon("developer_mode", addAsChild = false))
                         }
                     }
                 }
