@@ -17,6 +17,7 @@ kotlin {
         compilations.all {
             kotlinOptions {
                 sourceMap = true
+                sourceMapPrefix = ""
                 metaInfo = true
 //                moduleKind = "amd"
 //                sourceMapEmbedSources = "always"
@@ -79,5 +80,19 @@ task<DefaultTask>("depsize") {
                 }
         }
         println(out)
+    }
+}
+
+tasks.getByName("browserProductionWebpack").apply {
+    doLast {
+        val rootDirPath = rootDir.absolutePath.replace('\\', '/')
+        val mapFile = project.buildDir.resolve("distributions/${project.name}.js.map")
+        mapFile.writeText(
+            mapFile.readText()
+                .replace("$rootDirPath/build/js/src/main/", "")
+                .replace("$rootDirPath/build/src/main/", "")
+                .replace("$rootDirPath/build/js/node_modules", "node_modules")
+                .replace(rootDirPath, rootDir.name)
+        )
     }
 }

@@ -52,6 +52,7 @@ kotlin {
         compilations.all {
             kotlinOptions {
                 sourceMap = true
+                sourceMapPrefix = ""
                 metaInfo = true
 //                moduleKind = "amd"
             }
