@@ -1,6 +1,7 @@
 plugins {
     kotlin("multiplatform") version Jetbrains.Kotlin.version apply false
     id("kotlinx-serialization") version Jetbrains.Kotlin.version apply false
+    `build-scan`
 //    id("org.jetbrains.kotlin.frontend") version "0.0.45" apply false
 }
 
@@ -49,4 +50,18 @@ val stage = tasks.create("stage") {
 // debugging
 System.getenv().forEach { (key, value) ->
     logger.info("$key : $value")
+}
+
+buildScan {
+    termsOfServiceAgree = "yes"
+    publishAlwaysIf(true)
+    termsOfServiceUrl = "https://gradle.com/terms-of-service"
+}
+
+tasks.register<DefaultTask>("hello") {
+    description = "Hello World"
+    group = "help"
+    doLast {
+        logger.lifecycle("Hello World")
+    }
 }

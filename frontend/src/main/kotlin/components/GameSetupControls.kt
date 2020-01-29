@@ -14,7 +14,7 @@ import penta.BoardState
 import penta.ConnectionState
 import penta.PentaMove
 import penta.PlayerState
-import penta.SerialNotation
+import penta.network.GameEvent
 import penta.util.json
 import react.RBuilder
 import react.RClass
@@ -36,7 +36,7 @@ interface GameSetupProps : GameSetupStateProps, GameSetupDispatchProps {
 
 private fun GameSetupProps.dispatchMove(move: PentaMove) {
     when (val c = connection) {
-        is ConnectionState.Observing -> {
+        is ConnectionState.ConnectedToGame -> {
             GlobalScope.launch {
                 c.sendMove(move)
             }
@@ -57,7 +57,7 @@ class GameSetupControls(props: GameSetupProps) : RComponent<GameSetupProps, RSta
         styledDiv {
             if (!props.boardState.gameStarted) {
                 val conn = props.connection
-                if (conn is ConnectionState.Observing) {
+                if (conn is ConnectionState.ConnectedToGame) {
                     val localSymbols = listOf("triangle", "square", "cross", "circle")
                     localSymbols.forEach { symbol ->
                         if (props.boardState.players.none { it.figureId == symbol || it.id == conn.userId }) {
@@ -124,10 +124,10 @@ class GameSetupControls(props: GameSetupProps) : RComponent<GameSetupProps, RSta
                 variant = MButtonVariant.outlined,
                 onClick = {
                     val serializable = props.boardState.history.map { it.toSerializable() }
-                    val serialized = json.toJson(SerialNotation.serializer().list, serializable)
+                    val serialized = json.toJson(GameEvent.serializer().list, serializable)
                     console.info("history: ", serialized.toString())
                     serializable.forEach {
-                        console.info(it, json.toJson(SerialNotation.serializer(), it).toString())
+                        console.info(it, json.toJson(GameEvent.serializer(), it).toString())
                     }
                 }
             ) {

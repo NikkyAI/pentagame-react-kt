@@ -19,7 +19,7 @@ import org.reduxkotlin.applyMiddleware
 import org.reduxkotlin.createStore
 import penta.PentaMove
 import penta.PlayerState
-import penta.SerialNotation
+import penta.network.GameEvent
 import penta.network.GameSessionInfo
 import penta.BoardState
 import penta.util.handler
@@ -95,7 +95,7 @@ class ServerGamestate(
             )
         }
 
-    private val serializer = SerialNotation.serializer()
+    private val serializer = GameEvent.serializer()
 
     suspend fun handle(websocketSession: DefaultWebSocketServerSession, session: UserSession) = with(websocketSession) {
         var unsubscribe: StoreSubscription = {}
@@ -157,7 +157,7 @@ class ServerGamestate(
                             outgoing.send(
                                 Frame.Text(
                                     json.stringify(
-                                        SerialNotation.serializer(),
+                                        GameEvent.serializer(),
                                         illegalMove.toSerializable()
                                     )
                                 )

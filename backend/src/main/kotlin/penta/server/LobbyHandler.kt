@@ -11,24 +11,24 @@ import kotlinx.coroutines.channels.ClosedSendChannelException
 import kotlinx.coroutines.launch
 import kotlinx.io.IOException
 import mu.KotlinLogging
-import penta.network.GlobalEvent
+import penta.network.LobbyEvent
 import penta.util.exhaustive
 import penta.util.handler
 import penta.util.json
 
-object GlobalSessionController {
+object LobbyHandler {
     private val logger = KotlinLogging.logger {}
-    private val observeringSessions = mutableMapOf<UserSession, DefaultWebSocketServerSession>()
+    private val observingSessions = mutableMapOf<UserSession, DefaultWebSocketServerSession>()
     fun observeringSessionsPut(
         session: UserSession,
         defaultWebSocketServerSession: DefaultWebSocketServerSession
     ) {
         GlobalScope.launch(handler) {
-            observeringSessions.values.forEach { wss ->
+            observingSessions.values.forEach { wss ->
                 if (wss != defaultWebSocketServerSession) {
                     wss.outgoing.send(
                         Frame.Text(
-                            json.stringify(GlobalEvent.serializer(), GlobalEvent.Join(session.userId))
+                            json.stringify(LobbyEvent.serializer(), LobbyEvent.Join(session.userId))
                         )
                     )
                 }
@@ -38,13 +38,13 @@ object GlobalSessionController {
     fun observeringSessionsRemove(
         session: UserSession
     ) {
-        val removedSession = observeringSessions.remove(session)
+        val removedSession = observingSessions.remove(session)
         GlobalScope.launch(handler) {
-            observeringSessions.values.forEach { wss ->
+            observingSessions.values.forEach { wss ->
                 if (wss != removedSession) {
                     wss.outgoing.send(
                         Frame.Text(
-                            json.stringify(GlobalEvent.serializer(), GlobalEvent.Leave(session.userId, ""))
+                            json.stringify(LobbyEvent.serializer(), LobbyEvent.Leave(session.userId, ""))
                         )
                     )
                 }
@@ -52,34 +52,38 @@ object GlobalSessionController {
         }
     }
 
-    private val mutableChatHistory = mutableListOf<GlobalEvent.Message>()
-    val chatHistory: List<GlobalEvent.Message> = mutableChatHistory
-    fun chatHistoryAdd(new_message: GlobalEvent.Message) {
+    private val mutableChatHistory = mutableListOf<LobbyEvent.Message>()
+    val chatHistory: List<LobbyEvent.Message> = mutableChatHistory
+    fun chatHistoryAdd(new_message: LobbyEvent.Message) {
         mutableChatHistory += new_message
         GlobalScope.launch(handler) {
-            observeringSessions.values.forEach { wss ->
+            observingSessions.values.forEach { wss ->
                 wss.outgoing.send(
                     Frame.Text(
-                        json.stringify(GlobalEvent.serializer(), new_message)
+                        json.stringify(LobbyEvent.serializer(), new_message)
                     )
                 )
             }
         }
     }
 
-    private val serializer = GlobalEvent.serializer()
+    private val serializer = LobbyEvent.serializer()
     suspend fun handle(websocketSession: DefaultWebSocketServerSession, session: UserSession) = with(websocketSession) {
         try {
             // play back history
             logger.info { "sending observers" }
             logger.info { "sending chat history" }
+            logger.info { "sending game list" }
             outgoing.send(
                 Frame.Text(
                     json.stringify(
                         serializer,
-                        GlobalEvent.InitialSync(
-                            users = observeringSessions.keys.map { it.userId },
-                            chat = chatHistory.take(50)
+                        LobbyEvent.InitialSync(
+                            users = observingSessions.keys.map { it.userId },
+                            chat = chatHistory.take(50),
+                            games = GameController.games.map { gameState ->
+                                gameState.info
+                            }
                         )
                     )
                 )
@@ -94,12 +98,12 @@ object GlobalSessionController {
                 val notationJson = (incoming.receive() as Frame.Text).readText()
                 logger.info { "ws received: $notationJson" }
 
-                val event = json.parse(serializer, notationJson) as? GlobalEvent.FromClient ?: run {
+                val event = json.parse(serializer, notationJson) as? LobbyEvent.FromClient ?: run {
                     close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "event: $this cannot be sent by client"))
                     return
                 }
                 when (event) {
-                    is GlobalEvent.Message -> {
+                    is LobbyEvent.Message -> {
                         if (session.userId == event.userId) {
                             chatHistoryAdd(event)
                         } else {

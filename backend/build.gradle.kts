@@ -90,6 +90,13 @@ val shadowJar = tasks.getByName<ShadowJar>("shadowJar") {
     from(packageStatic)
 }
 
+val unzipJsJar = tasks.create<Copy>("unzipShadowJar") {
+    dependsOn(shadowJar)
+    group = "build"
+    from(zipTree(shadowJar.archiveFile))
+    into(shadowJar.destinationDirectory.file(shadowJar.archiveBaseName))
+}
+
 task<DefaultTask>("depsize") {
     group = "help"
     description = "prints dependency sizes"

@@ -3,8 +3,8 @@ package penta.util
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonConfiguration
 import kotlinx.serialization.modules.SerializersModule
-import penta.SerialNotation
-import penta.network.GlobalEvent
+import penta.network.GameEvent
+import penta.network.LobbyEvent
 import penta.network.LoginResponse
 
 val json = Json(
@@ -14,7 +14,7 @@ val json = Json(
         prettyPrint = false,
         classDiscriminator = "type"
     ), context = SerializersModule {
-        SerialNotation.install(this)
+        GameEvent.install(this)
         LoginResponse.install(this)
-        GlobalEvent.install(this)
+        LobbyEvent.install(this)
     })

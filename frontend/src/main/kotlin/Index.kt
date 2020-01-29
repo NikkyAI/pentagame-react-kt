@@ -15,7 +15,7 @@ import kotlin.browser.document
 
 val initialState = State()
 val store: Store<State, RAction, dynamic> = createStore<State, RAction, dynamic>(
-    State.combinedReducers(),
+    State.reducer,
     initialState,
     compose(
         rEnhancer(),

@@ -1,5 +1,6 @@
 package util
 
+import org.w3c.dom.ItemArrayLike
 import redux.Reducer
 import redux.combineReducers
 import kotlin.reflect.KProperty1
@@ -25,4 +26,10 @@ import kotlin.reflect.KProperty1
  */
 fun <S, A, R> combineReducers(reducers: Map<KProperty1<S, R>, Reducer<*, A>>): Reducer<S, A> {
     return combineReducers(reducers.mapKeys { it.key.name })
+}
+
+fun <T> ItemArrayLike<T>.forEach(function: (T) -> Unit) {
+    for (i in 0 until length) {
+        function(item(i)!!)
+    }
 }

@@ -2,9 +2,10 @@ package penta
 
 import penta.logic.Piece
 import penta.logic.Field
+import penta.network.GameEvent
 
 sealed class PentaMove {
-    abstract fun toSerializable(): SerialNotation
+    abstract fun toSerializable(): GameEvent
     abstract fun asNotation(): String
 
     interface Move {
@@ -28,7 +29,7 @@ sealed class PentaMove {
     ) : PentaMove(), Move, CanSetBlack, CanSetGrey {
         override fun asNotation(): String = "${playerPiece.playerId}: ${playerPiece.id} (${from.id} -> ${to.id})"
         override fun toSerializable() =
-            SerialNotation.MovePlayer(
+            GameEvent.MovePlayer(
                 player = playerPiece.playerId,
                 piece = playerPiece.id,
                 from = from.id,
@@ -44,7 +45,7 @@ sealed class PentaMove {
     ) : PentaMove(), Move, CanSetGrey {
         override fun asNotation(): String = "${playerPiece.playerId}: ${playerPiece.id} (${from.id} -> ${to.id})"
         override fun toSerializable() =
-            SerialNotation.ForcedMovePlayer(
+            GameEvent.ForcedMovePlayer(
                 player = playerPiece.playerId,
                 piece = playerPiece.id,
                 from = from.id,
@@ -63,7 +64,7 @@ sealed class PentaMove {
             "${playerPiece.playerId}: ${playerPiece.id} ${otherPlayerPiece.id}{${otherPlayerPiece.playerId}} (${from.id} <-> ${to.id})"
 
         override fun toSerializable() =
-            SerialNotation.SwapOwnPiece(
+            GameEvent.SwapOwnPiece(
                 player = playerPiece.playerId,
                 piece = playerPiece.id,
                 otherPiece = otherPlayerPiece.id,
@@ -83,7 +84,7 @@ sealed class PentaMove {
             "${playerPiece.playerId}: ${playerPiece.id} ${otherPlayerPiece.id}{${otherPlayerPiece.playerId}} (${from.id} <+> ${to.id})"
 
         override fun toSerializable() =
-            SerialNotation.SwapHostilePieces(
+            GameEvent.SwapHostilePieces(
                 player = playerPiece.playerId,
                 otherPlayer = otherPlayerPiece.playerId,
                 piece = playerPiece.id,
@@ -104,7 +105,7 @@ sealed class PentaMove {
             "${playerPiece.playerId}: ${playerPiece.id} ${otherPlayerPiece.id}{${otherPlayerPiece.playerId}} (${from.id} <=> ${to.id})"
 
         override fun toSerializable() =
-            SerialNotation.CooperativeSwap(
+            GameEvent.CooperativeSwap(
                 player = playerPiece.playerId,
                 otherPlayer = otherPlayerPiece.playerId,
                 piece = playerPiece.id,
@@ -120,7 +121,7 @@ sealed class PentaMove {
         val to: Field
     ) : PentaMove() {
         override fun asNotation(): String = "& [${to.id}]"
-        override fun toSerializable() = SerialNotation.SetBlack(piece.id, from.id, to.id)
+        override fun toSerializable() = GameEvent.SetBlack(piece.id, from.id, to.id)
     }
 
     data class SetGrey(
@@ -129,26 +130,26 @@ sealed class PentaMove {
         val to: Field
     ) : PentaMove() {
         override fun asNotation(): String = "& [${to.id}]"
-        override fun toSerializable() = SerialNotation.SetGrey(piece.id, from?.id, to.id)
+        override fun toSerializable() = GameEvent.SetGrey(piece.id, from?.id, to.id)
     }
 
     data class SelectGrey(
         val grayPiece: Piece.GrayBlocker?
     ): PentaMove() {
         override fun asNotation(): String = "select grey ${grayPiece?.id}"
-        override fun toSerializable(): SerialNotation = TODO("add serializer class")
+        override fun toSerializable(): GameEvent = TODO("add serializer class")
     }
 
     data class SelectPlayerPiece(
         val playerPiece: Piece.Player?
     ): PentaMove() {
         override fun asNotation(): String = "select player ${playerPiece?.id}"
-        override fun toSerializable(): SerialNotation = TODO("add serializer class")
+        override fun toSerializable(): GameEvent = TODO("add serializer class")
     }
 
     data class PlayerJoin(val player: PlayerState) : PentaMove() {
         override fun asNotation(): String = ">>> [${player.id}]"
-        override fun toSerializable() = SerialNotation.PlayerJoin(player)
+        override fun toSerializable() = GameEvent.PlayerJoin(player)
     }
 
 //    @Deprecated("not a move")
@@ -165,13 +166,13 @@ sealed class PentaMove {
 
     object InitGame : PentaMove() {
         override fun asNotation(): String = ">>>"
-        override fun toSerializable() = SerialNotation.InitGame
+        override fun toSerializable() = GameEvent.InitGame
         override fun toString() = "InitGame"
     }
 
     data class Win(val players: List<String>) : PentaMove() {
         override fun asNotation(): String = "winner: ${players.joinToString(" & ")}"
-        override fun toSerializable() = SerialNotation.Win(players)
+        override fun toSerializable() = GameEvent.Win(players)
     }
 
     data class IllegalMove(val message: String, val move: PentaMove) : PentaMove() {
@@ -179,6 +180,6 @@ sealed class PentaMove {
             TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
         }
 
-        override fun toSerializable() = SerialNotation.IllegalMove(message, move.toSerializable())
+        override fun toSerializable() = GameEvent.IllegalMove(message, move.toSerializable())
     }
 }

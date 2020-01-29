@@ -114,8 +114,8 @@ kotlin {
 
                 // mongodb
 //                    implementation("org.litote.kmongo:kmongo-serialization:3.11.1")
-                api("org.litote.kmongo:kmongo-coroutine-serialization:3.11.1")
-                api("org.litote.kmongo:kmongo-id:3.11.1")
+//                api("org.litote.kmongo:kmongo-coroutine-serialization:3.11.1")
+//                api("org.litote.kmongo:kmongo-id:3.11.1")
             }
             kotlin.srcDirs(genBackendResource.path)
         }

@@ -7,6 +7,7 @@ import io.ktor.http.cio.websocket.Frame
 import io.ktor.http.cio.websocket.close
 import mu.KotlinLogging
 import penta.network.GameSessionInfo
+import penta.network.GameEvent
 import penta.util.json
 
 sealed class ConnectionState {
@@ -57,20 +58,32 @@ sealed class ConnectionState {
     data class Lobby(
         override val baseUrl: Url,
         override val userId: String,
-        override var session: String
-    ) : ConnectionState(), HasSession
+        override var session: String,
+        internal val websocketSessionLobby: DefaultClientWebSocketSession
+    ) : ConnectionState(), HasSession {
+        suspend fun sendMessage() {
+            TODO("copy from sendMove")
+        }
 
-    data class Observing(
+        suspend fun disconnect() {
+            logger.info { "leaving game" }
+            logger.info { "sending close frame" }
+            websocketSessionLobby.close(CloseReason(CloseReason.Codes.NORMAL, "leaving game"))
+            websocketSessionLobby.terminate()
+        }
+    }
+
+    data class ConnectedToGame(
         override val baseUrl: Url,
         override val userId: String,
         override var session: String,
         override val game: GameSessionInfo,
-        private val websocketSession: DefaultClientWebSocketSession,
-        var running: Boolean
+        private val websocketSessionGame: DefaultClientWebSocketSession,
+        private val websocketSessionLobby: DefaultClientWebSocketSession
     ) : ConnectionState(), HasSession, HasGameSession {
         suspend fun sendMove(move: PentaMove) {
-            websocketSession.outgoing.send(
-                Frame.Text(json.stringify(SerialNotation.serializer(), move.toSerializable()))
+            websocketSessionGame.outgoing.send(
+                Frame.Text(json.stringify(GameEvent.serializer(), move.toSerializable()))
             )
         }
 
@@ -80,8 +93,8 @@ sealed class ConnectionState {
 //            running = false
 //            websocketSession.outgoing.send(Frame.Text("close"))
             logger.info { "sending close frame" }
-            websocketSession.close(CloseReason(CloseReason.Codes.NORMAL, "leaving game"))
-            websocketSession.terminate()
+            websocketSessionGame.close(CloseReason(CloseReason.Codes.NORMAL, "leaving game"))
+            websocketSessionGame.terminate()
 //            logger.info { "finished leaving game" }
         }
     }

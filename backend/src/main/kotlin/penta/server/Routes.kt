@@ -34,7 +34,7 @@ fun Application.routes() = routing {
         defaultResource("static/index.html")
     }
 
-    webSocket("ws/global") {
+    webSocket("ws/lobby") {
         logger.info { "websocket connection opened" }
         val sessionId = (incoming.receive() as Frame.Text).readText()
         val session = SessionController.get(sessionId)
@@ -43,7 +43,7 @@ fun Application.routes() = routing {
             return@webSocket close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "not authenticated"))
         }
 
-        GlobalSessionController.handle(this, session)
+        LobbyHandler.handle(this, session)
     }
 
     webSocket("/ws/game/{gameId}") {

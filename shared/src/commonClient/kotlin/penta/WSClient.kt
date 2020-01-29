@@ -22,8 +22,9 @@ import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.serialization.list
 import kotlinx.serialization.serializer
 import mu.KotlinLogging
+import penta.network.GameEvent
 import penta.network.GameSessionInfo
-import penta.network.GlobalEvent
+import penta.network.LobbyEvent
 import penta.network.LoginRequest
 import penta.network.LoginResponse
 import penta.network.ServerStatus
@@ -106,18 +107,8 @@ object WSClient {
                     baseUrl = baseURL,
                     userId = userIdInput,
                     session = sessionId ?: throw IllegalStateException("missing SESSION header")
-                ).also { state ->
-                    //                    val whoAmIUrl = URLBuilder(baseURL).apply {
-//                        path("whoami")
-//                    }.build()
-//                    client.authenticatedRequest(whoAmIUrl, state, HttpMethod.Get) {
-//                        authenticateWith(state)
-//                    }.run {
-//                        logger.suspendInfo { "response: " + readText() }
-//                    }
-                }
+                )
             }
-//            dispatch(connectionState)
 
             dispatch(connectionState)
             return connectionState
@@ -131,16 +122,22 @@ object WSClient {
         }
     }
 
-    suspend fun listGames(
-        state: ConnectionState.Authenticated,
+    suspend fun <T> listGames(
+        state: T,
         dispatch: (ConnectionState) -> Unit
-    ): List<GameSessionInfo> {
+    ): List<GameSessionInfo>
+        where T : ConnectionState, T : ConnectionState.HasSession {
         val listGamesUrl = URLBuilder(state.baseUrl)
             .path("api", "games")
             .build()
 
         val receivedList = try {
-            client.authenticatedRequest(listGamesUrl, state, HttpMethod.Get, GameSessionInfo.serializer().list)
+            client.authenticatedRequest(
+                listGamesUrl,
+                state,
+                HttpMethod.Get,
+                GameSessionInfo.serializer().list
+            )
         } catch (exception: Exception) {
             logger.error(exception) { "request failed" }
             // TODO: add state: connection lost
@@ -161,7 +158,7 @@ object WSClient {
         dispatch: (ConnectionState) -> Unit
     ) {
         val wsUrl = URLBuilder(state.baseUrl)
-            .path("ws", "global")
+            .path("ws", "lobby")
             .build()
 
         client.webSocket(
@@ -177,36 +174,42 @@ object WSClient {
 
             outgoing.send(Frame.Text(state.session))
 
-            val observingState = ConnectionState.Lobby(
+            val lobbyState = ConnectionState.Lobby(
                 baseUrl = state.baseUrl,
                 userId = state.userId,
-                session = state.session
+                session = state.session,
+                websocketSessionLobby = this
             )
-            logger.info { "setting connectionState to $observingState" }
-            dispatch(observingState)
+            logger.info { "setting connectionState to $lobbyState" }
+            dispatch(lobbyState)
 
             try {
                 while (true) {
                     val notationJson = (incoming.receive() as Frame.Text).readText()
                     logger.info { "ws received: $notationJson" }
 
-                    val event = json.parse(GlobalEvent.serializer(), notationJson) as? GlobalEvent.FromServer ?: run {
+                    val _event = json.parse(LobbyEvent.serializer(), notationJson)
+
+                    logger.info { "received event: $_event" }
+
+                    val event = _event as? LobbyEvent.FromServer ?: run {
                         close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "event: $this cannot be sent by client"))
 //                        terminate()
                         throw IllegalStateException("event: $this cannot be sent by client")
                     }
 
+                    // TODO: dispatch LobbyEvents to redux
                     when (event) {
-                        is GlobalEvent.InitialSync -> {
+                        is LobbyEvent.InitialSync -> {
                             // TODO
                         }
-                        is GlobalEvent.Message -> {
+                        is LobbyEvent.Message -> {
                             // TODO
                         }
-                        is GlobalEvent.Join -> {
+                        is LobbyEvent.Join -> {
                             // TODO
                         }
-                        is GlobalEvent.Leave -> {
+                        is LobbyEvent.Leave -> {
                             // TODO
                         }
                         else -> {
@@ -238,9 +241,9 @@ object WSClient {
     }
 
     suspend fun createGameAndConnect(
-        state: ConnectionState.Authenticated,
+        state: ConnectionState.Lobby,
         dispatchConnection: (ConnectionState) -> Unit,
-        dispatchNotation: (SerialNotation) -> Unit,
+        dispatchNotation: (GameEvent) -> Unit,
         dispatchNewBoardState: (BoardState) -> Unit
     ) {
         val createGameUrl = URLBuilder(state.baseUrl)
@@ -259,10 +262,10 @@ object WSClient {
 
     @UseExperimental(ExperimentalStdlibApi::class)
     suspend fun connectToGame(
-        state: ConnectionState.Authenticated,
+        state: ConnectionState.Lobby,
         game: GameSessionInfo,
         dispatchConnection: (ConnectionState) -> Unit,
-        dispatchNotation: (SerialNotation) -> Unit,
+        dispatchNotation: (GameEvent) -> Unit,
         dispatchNewBoardState: (BoardState) -> Unit
     ) {
         val wsUrl = URLBuilder(state.baseUrl)
@@ -292,16 +295,13 @@ object WSClient {
             outgoing.send(Frame.Text(state.session))
 
             logger.info { "setting multiplayerStatus to Playing" }
-            val observingState = ConnectionState.Observing(
+            val observingState = ConnectionState.ConnectedToGame(
                 baseUrl = state.baseUrl,
                 userId = state.userId,
                 session = state.session,
                 game = game,
-                websocketSession = this@webSocket,
-                running = true
-//                closeFun = {
-//                    close(CloseReason(CloseReason.Codes.GOING_AWAY, "closing"))
-//                }
+                websocketSessionGame = this@webSocket,
+                websocketSessionLobby = state.websocketSessionLobby
             )
             logger.info { "setting connectionStatus to $observingState" }
             dispatchConnection(observingState)
@@ -317,13 +317,13 @@ object WSClient {
 
                 val notationListJson = (incoming.receive() as Frame.Text).readText()
                 logger.info { "receiving notation $notationListJson" }
-                val history = json.parse(SerialNotation.serializer().list, notationListJson)
+                val history = json.parse(GameEvent.serializer().list, notationListJson)
                 // TODO: dispatch action to store
 //                penta.client.PentaViz.gameState.isPlayback = true
 //                withContext(Dispatchers.Main) {
-                    history.forEach { notation ->
-                        dispatchNotation(notation)
-                    }
+                history.forEach { notation ->
+                    dispatchNotation(notation)
+                }
 //                }
                 // TODO: dispatch action to store
 //                penta.client.PentaViz.gameState.isPlayback = false
@@ -345,7 +345,7 @@ object WSClient {
                         is Frame.Text -> {
                             val notationJson = frame.readText()
                             logger.info { "receiving notation $notationJson" }
-                            val notation = json.parse(SerialNotation.serializer(), notationJson)
+                            val notation = json.parse(GameEvent.serializer(), notationJson)
                             dispatchNotation(notation)
                         }
                     }
@@ -367,10 +367,11 @@ object WSClient {
 
         // connection closed "normally" ?
         dispatchConnection(
-            ConnectionState.Authenticated(
+            ConnectionState.Lobby(
                 baseUrl = state.baseUrl,
                 userId = state.userId,
-                session = state.session
+                session = state.session,
+                websocketSessionLobby = state.websocketSessionLobby
             )
         )
 
@@ -378,7 +379,7 @@ object WSClient {
         dispatchNewBoardState(BoardState.create())
     }
 
-    suspend fun joinGame(state: ConnectionState.Observing) {
+    suspend fun joinGame(state: ConnectionState.ConnectedToGame) {
         val joinGameUrl = URLBuilder(state.baseUrl)
             .path("api", "game", state.game.id, "join")
             .build()
@@ -387,7 +388,7 @@ object WSClient {
     }
 
     // TODO: just send `InitGame`
-    suspend fun startGame(state: ConnectionState.Observing) {
+    suspend fun startGame(state: ConnectionState.ConnectedToGame) {
         val startGameUrl = URLBuilder(state.baseUrl)
             .path("api", "game", state.game.id, "start")
             .build()

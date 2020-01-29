@@ -33,7 +33,7 @@ import org.w3c.dom.events.Event
 import penta.BoardState
 import penta.ConnectionState
 import penta.PentaMove
-import penta.SerialNotation
+import penta.network.GameEvent
 import penta.network.GameSessionInfo
 import penta.redux.MultiplayerState
 import react.RBuilder
@@ -55,7 +55,9 @@ class TextConnection(props: TextConnectionProps) : RComponent<TextConnectionProp
     var idValue = ""
     var passwordValue = ""
 
-    private fun requestGameList(connection: ConnectionState.Authenticated) {
+    private fun <T> requestGameList(connection: T)
+        where T : ConnectionState, T : ConnectionState.HasSession
+    {
         GlobalScope.promise {
             penta.WSClient.listGames(
                 connection,
@@ -113,19 +115,19 @@ class TextConnection(props: TextConnectionProps) : RComponent<TextConnectionProp
         }
     }
 
-    private fun login() {
-        GlobalScope.launch {
-            val returnedState = penta.WSClient.login(
-                urlInput = urlValue,
-                userIdInput = idValue,
-                passwordInput = passwordValue,
-                dispatch = props.dispatchConnection
-            )
-            when (val nextState = returnedState) {
-                is ConnectionState.Authenticated -> requestGameList(connection = nextState)
-            }
-        }
-    }
+//    private fun login() {
+//        GlobalScope.launch {
+//            val returnedState = penta.WSClient.login(
+//                urlInput = urlValue,
+//                userIdInput = idValue,
+//                passwordInput = passwordValue,
+//                dispatch = props.dispatchConnection
+//            )
+//            when (val nextState = returnedState) {
+//                is ConnectionState.Authenticated -> requestGameList(connection = nextState)
+//            }
+//        }
+//    }
 
     private fun RBuilder.loginSubmitButton() {
         mButton(
@@ -142,11 +144,16 @@ class TextConnection(props: TextConnectionProps) : RComponent<TextConnectionProp
             variant = MButtonVariant.outlined,
             color = MColor.secondary,
             onClick = { event ->
-                // TODO: kill current connections to server
+                // TODO: kill current connection to server
                 when (connection) {
-                    is ConnectionState.Observing -> {
+                    is ConnectionState.ConnectedToGame -> {
                         GlobalScope.launch {
                             connection.leave()
+                        }
+                    }
+                    is ConnectionState.Lobby -> {
+                        GlobalScope.launch {
+                            connection.disconnect()
                         }
                     }
                 }
@@ -157,21 +164,26 @@ class TextConnection(props: TextConnectionProps) : RComponent<TextConnectionProp
                     )
                 )
             }
-
         )
     }
 
     private fun loginFunction(event: Event) {
         event.preventDefault()
         GlobalScope.launch {
-            val returnedState = penta.WSClient.login(
+            val nextState = penta.WSClient.login(
                 urlInput = urlValue,
                 userIdInput = idValue,
                 passwordInput = passwordValue,
                 dispatch = props.dispatchConnection
             )
-            when (val nextState = returnedState) {
-                is ConnectionState.Authenticated -> requestGameList(connection = nextState)
+            when (nextState) {
+                is ConnectionState.Authenticated -> {
+                    penta.WSClient.connectToLobby(
+                        state = nextState,
+                        dispatch = props.dispatchConnection
+                    )
+//                    requestGameList(connection = nextState)
+                }
             }
         }
     }
@@ -181,7 +193,7 @@ class TextConnection(props: TextConnectionProps) : RComponent<TextConnectionProp
             return
         }
         when (val state = props.connection) {
-            is ConnectionState.NotLoggedIn -> {
+            is ConnectionState.Disconnected -> {
                 mFormControl {
                     form {
                         attrs.onSubmitFunction = ::loginFunction
@@ -227,7 +239,7 @@ class TextConnection(props: TextConnectionProps) : RComponent<TextConnectionProp
                     }
                 }
             }
-            is ConnectionState.Authenticated -> {
+            is ConnectionState.Lobby -> {
                 mGridContainer {
                     mGridItem(xs = MGridSize.cells4) {
                         disconnectButton(state)
@@ -289,7 +301,7 @@ class TextConnection(props: TextConnectionProps) : RComponent<TextConnectionProp
                     }
                 }
             }
-            is ConnectionState.Observing -> {
+            is ConnectionState.ConnectedToGame -> {
                 mGridContainer {
 //                    mGridItem(xs = MGridSize.cells3) {
 //                        disconnectButton(state)
@@ -352,7 +364,7 @@ interface TextConnectionDispatchProps : RProps {
     var dispatchConnection: (ConnectionState) -> Unit
     var dispatchMultiplayerAction: (MultiplayerState.Companion.Actions) -> Unit
     var dispatchMoveLocal: (PentaMove) -> Unit
-    var dispatchNotationLocal: (SerialNotation) -> Unit
+    var dispatchNotationLocal: (GameEvent) -> Unit
     var dispatchNewBoardstate: (BoardState) -> Unit
 }
 

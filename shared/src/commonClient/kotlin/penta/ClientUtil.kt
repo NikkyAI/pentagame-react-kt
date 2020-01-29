@@ -6,7 +6,6 @@ import io.data2viz.color.Colors
 import io.data2viz.geom.Point
 import io.data2viz.math.Angle
 import io.data2viz.math.deg
-import io.data2viz.viz.PathNode
 import mu.KotlinLogging
 import penta.logic.Piece
 import penta.logic.Field
@@ -121,7 +120,7 @@ fun SVG.drawPlayer(
 
             polygon {
                 if(pieceId != null) {
-                    id = pieceId
+                    cssClass = pieceId
                 }
                 this.points = points.joinToString(" ") { "${it.x},${it.y}" }
 
@@ -136,7 +135,7 @@ fun SVG.drawPlayer(
             }
             polygon {
                 if(pieceId != null) {
-                    id = pieceId
+                    cssClass = pieceId
                 }
                 this.points = points.joinToString(" ") { "${it.x},${it.y}" }
 
@@ -172,7 +171,7 @@ fun SVG.drawPlayer(
 
             polygon {
                 if(pieceId != null) {
-                    id = pieceId
+                    cssClass = pieceId
                 }
                 this.points = points.joinToString(" ") { "${it.x},${it.y}" }
 
@@ -184,7 +183,7 @@ fun SVG.drawPlayer(
         "circle" -> {
             circle {
                 if(pieceId != null) {
-                    id = pieceId
+                    cssClass = pieceId
                 }
                 cx = "${center.x}"
                 cy = "${center.y}"
@@ -273,85 +272,4 @@ fun calculatePiecePos(piece: Piece, field: Field?, boardState: BoardState) = wit
         )
     }
     pos
-}
-
-fun PathNode.drawFigure(figureId: String, center: Point, radius: Double) {
-    clearPath()
-
-    fun point(angle: Angle, radius: Double, center: Point = Point(0.0, 0.0)): Point {
-        return Point(angle.cos * radius, angle.sin * radius) + center
-    }
-
-    fun angles(n: Int, start: Angle = 0.deg): List<Angle> {
-        val step = 360.deg / n
-
-        return (0..n).map { i ->
-            (start + (step * i))
-        }
-    }
-
-    when (figureId) {
-        "square" -> {
-            val points = angles(4, 0.deg).map { angle ->
-                point(angle, radius, center)
-            }
-            points.forEachIndexed { index, it ->
-                if (index == 0) {
-                    moveTo(it.x, it.y)
-                } else {
-                    lineTo(it.x, it.y)
-                }
-            }
-        }
-        "triangle" -> {
-            val points = angles(3, -90.deg).map { angle ->
-                point(angle, radius, center)
-            }
-            points.forEachIndexed { index, it ->
-                if (index == 0) {
-                    moveTo(it.x, it.y)
-                } else {
-                    lineTo(it.x, it.y)
-                }
-            }
-        }
-        "cross" -> {
-
-            val width = 15
-
-            val p1 = point((45 - width).deg, radius, center)
-            val p2 = point((45 + width).deg, radius, center)
-
-            val c = sqrt((p2.x - p1.x).pow(2) + (p2.y - p1.y).pow(2))
-
-            val a = c / sqrt(2.0)
-
-            val points = listOf(
-                point((45 - width).deg, radius, center),
-                point((45 + width).deg, radius, center),
-                point((90).deg, a, center),
-                point((135 - width).deg, radius, center),
-                point((135 + width).deg, radius, center),
-                point((180).deg, a, center),
-                point((45 + 180 - width).deg, radius, center),
-                point((45 + 180 + width).deg, radius, center),
-                point((270).deg, a, center),
-                point((135 + 180 - width).deg, radius, center),
-                point((135 + 180 + width).deg, radius, center),
-                point((360).deg, a, center)
-            )
-            points.forEachIndexed { index, it ->
-                if (index == 0) {
-                    moveTo(it.x, it.y)
-                } else {
-                    lineTo(it.x, it.y)
-                }
-            }
-        }
-        "circle" -> {
-            arc(center.x, center.y, radius, 0.0, 180.0, false)
-        }
-        else -> throw IllegalStateException("illegal figureId: ''")
-    }
-    closePath()
 }

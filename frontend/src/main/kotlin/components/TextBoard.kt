@@ -37,7 +37,7 @@ interface TextBoardProps : TextBoardStateProps, TextBoardDispatchProps {
 class TextBoard(props: TextBoardProps) : RComponent<TextBoardProps, RState>(props) {
     fun TextBoardProps.dispatchMove(move: PentaMove) {
         when (val c = connection) {
-            is ConnectionState.Observing -> {
+            is ConnectionState.ConnectedToGame -> {
                 GlobalScope.launch {
                     c.sendMove(move)
                 }
