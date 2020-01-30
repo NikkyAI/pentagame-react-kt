@@ -189,10 +189,11 @@ object WSClient {
 
             try {
                 while (true) {
+                    logger.info { "waiting for frame" }
                     val notationJson = (incoming.receive() as Frame.Text).readText()
                     logger.info { "ws received: $notationJson" }
 
-                    val event: LobbyEvent = json.parse(LobbyEvent.serializer(), notationJson)
+                    val event = json.parse(LobbyEvent.serializer(), notationJson)
 
                     logger.info { "received event: $event" }
 

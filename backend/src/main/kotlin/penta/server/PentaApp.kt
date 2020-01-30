@@ -22,6 +22,7 @@ import java.time.Duration
 
 private val logger = Logger("PentaApp")
 fun Application.main() {
+    Logger.defaultLevel = Logger.Level.INFO
     install(DefaultHeaders)
     // TODO: fix call logging
     install(CallLogging) {

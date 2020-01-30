@@ -12,7 +12,6 @@ sealed class LobbyEvent {
     interface FromClient
     interface FromServer
 
-
     // TODO: add more message types to update and remove games
     @Serializable
     data class UpdateGame(
@@ -40,7 +39,7 @@ sealed class LobbyEvent {
     data class InitialSync(
         val users: List<String>,
         val chat: List<Message>,
-        val games: List<GameSessionInfo>
+        val games: Map<String, GameSessionInfo>
     ): LobbyEvent(), FromServer
 
     // TODO: event to announce new games

@@ -1,13 +1,11 @@
 package reducers
 
 import actions.Action
-import initialState
-import penta.PentaMove
+import com.soywiz.klogger.Logger
 import penta.BoardState
 import penta.BoardState.Companion.processMove
-import redux.RAction
-import util.combineReducers
 import penta.ConnectionState
+import penta.PentaMove
 import penta.network.GameEvent
 import penta.network.LobbyEvent
 import penta.redux.MultiplayerState
@@ -19,7 +17,7 @@ data class State(
 //    val array: Array<String> = emptyArray()
 ) {
     fun reduce(action: Any): State {
-        return when(action) {
+        return when (action) {
             is Action<*> -> {
                 reduce(action.action)
             }
@@ -39,7 +37,13 @@ data class State(
                 copy(multiplayerState = multiplayerState.reduce(action))
             }
             is LobbyEvent -> {
-                copy(multiplayerState = multiplayerState.reduceLobby(action))
+                copy(
+                    multiplayerState = with(multiplayerState) {
+                        copy(
+                            lobby = lobby.reduce(action)
+                        )
+                    }
+                )
             }
             is ConnectionState -> {
                 copy(
@@ -48,11 +52,14 @@ data class State(
                     )
                 )
             }
-            else -> this
+            else -> {
+                this
+            }
         }.exhaustive
     }
 
     companion object {
+        private val logger = Logger(this::class.simpleName!!)
         val reducer: (State, Any) -> State = State::reduce
     }
 }

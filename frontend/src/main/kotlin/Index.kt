@@ -1,4 +1,5 @@
 import com.ccfraser.muirwik.components.styles.mStylesProvider
+import com.soywiz.klogger.Logger
 import components.app
 import externals.ReduxLoggerOptionsImpl
 import externals.createLogger
@@ -58,6 +59,7 @@ fun main() {
 //            PentaMove.InitGame
 //        )
 //    )
+    Logger.defaultLevel = Logger.Level.DEBUG
 
     val rootDiv = document.getElementById("container")
     render(rootDiv) {

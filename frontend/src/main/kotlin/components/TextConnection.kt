@@ -268,7 +268,7 @@ class TextConnection(props: TextConnectionProps) : RComponent<TextConnectionProp
                 mList {
                     mListItem("Games")
                     mDivider()
-                    props.games.forEach { gameSessionInfo ->
+                    props.games.forEach { (id, gameSessionInfo) ->
                         mListItem("id", gameSessionInfo.id) {
                             mListItemText("owner", gameSessionInfo.owner)
                             mListItemText("players", "${gameSessionInfo.players}")
@@ -327,6 +327,7 @@ class TextConnection(props: TextConnectionProps) : RComponent<TextConnectionProp
             }
             else -> {
                 mTypography("TODO: Add Disconnect button")
+                mTypography("TODO: Implement view for $state")
             }
         }
         mTypography(props.connection.toString())
@@ -359,7 +360,7 @@ interface TextConnectionParameters : RProps
 interface TextConnectionStateProps : TextConnectionParameters {
     var boardState: BoardState
     var connection: ConnectionState
-    var games: List<GameSessionInfo>
+    var games: Map<String, GameSessionInfo>
 }
 
 interface TextConnectionDispatchProps : RProps {
@@ -379,7 +380,7 @@ val textConnection =
             console.debug("configProps: ", configProps)
             boardState = state.boardState
             connection = state.multiplayerState.connectionState
-            games = state.multiplayerState.games.values.toList()
+            games = state.multiplayerState.lobby.games
         },
         { dispatch, configProps ->
             // any kind of interactivity is linked to dispatching state changes here
