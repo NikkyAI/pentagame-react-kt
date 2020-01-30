@@ -9,6 +9,7 @@ import redux.RAction
 import util.combineReducers
 import penta.ConnectionState
 import penta.network.GameEvent
+import penta.network.LobbyEvent
 import penta.redux.MultiplayerState
 import penta.util.exhaustive
 
@@ -36,6 +37,9 @@ data class State(
             }
             is MultiplayerState.Companion.Actions -> {
                 copy(multiplayerState = multiplayerState.reduce(action))
+            }
+            is LobbyEvent -> {
+                copy(multiplayerState = multiplayerState.reduceLobby(action))
             }
             is ConnectionState -> {
                 copy(

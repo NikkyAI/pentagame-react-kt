@@ -15,10 +15,8 @@ sealed class LobbyEvent {
 
     // TODO: add more message types to update and remove games
     @Serializable
-    data class AddGame(
-        val id: String,
-        val creator: String,
-        val gameType: BoardState.GameType
+    data class UpdateGame(
+        val game: GameSessionInfo
     ): LobbyEvent(), FromServer
 
     @Serializable
@@ -51,7 +49,7 @@ sealed class LobbyEvent {
     companion object {
         fun install(builder: SerializersModuleBuilder) {
             builder.polymorphic<LobbyEvent> {
-                AddGame::class with AddGame.serializer()
+                UpdateGame::class with UpdateGame.serializer()
                 Message::class with Message.serializer()
                 Join::class with Join.serializer()
                 Leave::class with Leave.serializer()

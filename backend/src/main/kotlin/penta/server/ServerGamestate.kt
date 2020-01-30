@@ -89,7 +89,6 @@ class ServerGamestate(
                 id = id,
                 owner = owner.userId,
                 running = running,
-                turn = boardStateStore.state.turn,
                 players = boardStateStore.state.players.map { it.id },
                 observers = sessionStore.state.observingSessions.keys.map { it.userId }
             )

@@ -1,31 +1,44 @@
 package penta.redux
 
-import org.reduxkotlin.Reducer
 import penta.ConnectionState
 import penta.network.GameSessionInfo
+import penta.network.LobbyEvent
 import penta.util.exhaustive
 
 data class MultiplayerState(
-    val observers: List<String> = listOf(),
+    val gameObservers: List<String> = listOf(),
     val connectionState: ConnectionState = ConnectionState.Disconnected(),
-    val games: List<GameSessionInfo> = listOf()
+    val lobbyUsers: List<String> = listOf(), // TODO: use this ?
+    val chatHistory: List<LobbyEvent.Message>,
+    val games: Map<String, GameSessionInfo> = mapOf()
 ) {
-    fun reduce(action: Actions): MultiplayerState {
-        val state = this
-        return when(action) {
-            is Actions.AddObserver -> {
-                state.copy(observers = state.observers + action.observer)
-            }
-            is Actions.RemoveObserver -> {
-                state.copy(observers = state.observers - action.observer)
-            }
-            is Actions.SetGames -> {
-                state.copy(games = action.games.toList())
-            }
-            is Actions.SetConnectionState -> {
-                state.copy(connectionState = action.connectionState)
-            }
-        }.exhaustive
+    fun reduce(action: Actions): MultiplayerState = when(action) {
+        is Actions.AddObserver -> copy(
+            gameObservers = gameObservers + action.observer
+        )
+        is Actions.RemoveObserver -> copy(
+            gameObservers = gameObservers - action.observer
+        )
+        is Actions.SetGames -> copy(
+            games = action.games.associateBy { it.id }
+        )
+        is Actions.SetConnectionState -> copy(
+            connectionState = action.connectionState
+        )
+    }.exhaustive
+
+    fun reduceLobby(action: LobbyEvent): MultiplayerState = when(action) {
+        is LobbyEvent.InitialSync -> copy(
+            lobbyUsers = action.users,
+            chatHistory = action.chat,
+            games = action.games.associateBy { it.id }
+        )
+        is LobbyEvent.UpdateGame -> copy(
+            games = games + (action.game.id to action.game)
+        )
+        is LobbyEvent.Message -> TODO()
+        is LobbyEvent.Join -> TODO()
+        is LobbyEvent.Leave -> TODO()
     }
 
     companion object {
