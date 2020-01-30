@@ -36,7 +36,13 @@ tasks.withType(AbstractKotlinCompile::class.java).all {
 }
 
 kotlin {
-    jvm()
+    jvm() {
+        compilations.all {
+            kotlinOptions {
+                jvmTarget = "1.8"
+            }
+        }
+    }
     js {
         nodejs()
 //        useCommonJs()
@@ -74,6 +80,8 @@ kotlin {
                 api(d2v("color"))
 
                 // logging
+//                api("com.soywiz.korlibs.klogger:klogger-metadata:1.8.1")
+                api("com.soywiz.korlibs.klogger:klogger:1.8.1")
                 api("io.github.microutils:kotlin-logging-common:${KotlinLogging.version}")
 
                 // Redux
@@ -94,12 +102,18 @@ kotlin {
         jvm().compilations["main"].defaultSourceSet {
             dependencies {
                 api(kotlin("stdlib-jdk8"))
+
+                // need this ? why does metadata not work ?
+                api("org.jetbrains.kotlinx:kotlinx-serialization-runtime:${Serialization.version}")
+
                 // KTOR
                 api(ktor("server-core", Ktor.version))
                 api(ktor("server-cio", Ktor.version))
                 api(ktor("websockets", Ktor.version))
                 api(ktor("jackson", Ktor.version))
 
+                // logging
+                api("com.soywiz.korlibs.klogger:klogger-jvm:1.8.1")
 
                 // serialization
 //                api("org.jetbrains.kotlinx:kotlinx-serialization-runtime:${Serialization.version}")
@@ -144,6 +158,7 @@ kotlin {
             dependsOn(commonClient)
             dependencies {
                 // logging
+                api("com.soywiz.korlibs.klogger:klogger-js:1.8.1")
                 api("io.github.microutils:kotlin-logging-js:${KotlinLogging.version}")
 
                 // ktor client

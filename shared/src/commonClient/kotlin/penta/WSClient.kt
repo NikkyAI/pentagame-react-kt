@@ -1,6 +1,7 @@
 package penta
 
 import client
+import com.soywiz.klogger.Logger
 import io.ktor.client.features.websocket.webSocket
 import io.ktor.client.request.post
 import io.ktor.client.request.request
@@ -35,7 +36,7 @@ import penta.util.json
 import penta.util.parse
 
 object WSClient {
-    private val logger = KotlinLogging.logger {}
+    private val logger = Logger(this::class.simpleName!!)
 
     suspend fun status(
         baseURL: Url
@@ -47,7 +48,8 @@ object WSClient {
         return try {
             client.request<ServerStatus>(url) {}
         } catch (exception: Exception) {
-            logger.error(exception) { "request failed" }
+            logger.error { exception }
+            logger.error { "request failed" }
             null
         }
     }
@@ -139,7 +141,8 @@ object WSClient {
                 GameSessionInfo.serializer().list
             )
         } catch (exception: Exception) {
-            logger.error(exception) { "request failed" }
+            logger.error {exception }
+            logger.error { "request failed" }
             // TODO: add state: connection lost
             dispatch(
                 ConnectionState.Disconnected(
@@ -155,7 +158,8 @@ object WSClient {
     @UseExperimental(KtorExperimentalAPI::class)
     suspend fun connectToLobby(
         state: ConnectionState.Authenticated,
-        dispatch: (ConnectionState) -> Unit
+        dispatch: (ConnectionState) -> Unit,
+        dispatchLobbyEvent: (LobbyEvent) -> Unit
     ) {
         val wsUrl = URLBuilder(state.baseUrl)
             .path("ws", "lobby")
@@ -188,42 +192,27 @@ object WSClient {
                     val notationJson = (incoming.receive() as Frame.Text).readText()
                     logger.info { "ws received: $notationJson" }
 
-                    val _event = json.parse(LobbyEvent.serializer(), notationJson)
+                    val event: LobbyEvent = json.parse(LobbyEvent.serializer(), notationJson)
 
-                    logger.info { "received event: $_event" }
+                    logger.info { "received event: $event" }
 
-                    val event = _event as? LobbyEvent.FromServer ?: run {
+                    if(event !is LobbyEvent.FromServer) {
                         close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "event: $this cannot be sent by client"))
 //                        terminate()
                         throw IllegalStateException("event: $this cannot be sent by client")
                     }
 
                     // TODO: dispatch LobbyEvents to redux
-                    when (event) {
-                        is LobbyEvent.InitialSync -> {
-                            // TODO
-                        }
-                        is LobbyEvent.Message -> {
-                            // TODO
-                        }
-                        is LobbyEvent.Join -> {
-                            // TODO
-                        }
-                        is LobbyEvent.Leave -> {
-                            // TODO
-                        }
-                        else -> {
-                            logger.error { "unhandled event: $event" }
-                            throw IllegalStateException("unhandled event: $event")
-                        }
-                    }.exhaustive
+                    dispatchLobbyEvent(event as LobbyEvent)
                 }
             } catch (e: ClosedReceiveChannelException) {
                 val reason = closeReason.await()
-                logger.debug(e) { "onClose $reason" }
+                logger.debug { e }
+                logger.debug { "onClose $reason" }
                 // TODO transition to state `ConnectionLost`
             } catch (e: Exception) {
-                logger.error(e) { "exception onClose ${e::class.simpleName} ${e.message}" }
+                logger.error { e }
+                logger.error { "exception onClose ${e::class.simpleName} ${e.message}" }
                 // TODO transition to state `ConnectionLost`
             } finally {
                 logger.info { "connection closing" }
@@ -232,10 +221,9 @@ object WSClient {
 
 
         dispatch(
-            ConnectionState.Authenticated(
+            ConnectionState.Disconnected(
                 baseUrl = state.baseUrl,
-                userId = state.userId,
-                session = state.session
+                userId = state.userId
             )
         )
     }
@@ -333,7 +321,8 @@ object WSClient {
                     val frame = try {
                         incoming.receive()
                     } catch (e: Exception) {
-                        logger.error(e) { "exception onClose ${e.message}" }
+                        logger.error { e }
+                        logger.error { "exception onClose ${e.message}" }
                         throw e
                         // TODO transition to state `ConnectionLost`
                     } finally {
@@ -354,10 +343,12 @@ object WSClient {
                 }
             } catch (e: ClosedReceiveChannelException) {
                 val reason = closeReason.await()
-                logger.debug(e) { "onClose $reason" }
+                logger.debug { e }
+                logger.debug { "onClose $reason" }
                 // TODO transition to state `ConnectionLost`
             } catch (e: Exception) {
-                logger.error(e) { "exception onClose ${e::class.simpleName} ${e.message}" }
+                logger.error { e }
+                logger.error { "exception onClose ${e::class.simpleName} ${e.message}" }
                 // TODO transition to state `ConnectionLost`
             } finally {
                 logger.info { "connection closing" }

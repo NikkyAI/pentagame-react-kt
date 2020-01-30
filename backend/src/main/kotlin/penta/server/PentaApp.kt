@@ -2,6 +2,7 @@ package penta.server
 
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.module.kotlin.KotlinModule
+import com.soywiz.klogger.Logger
 import io.ktor.application.Application
 import io.ktor.application.install
 import io.ktor.features.CORS
@@ -15,15 +16,16 @@ import io.ktor.sessions.SessionStorageMemory
 import io.ktor.sessions.Sessions
 import io.ktor.sessions.cookie
 import io.ktor.websocket.WebSockets
-import mu.KotlinLogging
+import org.slf4j.Marker
 import org.slf4j.event.Level
 import java.time.Duration
 
-private val logger = KotlinLogging.logger {}
+private val logger = Logger("PentaApp")
 fun Application.main() {
     install(DefaultHeaders)
+    // TODO: fix call logging
     install(CallLogging) {
-        logger = penta.server.logger
+//        logger = penta.server.logger
         level = Level.INFO
     }
 

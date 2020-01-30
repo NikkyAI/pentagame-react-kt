@@ -1,5 +1,6 @@
 package penta.server
 
+import com.soywiz.klogger.Logger
 import io.ktor.websocket.DefaultWebSocketServerSession
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -12,7 +13,7 @@ data class SessionState(
     val observingSessions: Map<UserSession, DefaultWebSocketServerSession> = mapOf()
 ) {
     companion object {
-        private val logger = KotlinLogging.logger {}
+        private val logger = Logger(this::class.simpleName!!)
         sealed class Actions {
             data class AddObserver(
                 val session: UserSession,

@@ -1,5 +1,6 @@
 package penta.server
 
+import com.soywiz.klogger.Logger
 import io.ktor.http.cio.websocket.Frame
 import io.ktor.http.cio.websocket.readText
 import io.ktor.websocket.DefaultWebSocketServerSession
@@ -46,7 +47,7 @@ class ServerGamestate(
     )
 
     companion object {
-        private val logger = KotlinLogging.logger {}
+        private val logger = Logger(this::class.simpleName!!)
     }
 
     var running: Boolean = false
@@ -170,7 +171,8 @@ class ServerGamestate(
             sessionStore.dispatch(SessionState.Companion.Actions.RemoveObserver(session))
 //            observeringSessions.remove(session)
             val reason = closeReason.await()
-            logger.debug(e) { "onClose $reason" }
+            logger.debug { e }
+            logger.debug { "onClose $reason" }
         } catch (e: ClosedReceiveChannelException) {
             sessionStore.dispatch(SessionState.Companion.Actions.RemoveObserver(session))
 //            observeringSessions.remove(session)
@@ -184,7 +186,8 @@ class ServerGamestate(
         } catch (e: Exception) {
             sessionStore.dispatch(SessionState.Companion.Actions.RemoveObserver(session))
 //            observeringSessions.remove(session)
-            logger.error(e) { "exception onClose ${e.message}" }
+            logger.error { e }
+            logger.error { "exception onClose ${e.message}" }
         } finally {
             unsubscribe()
         }

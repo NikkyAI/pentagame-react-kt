@@ -2,6 +2,7 @@ package penta
 
 import PentaBoard
 import actions.Action
+import com.soywiz.klogger.Logger
 import mu.KotlinLogging
 import org.reduxkotlin.Reducer
 import penta.logic.Piece
@@ -36,7 +37,7 @@ data class BoardState private constructor(
     }
 
     companion object {
-        private val logger = KotlinLogging.logger {}
+        private val logger = Logger(this::class.simpleName!!)
 
         fun create(): BoardState {
             logger.info { "created new BoardState" }
@@ -632,7 +633,7 @@ data class BoardState private constructor(
             } catch (e: IllegalMoveException) {
                 handleIllegalMove(e.move)
             } catch (e: Exception) {
-                logger.error(e) { "error" }
+                logger.error { e }
             }
             return nextState
         }

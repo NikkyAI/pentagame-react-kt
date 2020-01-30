@@ -1,5 +1,6 @@
 package penta
 
+import com.soywiz.klogger.Logger
 import io.ktor.client.features.websocket.DefaultClientWebSocketSession
 import io.ktor.http.Url
 import io.ktor.http.cio.websocket.CloseReason
@@ -12,7 +13,7 @@ import penta.util.json
 
 sealed class ConnectionState {
     companion object {
-        private val logger = KotlinLogging.logger {}
+        private val logger = Logger(this::class.simpleName!!)
     }
 
     abstract val baseUrl: Url

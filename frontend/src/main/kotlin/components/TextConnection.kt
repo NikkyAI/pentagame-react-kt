@@ -33,6 +33,7 @@ import org.w3c.dom.events.Event
 import penta.BoardState
 import penta.ConnectionState
 import penta.PentaMove
+import penta.network.LobbyEvent
 import penta.network.GameEvent
 import penta.network.GameSessionInfo
 import penta.redux.MultiplayerState
@@ -180,7 +181,8 @@ class TextConnection(props: TextConnectionProps) : RComponent<TextConnectionProp
                 is ConnectionState.Authenticated -> {
                     penta.WSClient.connectToLobby(
                         state = nextState,
-                        dispatch = props.dispatchConnection
+                        dispatch = props.dispatchConnection,
+                    dispatchLobbyEvent = props.dispatchLobbyEvent
                     )
 //                    requestGameList(connection = nextState)
                 }
@@ -366,6 +368,7 @@ interface TextConnectionDispatchProps : RProps {
     var dispatchMoveLocal: (PentaMove) -> Unit
     var dispatchNotationLocal: (GameEvent) -> Unit
     var dispatchNewBoardstate: (BoardState) -> Unit
+    var dispatchLobbyEvent: (LobbyEvent) -> Unit
 }
 
 val textConnection =
@@ -376,7 +379,7 @@ val textConnection =
             console.debug("configProps: ", configProps)
             boardState = state.boardState
             connection = state.multiplayerState.connectionState
-            games = state.multiplayerState.games
+            games = state.multiplayerState.games.values.toList()
         },
         { dispatch, configProps ->
             // any kind of interactivity is linked to dispatching state changes here
@@ -388,6 +391,7 @@ val textConnection =
             this.dispatchMoveLocal = { dispatch(it) }
             this.dispatchNotationLocal = { dispatch(it) }
             this.dispatchNewBoardstate = { dispatch(it) }
+            this.dispatchLobbyEvent = { dispatch(it) }
 //            this.dispatch = { dispatch(Action(it)) }
         }
     )(TextConnection::class.js.unsafeCast<RClass<TextConnectionProps>>())

@@ -11,6 +11,7 @@ import penta.PentaMove
 import penta.PlayerState
 import penta.logic.Piece
 import penta.util.ObjectSerializer
+import com.soywiz.klogger.*
 
 @Polymorphic
 @Serializable(PolymorphicSerializer::class)
@@ -166,7 +167,6 @@ sealed class GameEvent {
     }
 
     companion object {
-        private val logger = KotlinLogging.logger {}
         fun install(builder: SerializersModuleBuilder) {
             builder.polymorphic<GameEvent> {
                 MovePlayer::class with MovePlayer.serializer()

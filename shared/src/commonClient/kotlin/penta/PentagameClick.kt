@@ -1,5 +1,6 @@
 package penta
 
+import com.soywiz.klogger.Logger
 import mu.KotlinLogging
 import penta.logic.Piece
 import penta.logic.Field
@@ -8,7 +9,7 @@ import penta.logic.Field
  * determines what action to take when clicking on fields or pieces
  */
 object PentagameClick {
-    private val logger = KotlinLogging.logger {}
+    private val logger = Logger(this::class.simpleName!!)
 
     fun preProcessMove(move: PentaMove, dispatch: (PentaMove) -> Unit, boardState: BoardState) {
         logger.info { "preProcess $move" }

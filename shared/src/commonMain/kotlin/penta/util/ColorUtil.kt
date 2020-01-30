@@ -4,7 +4,7 @@
 //import io.data2viz.scale.ScalesChromatic
 //import mu.KotlinLogging
 //
-//private val logger = KotlinLogging.logger {}
+//private val logger = Logger(this::class.simpleName!!)
 //fun Color.interpolate(other: Color, steps: Int): List<Color> {
 //    // TODO: use custom chromatic scales
 //    val scale = ScalesChromatic.Continuous.linearHCL{

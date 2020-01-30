@@ -1,6 +1,7 @@
 package penta
 
 import com.github.nwillc.ksvg.elements.SVG
+import com.soywiz.klogger.Logger
 import io.data2viz.color.Color
 import io.data2viz.color.Colors
 import io.data2viz.geom.Point
@@ -208,7 +209,7 @@ fun cornerPoint(index: Int, angleDelta: Angle = 0.deg, radius: Double = PentaMat
 }
 
 fun calculatePiecePos(piece: Piece, field: Field?, boardState: BoardState) = with(boardState) {
-    val logger = KotlinLogging.logger {}
+    val logger = Logger(this::class.simpleName!!)
     var pos: Point = field?.pos ?: run {
         val radius = when (piece) {
             is Piece.GrayBlocker -> {

@@ -1,3 +1,4 @@
+import com.soywiz.klogger.Logger
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.js.Js
 import io.ktor.client.features.cookies.AcceptAllCookiesStorage
@@ -14,7 +15,7 @@ import org.w3c.notifications.NotificationOptions
 import org.w3c.notifications.NotificationPermission
 import penta.util.json
 
-private val logger = KotlinLogging.logger {}
+private val logger = Logger("ClientKt")
 actual val client: HttpClient = HttpClient(Js).config {
     install(WebSockets) {
 

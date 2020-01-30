@@ -1,5 +1,6 @@
 package penta.server
 
+import com.soywiz.klogger.Logger
 import io.ktor.http.cio.websocket.CloseReason
 import io.ktor.http.cio.websocket.Frame
 import io.ktor.http.cio.websocket.close
@@ -17,7 +18,7 @@ import penta.util.handler
 import penta.util.json
 
 object LobbyHandler {
-    private val logger = KotlinLogging.logger {}
+    private val logger = Logger(this::class.simpleName!!)
     private val observingSessions = mutableMapOf<UserSession, DefaultWebSocketServerSession>()
     fun observeringSessionsPut(
         session: UserSession,
@@ -118,7 +119,8 @@ object LobbyHandler {
         } catch (e: IOException) {
             observeringSessionsRemove(session)
             val reason = closeReason.await()
-            logger.debug(e) { "onClose $reason" }
+            logger.debug { e }
+            logger.debug { "onClose $reason" }
         } catch (e: ClosedReceiveChannelException) {
             observeringSessionsRemove(session)
             val reason = closeReason.await()
@@ -129,7 +131,8 @@ object LobbyHandler {
             logger.error { "onClose $reason" }
         } catch (e: Exception) {
             observeringSessionsRemove(session)
-            logger.error(e) { "exception onClose ${e.message}" }
+            logger.error { e }
+            logger.error { "exception onClose ${e.message}" }
         } finally {
 
         }

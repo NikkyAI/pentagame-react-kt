@@ -1,9 +1,9 @@
 package penta.util
 
-import mu.KLogger
+import com.soywiz.klogger.Logger
 import org.reduxkotlin.middleware
 
-fun <T> loggingMiddleware(logger: KLogger) = middleware<T> { store, next, action ->
+fun <T> loggingMiddleware(logger: Logger) = middleware<T> { store, next, action ->
     logger.info {
         "reduce action: $action"
     }

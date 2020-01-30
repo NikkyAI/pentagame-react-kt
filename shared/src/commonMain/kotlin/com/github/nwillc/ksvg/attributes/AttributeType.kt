@@ -18,6 +18,7 @@
 
 package com.github.nwillc.ksvg.attributes
 
+import com.soywiz.klogger.Logger
 import mu.KotlinLogging
 
 /**
@@ -92,7 +93,7 @@ enum class AttributeType {
      * Constants.
      */
     private companion object {
-        private val logger = KotlinLogging.logger {}
+        private val logger = Logger(this::class.simpleName!!)
         private val number = Regex("[+-]?[0-9]*.?[0-9]+")
         private val separator = Regex("\\s*,?\\s+")
         private const val lengthUnits = "em|ex|px|in|cm|mm|pt|pc"

@@ -24,6 +24,7 @@ import com.github.nwillc.ksvg.attributes.HasAttributes
 import com.github.nwillc.ksvg.attributes.HasAttributesImpl
 import com.github.nwillc.ksvg.attributes.HasOrigin
 import com.github.nwillc.ksvg.attributes.HasOriginImpl
+import com.soywiz.klogger.Logger
 import mu.KotlinLogging
 
 /**
@@ -37,7 +38,7 @@ class USE(validation: Boolean = false, hasAttributes: HasAttributes = HasAttribu
      * Companion object.
      */
     private companion object {
-        private val logger = KotlinLogging.logger {}
+        private val logger = Logger(this::class.simpleName!!)
     }
 
     init {

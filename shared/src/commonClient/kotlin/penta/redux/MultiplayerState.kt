@@ -1,6 +1,7 @@
 package penta.redux
 
 import penta.ConnectionState
+import penta.WSClient
 import penta.network.GameSessionInfo
 import penta.network.LobbyEvent
 import penta.util.exhaustive
@@ -9,7 +10,7 @@ data class MultiplayerState(
     val gameObservers: List<String> = listOf(),
     val connectionState: ConnectionState = ConnectionState.Disconnected(),
     val lobbyUsers: List<String> = listOf(), // TODO: use this ?
-    val chatHistory: List<LobbyEvent.Message>,
+    val chatHistory: List<LobbyEvent.Message> = listOf(),
     val games: Map<String, GameSessionInfo> = mapOf()
 ) {
     fun reduce(action: Actions): MultiplayerState = when(action) {
@@ -39,6 +40,10 @@ data class MultiplayerState(
         is LobbyEvent.Message -> TODO()
         is LobbyEvent.Join -> TODO()
         is LobbyEvent.Leave -> TODO()
+        else -> {
+//            logger.error { "unhandled event: $action" }
+            throw IllegalStateException("unhandled event: $action")
+        }
     }
 
     companion object {

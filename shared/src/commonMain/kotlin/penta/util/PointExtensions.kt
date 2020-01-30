@@ -21,14 +21,8 @@ fun Point.interpolate(otherPoint: Point, steps: Int = 1, skip: Double = 0.0): Li
         (otherPoint.y - y) / (steps + 1)
     ).unit
 
-    val dx = (otherPoint.x - x) / (steps + 1)
-    val dy = (otherPoint.y - y) / (steps + 1)
     return (0 until steps).map { i ->
         this + (v * i) + v * skip
-//            Point(
-//                x + (d.x * i) + (d.x * skip),
-//                y + (d.y * i) + (d.y * skip)
-//            )
     }
 }
 

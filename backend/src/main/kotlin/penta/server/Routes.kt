@@ -1,5 +1,6 @@
 package penta.server
 
+import com.soywiz.klogger.Logger
 import io.ktor.application.Application
 import io.ktor.application.call
 import io.ktor.http.ContentType
@@ -27,7 +28,7 @@ import penta.network.ServerStatus
 import kotlin.random.Random
 import kotlin.IllegalArgumentException
 
-private val logger = KotlinLogging.logger {}
+private val logger = Logger("Routes")
 fun Application.routes() = routing {
     static("/") {
         resources("static")

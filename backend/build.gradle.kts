@@ -39,6 +39,15 @@ dependencies {
     testImplementation(kotlin("test-junit"))
 }
 
+kotlin {
+    target {
+        compilations.all {
+            kotlinOptions {
+                jvmTarget = "1.8"
+            }
+        }
+    }
+}
 tasks {
     compileKotlin {
         kotlinOptions.jvmTarget = "1.8"

@@ -10,7 +10,7 @@ import penta.PlayerState
 import penta.BoardState
 
 class Tests {
-    private val logger = KotlinLogging.logger {}
+    private val logger = Logger(this::class.simpleName!!)
     @Test
     fun test() {
         val boardStore: org.reduxkotlin.Store<BoardState> = createStore(
