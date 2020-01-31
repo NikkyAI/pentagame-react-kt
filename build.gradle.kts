@@ -1,7 +1,8 @@
 plugins {
-    kotlin("multiplatform") version Jetbrains.Kotlin.version apply false
+    kotlin("multiplatform") version Jetbrains.Kotlin.version// apply false
     id("kotlinx-serialization") version Jetbrains.Kotlin.version// apply false
     `build-scan`
+    `maven-publish`
 //    id("org.jetbrains.kotlin.frontend") version "0.0.45" apply false
 }
 
@@ -27,7 +28,7 @@ allprojects {
             name = "korlibs"
         }
 //        mavenLocal()
-        // TODO: remove
+//        // TODO: remove
 //        if (project.gradle.startParameter.taskNames.contains("bundleLocalDependencies")) {
 //            mavenLocal()
 //        } else {
@@ -65,5 +66,32 @@ tasks.register<DefaultTask>("hello") {
     group = "help"
     doLast {
         logger.lifecycle("Hello World")
+    }
+}
+
+kotlin {
+    jvm()
+    js {
+        useCommonJs()
+        browser {
+            runTask {
+                sourceMaps = true
+            }
+            webpackTask {
+                sourceMaps = true
+            }
+        }
+        compilations.all {
+            kotlinOptions {
+                sourceMap = true
+                metaInfo = true
+                main = "call"
+            }
+        }
+        mavenPublication { // Setup the publication for the target
+//            artifactId = "ksvg-js"
+            // Add a docs JAR artifact (it should be a custom task):
+//            artifact(javadocJar)
+        }
     }
 }

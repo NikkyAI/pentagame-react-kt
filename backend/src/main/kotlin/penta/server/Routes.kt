@@ -19,12 +19,12 @@ import io.ktor.routing.post
 import io.ktor.routing.routing
 import io.ktor.websocket.webSocket
 import kotlinx.serialization.list
-import mu.KotlinLogging
 import penta.util.json
 import penta.network.GameSessionInfo
 import penta.network.LoginRequest
 import penta.network.LoginResponse
 import penta.network.ServerStatus
+import penta.server.GlobalState.Companion.store
 import kotlin.random.Random
 import kotlin.IllegalArgumentException
 
@@ -59,7 +59,7 @@ fun Application.routes() = routing {
 
         val gameId = call.parameters["gameId"] ?: throw IllegalArgumentException("missing parameter gameId")
 
-        val game = GameController.games.find {
+        val game = store.state.games.find {
             it.id == gameId
         } ?: run {
             return@webSocket close(CloseReason(CloseReason.Codes.CANNOT_ACCEPT, "game not found"))
@@ -175,7 +175,7 @@ fun Application.routes() = routing {
             call.respondText(
                 text = json.stringify(
                     GameSessionInfo.serializer().list,
-                    GameController.games.map { gameState ->
+                    store.state.games.map { gameState ->
                         gameState.info
                     }
                 ),

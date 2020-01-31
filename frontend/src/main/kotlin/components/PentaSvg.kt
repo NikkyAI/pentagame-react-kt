@@ -6,6 +6,7 @@ import com.ccfraser.muirwik.components.MColor
 import com.ccfraser.muirwik.components.button.MButtonVariant
 import com.ccfraser.muirwik.components.button.mButton
 import com.github.nwillc.ksvg.elements.SVG
+import com.github.nwillc.ksvg.RenderMode
 import containers.PentaSvgDispatchProps
 import containers.PentaSvgStateProps
 import debug
@@ -97,7 +98,7 @@ class PentaSvg(props: PentaSvgProps) : RComponent<PentaSvgProps, RState>(props) 
                     }
 
                     val svgFile = buildString {
-                        svg.render(this, SVG.RenderMode.FILE)
+                        svg.render(this, RenderMode.FILE)
                     }
 
                     console.log(svgFile)
@@ -144,7 +145,7 @@ class PentaSvg(props: PentaSvgProps) : RComponent<PentaSvgProps, RState>(props) 
 //            console.log("svg: ${fullSvg}")
             val svgInline = buildString {
                 newSVG.children.forEach {
-                    it.render(this, SVG.RenderMode.INLINE)
+                    it.render(this, RenderMode.INLINE)
                 }
             }
             svg.innerHTML = svgInline

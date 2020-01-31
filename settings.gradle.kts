@@ -21,7 +21,8 @@ pluginManagement {
 
 enableFeaturePreview("GRADLE_METADATA")
 
-rootProject.name = "penta"
+includeBuild("ksvg")
+
 include("backend")
 include("frontend")
 include("shared")
