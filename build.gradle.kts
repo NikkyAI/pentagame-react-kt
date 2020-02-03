@@ -35,6 +35,8 @@ allprojects {
     val privateScript = rootDir.resolve("private.gradle.kts")
     if(privateScript.exists()) {
         apply(from = privateScript)
+    } else {
+        val DEV_JDBC_DATABASE_URL by extra("jdbc:postgresql://localhost:5432/pentagame?user=postgres")
     }
 }
 

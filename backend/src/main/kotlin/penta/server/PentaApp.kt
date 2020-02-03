@@ -16,6 +16,7 @@ import io.ktor.sessions.SessionStorageMemory
 import io.ktor.sessions.Sessions
 import io.ktor.sessions.cookie
 import io.ktor.websocket.WebSockets
+import org.jetbrains.exposed.sql.Database
 import org.slf4j.Marker
 import org.slf4j.event.Level
 import java.time.Duration
@@ -29,6 +30,11 @@ fun Application.main() {
 //        logger = penta.server.logger
         level = Level.INFO
     }
+
+    val db = Database.connect(
+        url = System.getenv("JDBC_DATABASE_URL"),
+        driver = "org.postgresql.Driver"
+    )
 
     install(WebSockets) {
         pingPeriod = Duration.ofMillis(1000)

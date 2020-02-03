@@ -5,10 +5,19 @@ import io.ktor.http.cio.websocket.Frame
 import io.ktor.websocket.DefaultWebSocketServerSession
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import kotlinx.serialization.list
+import org.jetbrains.exposed.sql.SizedCollection
+import org.jetbrains.exposed.sql.Slf4jSqlDebugLogger
+import org.jetbrains.exposed.sql.addLogger
+import org.jetbrains.exposed.sql.transactions.transaction
 import org.reduxkotlin.applyMiddleware
 import org.reduxkotlin.createStore
 import penta.LobbyState
+import penta.PentaMove
+import penta.network.GameEvent
 import penta.network.LobbyEvent
+import penta.server.db.Game
+import penta.server.db.findOrCreate
 import penta.util.handler
 import penta.util.json
 import penta.util.loggingMiddleware
@@ -21,7 +30,7 @@ data class GlobalState(
     val lobbyState: LobbyState = LobbyState()
 ) {
     fun reduce(action: Any): GlobalState = when (action) {
-        is GlobalAction -> when(action) {
+        is GlobalAction -> when (action) {
             is GlobalAction.AddSession -> {
                 GlobalScope.launch(handler) {
                     observingSessions.forEach { (session, wss) ->
@@ -59,6 +68,24 @@ data class GlobalState(
                 )
             }
             is GlobalAction.AddGame -> {
+                val game = transaction {
+                    addLogger(Slf4jSqlDebugLogger)
+                    Game.new {
+                        gameId = action.game.id
+                        history = json.stringify(
+                            GameEvent.serializer().list,
+                            action.game.boardStateStore.state.history.map { it.toSerializable() }
+                        )
+                    }
+                }
+                transaction {
+                    addLogger(Slf4jSqlDebugLogger)
+                    game.players = SizedCollection(
+                        action.game.boardStateStore.state.players.mapNotNull {
+                            UserManager.findDBUser(it.id)
+                        }
+                    )
+                }
                 copy(games = games + action.game)
                     .reduce(LobbyEvent.UpdateGame(action.game.info))
             }
@@ -83,13 +110,15 @@ data class GlobalState(
         data class AddSession(
             val session: UserSession,
             val websocketSession: DefaultWebSocketServerSession
-        ): GlobalAction()
+        ) : GlobalAction()
+
         data class RemoveSession(
             val session: UserSession
-        ): GlobalAction()
+        ) : GlobalAction()
+
         data class AddGame(
             val game: ServerGamestate
-        ): GlobalAction()
+        ) : GlobalAction()
     }
 
     companion object {

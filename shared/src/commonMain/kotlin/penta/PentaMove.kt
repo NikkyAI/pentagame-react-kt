@@ -137,14 +137,14 @@ sealed class PentaMove {
         val grayPiece: Piece.GrayBlocker?
     ): PentaMove() {
         override fun asNotation(): String = "select grey ${grayPiece?.id}"
-        override fun toSerializable(): GameEvent = TODO("add serializer class")
+        override fun toSerializable(): GameEvent = GameEvent.SelectGrey(grayPiece?.id)
     }
 
     data class SelectPlayerPiece(
         val playerPiece: Piece.Player?
     ): PentaMove() {
         override fun asNotation(): String = "select player ${playerPiece?.id}"
-        override fun toSerializable(): GameEvent = TODO("add serializer class")
+        override fun toSerializable(): GameEvent = GameEvent.SelectPlayerPiece(playerPiece?.id)
     }
 
     data class PlayerJoin(val player: PlayerState) : PentaMove() {

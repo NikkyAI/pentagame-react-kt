@@ -14,8 +14,7 @@ val logger = Logger("DBTests")
 @BeforeTest
 fun connect() {
     Database.connect(
-        url = "jdbc:postgresql://localhost:5432/pentagame",
-        user = "postgres",
+        url = System.getenv("DEV_DATABASE_URL"),
         driver = "org.postgresql.Driver"
     )
 }

@@ -133,6 +133,26 @@ sealed class GameEvent {
     }
 
     @Serializable
+    data class SelectGrey(
+        val id: String?
+    ) : GameEvent() {
+        override fun asMove(boardState: BoardState) =
+            PentaMove.SelectGrey(
+                grayPiece = id?.let { boardState.figures.filterIsInstance<Piece.GrayBlocker>().first { it.id == id } }
+            )
+    }
+
+    @Serializable
+    data class SelectPlayerPiece(
+        val id: String?
+    ) : GameEvent() {
+        override fun asMove(boardState: BoardState) =
+            PentaMove.SelectPlayerPiece(
+                playerPiece = id?.let { boardState.figures.filterIsInstance<Piece.Player>().first { it.id == id } }
+            )
+    }
+
+    @Serializable
     data class PlayerJoin(
         val player: PlayerState
     ) : GameEvent() {
@@ -176,6 +196,8 @@ sealed class GameEvent {
                 CooperativeSwap::class with CooperativeSwap.serializer()
                 SetBlack::class with SetBlack.serializer()
                 SetGrey::class with SetGrey.serializer()
+                SelectGrey::class with SelectGrey.serializer()
+                SelectPlayerPiece::class with SelectPlayerPiece.serializer()
                 PlayerJoin::class with PlayerJoin.serializer()
                 InitGame::class with ObjectSerializer(InitGame)
                 Win::class with Win.serializer()

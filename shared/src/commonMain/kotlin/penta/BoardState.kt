@@ -12,13 +12,13 @@ import penta.util.exhaustive
 import penta.util.requireMove
 
 data class BoardState private constructor(
-    val players: Array<PlayerState> = arrayOf(),
+    val players: List<PlayerState> = listOf(),
     val currentPlayer: PlayerState = PlayerState("_", "triangle"),
     val gameType: GameType = GameType.TWO,
     val scoringColors: Map<String, Array<PentaColor>> = mapOf(),
-    val figures: Array<Piece> = arrayOf(),
+    val figures: List<Piece> = listOf(),
     val positions: Map<String, Field?> = mapOf(),
-    val history: Array<PentaMove> = arrayOf(),
+    val history: List<PentaMove> = listOf(),
     val gameStarted: Boolean = false,
     val turn: Int = 0,
     val forceMoveNextPlayer: Boolean = false,
@@ -63,7 +63,7 @@ data class BoardState private constructor(
                     }
                 }
                 nextState = nextState.copy(
-                    figures = arrayOf(*blacks.toTypedArray(), *greys.toTypedArray())
+                    figures = listOf(*blacks.toTypedArray(), *greys.toTypedArray())
                 )
             }.nextState
         }
@@ -534,7 +534,7 @@ data class BoardState private constructor(
 
                         with(nextState) {
                             nextState = nextState.copy(
-                                figures = arrayOf<Piece>(
+                                figures = listOf<Piece>(
                                     // keep all black and grey blockers
                                     *figures.filterIsInstance<Piece.BlackBlocker>().toTypedArray(),
                                     *figures.filterIsInstance<Piece.GrayBlocker>().toTypedArray(),

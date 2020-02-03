@@ -1,5 +1,6 @@
 package penta.server
 
+import actions.Action
 import com.soywiz.klogger.Logger
 import io.ktor.http.cio.websocket.Frame
 import io.ktor.http.cio.websocket.readText
@@ -13,16 +14,20 @@ import kotlinx.io.IOException
 import kotlinx.serialization.list
 import kotlinx.serialization.serializer
 import mu.KotlinLogging
-import org.reduxkotlin.SelectorBuilder
-import org.reduxkotlin.Store
-import org.reduxkotlin.StoreSubscription
-import org.reduxkotlin.applyMiddleware
-import org.reduxkotlin.createStore
+import org.jetbrains.exposed.sql.SizedCollection
+import org.jetbrains.exposed.sql.Slf4jSqlDebugLogger
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.addLogger
+import org.jetbrains.exposed.sql.transactions.transaction
+import org.reduxkotlin.*
 import penta.PentaMove
 import penta.PlayerState
 import penta.network.GameEvent
 import penta.network.GameSessionInfo
 import penta.BoardState
+import penta.BoardState.Companion.processMove
+import penta.server.db.Game
+import penta.server.db.Games
 import penta.util.handler
 import penta.util.json
 import penta.util.loggingMiddleware
@@ -35,7 +40,7 @@ class ServerGamestate(
     var owner: User
 ) {
     val boardStateStore: Store<BoardState> = createStore(
-        BoardState.reducer,
+        ::reduce,
         BoardState.create(),
         applyMiddleware(loggingMiddleware(logger))
     )
@@ -48,6 +53,57 @@ class ServerGamestate(
 
     companion object {
         private val logger = Logger(this::class.simpleName!!)
+    }
+
+    // TODO: trigger database updates
+    fun reduce(state: BoardState, action:Any): BoardState {
+        return when (action) {
+//            is org.reduxkotlin.ActionTypes.INIT -> {
+//                logger.info { "received INIT" }
+//                state
+//            }
+//            is org.reduxkotlin.ActionTypes.REPLACE -> {
+//                logger.info { "received REPLACE" }
+//                state
+//            }
+            is PentaMove -> {
+                val oldHistory = state.history
+                val oldPlayers = state.players
+                val newState = BoardState.reducer(state, action)
+
+                try {
+                    if (oldHistory != newState.history) {
+                        transaction {
+                            addLogger(Slf4jSqlDebugLogger)
+                            val game = Game.find(Games.gameId eq id).first()
+                            game.history = json.stringify(
+                                GameEvent.serializer().list,
+                                newState.history.map { it.toSerializable() }
+                            )
+                        }
+                    }
+
+                    if (oldPlayers != newState.players) {
+                        transaction {
+                            addLogger(Slf4jSqlDebugLogger)
+                            val game = Game.find(Games.gameId eq id).first()
+                            game.players = SizedCollection(
+                                newState.players.mapNotNull {
+                                    UserManager.findDBUser(it.id)
+                                }
+                            )
+                        }
+                    }
+                } catch(e: Exception) {
+                    logger.error { e }
+                }
+
+                newState
+            }
+            else -> {
+                BoardState.reducer(state, action)
+            }
+        }
     }
 
     var running: Boolean = false

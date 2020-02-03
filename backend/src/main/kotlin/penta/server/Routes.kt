@@ -93,7 +93,7 @@ fun Application.routes() = routing {
         // find registered user
         // val dbuser = DBUser.getByUserId(loginRequest.userId)
         // val response: LoginResponse = if (dbuser == null) {
-        val user: String? = listOf("alice", "bob").find { it == loginRequest.userId }
+        val user: User.RegisteredUser? = UserManager.find(loginRequest.userId)
         val response: LoginResponse = if (user == null) {
             when {
                 loginRequest.userId.length < 5 ->
