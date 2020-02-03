@@ -1,9 +1,9 @@
 plugins {
-    kotlin("multiplatform") version Jetbrains.Kotlin.version// apply false
-    id("kotlinx-serialization") version Jetbrains.Kotlin.version// apply false
+    kotlin("multiplatform") version Kotlin.version// apply false
+    id("kotlinx-serialization") version Kotlin.version// apply false
+    id("de.fayard.refreshVersions") version "0.8.6"
     `build-scan`
     `maven-publish`
-//    id("org.jetbrains.kotlin.frontend") version "0.0.45" apply false
 }
 
 allprojects {
@@ -23,15 +23,8 @@ allprojects {
         maven(url = "https://dl.bintray.com/kotlin/exposed")
         maven(url = "https://dl.bintray.com/kenjiohtsuka/m")
 //        mavenLocal()
-//        // TODO: remove
-//        if (project.gradle.startParameter.taskNames.contains("bundleLocalDependencies")) {
-//            mavenLocal()
-//        } else {
-//            maven(url = uri("${project.rootDir}/mvn")) {
-//                name = "bundled local"
-//            }
-//        }
     }
+
     val privateScript = rootDir.resolve("private.gradle.kts")
     if(privateScript.exists()) {
         apply(from = privateScript)
@@ -45,6 +38,8 @@ val stage = tasks.create("stage") {
     // TODO: add :backend:shadowJar
     // TODO: update jar path
 //    dependsOn("clean")
+    dependsOn(":backend:flywayMigrate")
+    dependsOn(":backend:flywayValidate")
     dependsOn(":backend:shadowJar")
     doLast {
         logger.lifecycle("jar was compiled")

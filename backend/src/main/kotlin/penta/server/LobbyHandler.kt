@@ -33,7 +33,7 @@ object LobbyHandler {
                             users = observingSessions.keys.map { it.userId },
                             chat = store.state.lobbyState.chat.take(50),
                             games = store.state.games.associate { gameState ->
-                                gameState.id to gameState.info
+                                gameState.serverGameId to gameState.info
                             }
                         )
                     )

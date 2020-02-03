@@ -60,7 +60,7 @@ fun Application.routes() = routing {
         val gameId = call.parameters["gameId"] ?: throw IllegalArgumentException("missing parameter gameId")
 
         val game = store.state.games.find {
-            it.id == gameId
+            it.serverGameId == gameId
         } ?: run {
             return@webSocket close(CloseReason(CloseReason.Codes.CANNOT_ACCEPT, "game not found"))
         }
@@ -93,7 +93,7 @@ fun Application.routes() = routing {
         // find registered user
         // val dbuser = DBUser.getByUserId(loginRequest.userId)
         // val response: LoginResponse = if (dbuser == null) {
-        val user: User.RegisteredUser? = UserManager.find(loginRequest.userId)
+        val user: User.RegisteredUser? = UserManager.find(loginRequest.userId) as? User.RegisteredUser
         val response: LoginResponse = if (user == null) {
             when {
                 loginRequest.userId.length < 5 ->
@@ -139,16 +139,14 @@ fun Application.routes() = routing {
 //                displayNameField = dbuser.displayNameField
 //            )
             // TODO: retrieve User
-            val registeredUser = User.RegisteredUser(loginRequest.userId, passwordHash = "password")
-            if (loginRequest.password != registeredUser.passwordHash) {
+            if (loginRequest.password != user.passwordHash) {
                 LoginResponse.IncorrectPassword
             } else {
-                val authenticatedSession = UserSession(registeredUser.userId)
-//                call.sessions.set(authenticatedSession)
+                val authenticatedSession = UserSession(user.userId)
                 SessionController.set(authenticatedSession, call)
 
                 LoginResponse.Success(
-                    message = "Welcome back ${registeredUser.displayName}"
+                    message = "Welcome back ${user.displayName}"
                 )
             }
         }

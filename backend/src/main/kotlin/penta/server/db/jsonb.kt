@@ -21,13 +21,35 @@ fun Table.jsonb2(name: String): Column<String>
     = registerColumn(name, JsonString())
 
 
-private class JsonString(): StringColumnType() {
+private class JsonString(): ColumnType() {
     override fun sqlType() = "jsonb"
     override fun setParameter(stmt: PreparedStatementApi, index: Int, value: Any?) {
         val obj = PGobject()
         obj.type = "jsonb"
         obj.value = value as String
         stmt.set(index, obj)
+    }
+
+    override fun valueToString(value: Any?): String {
+        if(value is PGobject) {
+            return value.value
+        }
+        return value as String
+    }
+    override fun valueFromDB(value: Any): Any {
+        if (value !is PGobject) {
+            // We didn't receive a PGobject (the format of stuff actually coming from the DB).
+            // In that case "value" should already be an object of type T.
+            return value
+        }
+
+        return value.value
+    }
+    override fun nonNullValueToString(value: Any): String {
+        if(value is PGobject) {
+            return value.value
+        }
+        return value as String
     }
 }
 

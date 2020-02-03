@@ -13,17 +13,15 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import org.reduxkotlin.applyMiddleware
 import org.reduxkotlin.createStore
 import penta.LobbyState
-import penta.PentaMove
 import penta.network.GameEvent
 import penta.network.LobbyEvent
 import penta.server.db.Game
-import penta.server.db.findOrCreate
 import penta.util.handler
 import penta.util.json
 import penta.util.loggingMiddleware
 
 data class GlobalState(
-    val games: List<ServerGamestate> = listOf(),
+    val games: List<ServerGamestate> = loadGames(),
 
     // lobby
     val observingSessions: Map<UserSession, DefaultWebSocketServerSession> = mapOf(),
@@ -71,11 +69,12 @@ data class GlobalState(
                 val game = transaction {
                     addLogger(Slf4jSqlDebugLogger)
                     Game.new {
-                        gameId = action.game.id
+                        gameId = action.game.serverGameId
                         history = json.stringify(
                             GameEvent.serializer().list,
                             action.game.boardStateStore.state.history.map { it.toSerializable() }
                         )
+                        owner = UserManager.toDBUser(action.game.owner)
                     }
                 }
                 transaction {
@@ -128,5 +127,24 @@ data class GlobalState(
             GlobalState(),
             applyMiddleware(loggingMiddleware(GlobalState.logger))
         )
+
+        fun loadGames(): List<ServerGamestate> {
+            return transaction {
+                Game.all().map {
+                    GameController.idCounter++
+                    ServerGamestate(
+                        it.gameId,
+                        it.owner.let { u ->
+                            UserManager.convert(u)
+                        }
+                    ).apply {
+                        // apply all history
+                        json.parse(GameEvent.serializer().list, it.history).forEach {
+                            boardStateStore.dispatch(it)
+                        }
+                    }
+                }
+            }
+        }
     }
 }

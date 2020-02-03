@@ -2,15 +2,11 @@ import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import java.io.ByteArrayOutputStream
 import java.io.PrintStream
 
-// TODO: move to buildSrc
-var ktorVersion = "1.2.6"
-var logbackVersion = "1.2.3"
-
 
 plugins {
     kotlin("jvm")
     id("com.github.johnrengelman.shadow") version "5.0.0"
-    id("org.flywaydb.flyway") version "6.2.1"
+    id("org.flywaydb.flyway") version Flyway.version
     application
 }
 
@@ -40,13 +36,23 @@ if(flywayUrl != null) {
         baselineVersion = "0"
     }
 }
-
+if (hasDevUrl) {
+//    tasks.register<DefaultTask>("resetDatabase") {
+//        group = "database"
+//
+//        doFirst {
+//
+//        }
+//        this.finalizedBy("")
+//
+//    }
+}
 if (hasDevUrl && hasLiveUrl) {
     val DEV_JDBC_DATABASE_URL: String by extra
     val LIVE_JDBC_DATABASE_URL: String by extra
 
     tasks.register<DefaultTask>("createMigration") {
-        group = "migration"
+        group = "database"
 
         dependsOn("testClasses")
 
@@ -117,29 +123,21 @@ if (hasDevUrl && hasLiveUrl) {
     }
 }
 
-repositories {
-    jcenter()
-    mavenCentral()
-    maven(uri("https://dl.bintray.com/kotlin/ktor"))
-    maven(uri("https://dl.bintray.com/kotlin/kotlinx"))
-    maven(uri("https://dl.bintray.com/kotlin/kotlin-dev"))
-}
-
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
 
     implementation(project(":shared"))
 
-    implementation("io.ktor:ktor-server-netty:$ktorVersion")
-    implementation("io.ktor:ktor-html-builder:$ktorVersion")
-    implementation("io.ktor:ktor-serialization:$ktorVersion")
-    implementation("ch.qos.logback:logback-classic:$logbackVersion")
+    implementation("io.ktor:ktor-server-netty:${Ktor.version}")
+    implementation("io.ktor:ktor-html-builder:${Ktor.version}")
+    implementation("io.ktor:ktor-serialization:${Ktor.version}")
+    implementation("ch.qos.logback:logback-classic:${Logback.version}")
 
-    implementation("org.postgresql:postgresql:42.2.2")
+    implementation("org.postgresql:postgresql:${Postgres.version}")
 
-    implementation("org.jetbrains.exposed:exposed-core:0.20.3")
-    implementation("org.jetbrains.exposed:exposed-dao:0.20.3")
-    implementation("org.jetbrains.exposed:exposed-jdbc:0.20.3")
+    implementation("org.jetbrains.exposed:exposed-core:${Exposed.version}")
+    implementation("org.jetbrains.exposed:exposed-dao:${Exposed.version}")
+    implementation("org.jetbrains.exposed:exposed-jdbc:${Exposed.version}")
 
 //    implementation ("com.improve_future:harmonica:1.1.24")
 //    implementation (group = "org.reflections", name= "reflections", version= "0.9.11")
@@ -168,7 +166,8 @@ tasks {
 val packageStatic = tasks.create("packageStatic") {
     group = "build"
     val frontend = project(":frontend")
-    dependsOn(":frontend:browserProductionWebpack") // TODO: add back
+    dependsOn(":frontend:processResources")
+    dependsOn(":frontend:browserProductionWebpack")
 
     outputs.upToDateWhen { false }
     outputs.dir(gen_resource)
@@ -178,18 +177,17 @@ val packageStatic = tasks.create("packageStatic") {
     doFirst {
         staticFolder.deleteRecursively()
         staticFolder.mkdirs()
+        copy {
+            from(frontend.tasks.get("processResources"))
+            from(frontend.buildDir.resolve("distributions"))
+            into(staticFolder)
+        }
     }
 
-    // TODO: readd terser and require.js for dev
 //    from(terserTask)
 //    from(bundleTask)
 
     doLast {
-        copy {
-//            from(frontend.tasks.get("browserProductionWebpack"))
-            from(frontend.buildDir.resolve("distributions"))
-            into(staticFolder)
-        }
 //        copy {
 //            from(frontend.buildDir.resolve("distributions"))
 //            into(staticFolder.resolve("js"))

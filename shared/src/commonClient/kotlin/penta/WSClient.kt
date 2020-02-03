@@ -22,7 +22,6 @@ import io.ktor.util.KtorExperimentalAPI
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.serialization.list
 import kotlinx.serialization.serializer
-import mu.KotlinLogging
 import penta.network.GameEvent
 import penta.network.GameSessionInfo
 import penta.network.LobbyEvent
@@ -31,7 +30,6 @@ import penta.network.LoginResponse
 import penta.network.ServerStatus
 import penta.util.authenticateWith
 import penta.util.authenticatedRequest
-import penta.util.exhaustive
 import penta.util.json
 import penta.util.parse
 
@@ -289,6 +287,7 @@ object WSClient {
                 userId = state.userId,
                 session = state.session,
                 game = game,
+                isPlayback = true,
                 websocketSessionGame = this@webSocket,
                 websocketSessionLobby = state.websocketSessionLobby
             )
@@ -313,6 +312,9 @@ object WSClient {
                 history.forEach { notation ->
                     dispatchNotation(notation)
                 }
+                dispatchConnection(observingState.copy(isPlayback = false))
+
+                //TODO: set playback to false
 //                }
                 // TODO: dispatch action to store
 //                penta.client.PentaViz.gameState.isPlayback = false

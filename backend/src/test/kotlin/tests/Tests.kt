@@ -14,7 +14,7 @@ class Tests {
     @Test
     fun test() {
         val boardStore: org.reduxkotlin.Store<BoardState> = createStore(
-            BoardState.reducer,
+            BoardState.Companion::reduceFunc,
             BoardState.create(),
             applyMiddleware(/*loggingMiddleware(logger)*/)
         )

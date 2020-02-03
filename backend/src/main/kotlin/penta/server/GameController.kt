@@ -15,6 +15,6 @@ object GameController {
     }
 
     fun get(gameId: String): ServerGamestate? {
-        return store.state.games.find { it.id == gameId }
+        return store.state.games.find { it.serverGameId == gameId }
     }
 }

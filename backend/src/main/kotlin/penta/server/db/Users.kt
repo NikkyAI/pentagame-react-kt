@@ -13,8 +13,10 @@ object Users: UUIDTable() {
     val userId = varchar("userId", 50)
         .uniqueIndex()
     val passwordHash = varchar("passwordHash", 50)
+        .nullable()
     val displayName = varchar("displayName", 50)
         .nullable()
+    val temporaryUser = bool("temporaryUser")
 
     init {
 //        displayName.defaultValueFun = { null }
@@ -28,6 +30,7 @@ class User(id: EntityID<UUID>) : UUIDEntity(id) {
     var passwordHash by Users.passwordHash
     var displayName by Users.displayName
     var players by Game via PlayersInGames
+    var temporaryUser by Users.temporaryUser
 
     override fun toString(): String {
         return transaction {

@@ -1,21 +1,17 @@
 package penta.server.db
 
-import kotlinx.serialization.list
 import org.jetbrains.exposed.dao.UUIDEntity
 import org.jetbrains.exposed.dao.UUIDEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.UUIDTable
-import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.Table
-import penta.network.GameEvent
-import penta.util.json
 import java.util.UUID
 
 object Games : UUIDTable() {
     val gameId = varchar("gameId", 50)
         .uniqueIndex("gameId")
     val history = jsonb2("history")//, json, GameEvent.serializer().list)
-
+    val owner = reference("owner", Users)
     init {
         gameId.defaultValueFun = { "game_$id" }
     }
@@ -26,6 +22,7 @@ class Game(id: EntityID<UUID>) : UUIDEntity(id) {
 
     var gameId by Games.gameId
     var history by Games.history
+    var owner by User referencedOn Games.owner
     var players by User via PlayersInGames
 }
 

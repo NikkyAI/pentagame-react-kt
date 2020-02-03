@@ -120,6 +120,12 @@ class PentaSvg(props: PentaSvgProps) : RComponent<PentaSvgProps, RState>(props) 
 //        console.log("props: ${props.boardState}")
 //        console.log("nextProps: ${nextProps.boardState}")
 
+        // TODO: access isPlayBack ?
+        when (val conn = nextProps.connection){
+            is ConnectionState.ConnectedToGame -> {
+                if (conn.isPlayback) return false
+            }
+        }
         redraw(nextProps)
 
         return false

@@ -2,6 +2,7 @@ package reducers
 
 import actions.Action
 import com.soywiz.klogger.Logger
+import io.ktor.http.Url
 import penta.BoardState
 import penta.BoardState.Companion.processMove
 import penta.ConnectionState
@@ -10,10 +11,14 @@ import penta.network.GameEvent
 import penta.network.LobbyEvent
 import penta.redux.MultiplayerState
 import penta.util.exhaustive
+import kotlin.browser.document
+import kotlin.browser.window
 
 data class State(
     val boardState: BoardState = BoardState.create(),
-    val multiplayerState: MultiplayerState = MultiplayerState()
+    val multiplayerState: MultiplayerState = MultiplayerState(
+        connectionState = ConnectionState.Disconnected(baseUrl = Url(document.location!!.href))
+    )
 //    val array: Array<String> = emptyArray()
 ) {
     fun reduce(action: Any): State {

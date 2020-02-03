@@ -79,6 +79,7 @@ sealed class ConnectionState {
         override val userId: String,
         override var session: String,
         override val game: GameSessionInfo,
+        val isPlayback: Boolean = false,
         private val websocketSessionGame: DefaultClientWebSocketSession,
         private val websocketSessionLobby: DefaultClientWebSocketSession
     ) : ConnectionState(), HasSession, HasGameSession {

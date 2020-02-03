@@ -81,15 +81,15 @@ kotlin {
 
                 // logging
 //                api("com.soywiz.korlibs.klogger:klogger-metadata:1.8.1")
-                api("com.soywiz.korlibs.klogger:klogger:1.8.1")
+                api("com.soywiz.korlibs.klogger:klogger:${KLogger.version}")
                 api("io.github.microutils:kotlin-logging-common:${KotlinLogging.version}")
 
                 // Redux
-                api("org.reduxkotlin:redux-kotlin:0.2.9")
-                api("org.reduxkotlin:redux-kotlin-reselect:0.2.9")
+                api("org.reduxkotlin:redux-kotlin:${ReduxKotlin.version}")
+                api("org.reduxkotlin:redux-kotlin-reselect:${ReduxKotlin.version}")
 
 //                api(project(":ksvg"))
-                api("com.github.nwillc:ksvg:3.0.0-SNAPSHOT")
+                api("com.github.nwillc:ksvg:${KSvg.version}")
             }
 
             kotlin.srcDirs(genCommonSrcKt.path)

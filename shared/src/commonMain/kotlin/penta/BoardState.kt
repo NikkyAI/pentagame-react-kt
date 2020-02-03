@@ -3,11 +3,10 @@ package penta
 import PentaBoard
 import actions.Action
 import com.soywiz.klogger.Logger
-import mu.KotlinLogging
-import org.reduxkotlin.Reducer
-import penta.logic.Piece
 import penta.logic.Field
 import penta.logic.Field.Goal
+import penta.logic.Piece
+import penta.network.GameEvent
 import penta.util.exhaustive
 import penta.util.requireMove
 
@@ -32,13 +31,13 @@ data class BoardState private constructor(
     val selectingGrayPiece: Boolean = false,
     val illegalMove: PentaMove.IllegalMove? = null
 ) {
+    object RemoveIllegalMove
     enum class GameType {
         TWO, THREE, FOUR, TWO_VS_TO
     }
 
     companion object {
-        private val logger = Logger(this::class.simpleName!!)
-
+        private val logger = Logger("BoardState")
         fun create(): BoardState {
             logger.info { "created new BoardState" }
 
@@ -78,9 +77,9 @@ data class BoardState private constructor(
                 }
         }
 
-        val reducer: Reducer<BoardState> = { state, action ->
+        fun reduceFunc(state: BoardState, action: Any): BoardState {
             logger.info { "action: ${action::class}" }
-            when (action) {
+            return when (action) {
                 is org.reduxkotlin.ActionTypes.INIT -> {
                     logger.info { "received INIT" }
                     state
@@ -90,10 +89,18 @@ data class BoardState private constructor(
                     state
                 }
                 is Action<*> -> {
-                    WithMutableState(state).processMove(action.action as PentaMove)
+                    reduceFunc(state, action.action)
+                }
+                is GameEvent -> {
+                    reduceFunc(state, action.asMove(state))
                 }
                 is PentaMove -> {
                     WithMutableState(state).processMove(action)
+                }
+                is RemoveIllegalMove -> {
+                    state.copy(
+                        illegalMove = null
+                    )
                 }
                 else -> {
                     error("$action is of unhandled type")
@@ -414,7 +421,8 @@ data class BoardState private constructor(
                             } else {
                                 requireMove(selectedGrayPiece == move.piece) {
                                     PentaMove.IllegalMove(
-                                        "piece ${move.piece.id} is not the same as selected gray piece: ${selectedGrayPiece?.id}",
+                                        "piece ${move.piece
+                                            .id} is not the same as selected gray piece: ${selectedGrayPiece?.id}",
                                         move
                                     )
                                 }
@@ -463,10 +471,16 @@ data class BoardState private constructor(
                                 selectedGrayPiece = null
                             )
                         }
+
+                        with(nextState) {
+                            nextState = nextState.copy(
+                                history = history + move
+                            )
+                        }
                     }
                     is PentaMove.SelectPlayerPiece -> {
                         with(originalState) {
-                            if(move.playerPiece != null) {
+                            if (move.playerPiece != null) {
                                 requireMove(currentPlayer.id == move.playerPiece.playerId) {
                                     PentaMove.IllegalMove(
                                         "selected piece ${move.playerPiece} is not owned by current player ${currentPlayer.id}",
@@ -476,6 +490,7 @@ data class BoardState private constructor(
                             }
                         }
                         nextState = nextState.copy(
+                            history = nextState.history + move,
                             selectedPlayerPiece = move.playerPiece
                         )
                     }
@@ -530,7 +545,6 @@ data class BoardState private constructor(
 //                        changed.forEach {
 //                            logger.warn { "~  pos ${it.key} : ${it.value}" }
 //                        }
-
 
                         with(nextState) {
                             nextState = nextState.copy(
@@ -618,7 +632,7 @@ data class BoardState private constructor(
                         && move !is PentaMove.SelectGrey
                         && winner == null
                     ) {
-                        logger.info {"incrementing turn after ${move.asNotation()}"}
+                        logger.info { "incrementing turn after ${move.asNotation()}" }
                         nextState = nextState.copy(
                             currentPlayer = players[(turn + 1) % players.count()],
                             turn = turn + 1
