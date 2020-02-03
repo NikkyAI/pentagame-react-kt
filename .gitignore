@@ -16,4 +16,8 @@ out/
 node_modules/
 package-lock.json
 
+private.gradle.kts
 run/
+*.jar
+!/gradle/wrapper/*.jar
+

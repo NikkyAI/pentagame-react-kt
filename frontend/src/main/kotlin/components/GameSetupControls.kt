@@ -118,24 +118,6 @@ class GameSetupControls(props: GameSetupProps) : RComponent<GameSetupProps, RSta
                 }
             }
         }
-        styledDiv {
-            mButton(
-                caption = "Export History",
-                variant = MButtonVariant.outlined,
-                onClick = {
-                    val serializable = props.boardState.history.map { it.toSerializable() }
-                    val serialized = json.toJson(GameEvent.serializer().list, serializable)
-                    console.info("history: ", serialized.toString())
-                    serializable.forEach {
-                        console.info(it, json.toJson(GameEvent.serializer(), it).toString())
-                    }
-                }
-            ) {
-                css {
-                    margin(1.spacingUnits)
-                }
-            }
-        }
 
         children()
     }

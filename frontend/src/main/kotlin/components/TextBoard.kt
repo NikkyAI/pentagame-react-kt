@@ -1,8 +1,11 @@
 package components
 
+import com.ccfraser.muirwik.components.button.MButtonVariant
+import com.ccfraser.muirwik.components.button.mButton
 import com.ccfraser.muirwik.components.list.mList
 import com.ccfraser.muirwik.components.list.mListItem
 import com.ccfraser.muirwik.components.mTypography
+import com.ccfraser.muirwik.components.spacingUnits
 import com.ccfraser.muirwik.components.table.mTable
 import com.ccfraser.muirwik.components.table.mTableBody
 import com.ccfraser.muirwik.components.table.mTableCell
@@ -13,9 +16,13 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.css.Color
 import kotlinx.css.backgroundColor
+import kotlinx.css.margin
+import kotlinx.serialization.list
 import penta.BoardState
 import penta.ConnectionState
 import penta.PentaMove
+import penta.network.GameEvent
+import penta.util.json
 import react.RBuilder
 import react.RClass
 import react.RComponent
@@ -27,6 +34,7 @@ import react.redux.rConnect
 import reducers.State
 import redux.WrapperAction
 import styled.css
+import styled.styledDiv
 
 interface TextBoardProps : TextBoardStateProps, TextBoardDispatchProps {
 //    var boardState: BoardState
@@ -51,6 +59,26 @@ class TextBoard(props: TextBoardProps) : RComponent<TextBoardProps, RState>(prop
     override fun RBuilder.render() {
         if (props.boardState == undefined) {
             return
+        }
+
+
+        styledDiv {
+            mButton(
+                caption = "Export History",
+                variant = MButtonVariant.outlined,
+                onClick = {
+                    val serializable = props.boardState.history.map { it.toSerializable() }
+                    val serialized = json.toJson(GameEvent.serializer().list, serializable)
+                    console.info("history: ", serialized.toString())
+                    serializable.forEach {
+                        console.info(it, json.toJson(GameEvent.serializer(), it).toString())
+                    }
+                }
+            ) {
+                css {
+                    margin(1.spacingUnits)
+                }
+            }
         }
 
         div {

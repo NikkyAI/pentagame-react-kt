@@ -1,42 +1,83 @@
-//package penta.server.db
+package penta.server.db
+
+import kotlinx.serialization.list
+import org.jetbrains.exposed.sql.Database
+import org.jetbrains.exposed.sql.SchemaUtils
+import org.jetbrains.exposed.sql.SizedCollection
+import org.jetbrains.exposed.sql.StdOutSqlLogger
+import org.jetbrains.exposed.sql.addLogger
+import org.jetbrains.exposed.sql.transactions.transaction
+import penta.PlayerState
+import penta.network.GameEvent
+import penta.util.json
+import java.util.UUID
+
+fun main() {
+    val db = Database.connect(
+        url = System.getenv("JDBC_DATABASE_URL"),
+        driver = "org.postgresql.Driver"
+    )
+
+    transaction {
+        addLogger(StdOutSqlLogger)
+
+        SchemaUtils.drop(
+            Users, PlayersInGames, Games,
+            inBatch = true
+        )
+    }
+    transaction {
+        addLogger(StdOutSqlLogger)
+
+        SchemaUtils.createMissingTablesAndColumns(
+            Users, PlayersInGames, Games,
+            inBatch = true
+        )
+    }
+
+    val testUser = transaction {
+        findOrCreate("TesUser") {
+            userId = "TestUser"
+            displayName = "Test User"
+            passwordHash = "abcdefg"
+        }
+    }
+    println("testUser: $testUser")
+
+    transaction {
+        addLogger(StdOutSqlLogger)
+
+        val someuser = findOrCreate("someuser") {
+            passwordHash = "abcdefgh"
+        }
+
+        println("someuser: $someuser")
+
+        val newGame = Game.new(UUID.randomUUID()) {
+            gameId = "game_0"
+            history = json.stringify(
+                GameEvent.serializer().list, listOf(
+                    GameEvent.PlayerJoin(PlayerState("someuser", "tiangle")),
+                    GameEvent.InitGame
+                )
+            )
+            players = SizedCollection(
+                listOf(
+                    someuser
+                )
+            )
+        }
+    }
+
+    // TODO: figure out how to check if id exists / insertOrReplace
+}
+
+//object DBVersions : IntIdTable() {
+//    val version = integer("version").default(0)
+//}
 //
-//import com.mongodb.ConnectionString
-//import kotlinx.coroutines.runBlocking
-//import org.litote.kmongo.coroutine.CoroutineClient
-//import org.litote.kmongo.coroutine.coroutine
-//import org.litote.kmongo.reactivestreams.KMongo
+//class DBVersion(id: EntityID<Int>) : IntEntity(id) {
+//    companion object : IntEntityClass<DBVersion>(DBVersions)
 //
-//object DB {
-//    val client: CoroutineClient = System.getenv()["MONGODB_URI"]?.let {
-//        KMongo.createClient(ConnectionString(it)).coroutine
-//    } ?: run {
-//        KMongo.createClient().coroutine
-//    }
-//    //    val coroutineClient = client.coroutine
-//    val database = client.getDatabase("test") //normal java driver usage
-//    //
-//    val version: Int = 0
-//
-//    @JvmStatic
-//    fun main(args: Array<String>) = runBlocking {
-//        testDb()
-//    }
-//
-//    suspend fun testDb() {
-//        DBUser.migrate()
-//
-////        DBUser("nikky", "password", "abcd").insertOrReplace()
-////        DBUser("tempuser", "").insertOrReplace()
-////        DBUser("tempuser2", "").insertOrReplace()
-//
-//        val nikky = DBUser.getByUserId("nikky")
-//
-//        println("user: $nikky")
-//
-////        nikky?.let {
-////            it.copy(score = DBUser.ScoreInfo(100))
-////        }?.insertOrReplace()
-//
-////        db.designs.updateMany({}, { $set: { "dateCreated": ISODate() } })
-//    }
+//    var version by DBVersions.version
 //}

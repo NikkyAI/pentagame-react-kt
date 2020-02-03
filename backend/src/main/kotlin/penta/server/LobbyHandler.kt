@@ -72,20 +72,19 @@ object LobbyHandler {
         } catch (e: IOException) {
             store.dispatch(GlobalState.GlobalAction.RemoveSession(session))
             val reason = closeReason.await()
-            logger.debug { e }
-            logger.debug { "onClose $reason" }
+            logger.debug { "onClose ${session.userId} $reason ${e.message}" }
         } catch (e: ClosedReceiveChannelException) {
             store.dispatch(GlobalState.GlobalAction.RemoveSession(session))
             val reason = closeReason.await()
-            logger.error { "onClose $reason" }
+            logger.error { "onClose ${session.userId} $reason" }
         } catch (e: ClosedSendChannelException) {
             store.dispatch(GlobalState.GlobalAction.RemoveSession(session))
             val reason = closeReason.await()
-            logger.error { "onClose $reason" }
+            logger.error { "onClose ${session.userId} $reason" }
         } catch (e: Exception) {
             store.dispatch(GlobalState.GlobalAction.RemoveSession(session))
             logger.error { e }
-            logger.error { "exception onClose ${e.message}" }
+            logger.error { "exception onClose ${session.userId} ${e.message}" }
         } finally {
 
         }

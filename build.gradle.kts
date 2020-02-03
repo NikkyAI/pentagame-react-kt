@@ -11,22 +11,17 @@ allprojects {
 
     // TODO: remove
     repositories {
-        maven(url="https://dl.bintray.com/kotlin/kotlin-eap")
+        maven(url = "https://dl.bintray.com/kotlin/kotlin-eap")
         mavenCentral()
         jcenter()
-        maven(url = "https://dl.bintray.com/kotlin/kotlinx") {
-            name = "kotlinx"
-        }
-        maven("https://dl.bintray.com/kotlin/kotlin-js-wrappers")
-        maven(url = "https://dl.bintray.com/kotlin/ktor") {
-            name = "ktor"
-        }
-        maven(url = "https://dl.bintray.com/data2viz/data2viz/") {
-            name = "d2v"
-        }
-        maven(url = "https://dl.bintray.com/korlibs/korlibs/") {
-            name = "korlibs"
-        }
+        maven(url = "https://jcenter.bintray.com/")
+        maven(url = "https://dl.bintray.com/kotlin/kotlinx")
+        maven(url = "https://dl.bintray.com/kotlin/kotlin-js-wrappers")
+        maven(url = "https://dl.bintray.com/kotlin/ktor")
+        maven(url = "https://dl.bintray.com/data2viz/data2viz/")
+        maven(url = "https://dl.bintray.com/korlibs/korlibs/")
+        maven(url = "https://dl.bintray.com/kotlin/exposed")
+        maven(url = "https://dl.bintray.com/kenjiohtsuka/m")
 //        mavenLocal()
 //        // TODO: remove
 //        if (project.gradle.startParameter.taskNames.contains("bundleLocalDependencies")) {
@@ -36,6 +31,10 @@ allprojects {
 //                name = "bundled local"
 //            }
 //        }
+    }
+    val privateScript = rootDir.resolve("private.gradle.kts")
+    if(privateScript.exists()) {
+        apply(from = privateScript)
     }
 }
 

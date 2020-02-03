@@ -196,9 +196,8 @@ kotlin {
                 api("org.jetbrains:kotlin-react-redux:5.0.7-${kotlinWrappersVersion}")
 
                 // material UI components
-//                api(npm("@material-ui/core", "^4.8.3"))
-//                api(npm("@material-ui/icons", "^4.5.1"))
                 api(project(":muirwik"))
+//                api(project(":muirwik"))
             }
         }
 

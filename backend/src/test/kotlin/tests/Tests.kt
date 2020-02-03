@@ -1,7 +1,7 @@
 package tests
 
 import actions.Action
-import mu.KotlinLogging
+import com.soywiz.klogger.Logger
 import org.junit.Test
 import org.reduxkotlin.applyMiddleware
 import org.reduxkotlin.createStore

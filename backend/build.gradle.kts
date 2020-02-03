@@ -1,5 +1,8 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+import java.io.ByteArrayOutputStream
+import java.io.PrintStream
 
+// TODO: move to buildSrc
 var ktorVersion = "1.2.6"
 var logbackVersion = "1.2.3"
 
@@ -7,6 +10,7 @@ var logbackVersion = "1.2.3"
 plugins {
     kotlin("jvm")
     id("com.github.johnrengelman.shadow") version "5.0.0"
+    id("org.flywaydb.flyway") version "6.2.1"
     application
 }
 
@@ -17,6 +21,101 @@ val gen_resource = buildDir.resolve("gen-src/resources").apply { mkdirs() }
 //        resources.srcDirs += gen_resource
 //    }
 //}
+
+val hasDevUrl = extra.has("DEV_JDBC_DATABASE_URL")
+if (!hasDevUrl) logger.error("DEV_JDBC_DATABASE_URL not set")
+val hasLiveUrl = extra.has("LIVE_JDBC_DATABASE_URL")
+if (!hasLiveUrl) logger.error("LIVE_JDBC_DATABASE_URL not set")
+
+val flywayUrl = System.getenv()["JDBC_DATABASE_URL"] ?: if (hasDevUrl) {
+    val DEV_JDBC_DATABASE_URL: String by extra
+    DEV_JDBC_DATABASE_URL
+} else {
+    null
+}
+if(flywayUrl != null) {
+    flyway {
+        url = flywayUrl
+        schemas = arrayOf("public")
+        baselineVersion = "0"
+    }
+}
+
+if (hasDevUrl && hasLiveUrl) {
+    val DEV_JDBC_DATABASE_URL: String by extra
+    val LIVE_JDBC_DATABASE_URL: String by extra
+
+    tasks.register<DefaultTask>("createMigration") {
+        group = "migration"
+
+        dependsOn("testClasses")
+
+        val dumps = buildDir.resolve("dumps")
+
+        doFirst {
+            val livePath = dumps.resolve("live_schema.sql").path
+            val devPath = dumps.resolve("dev_schema.sql").path
+
+            pg_dump(
+                connectionString = LIVE_JDBC_DATABASE_URL,
+                target = livePath,
+                extraArgs = arrayOf(
+                    "--create",
+                    "--no-owner",
+                    "--no-acl",
+                    "--exclude-table", "flyway_schema_history"
+                    /*, "--schema-only"*/)
+            )
+
+            // drop and regenerate dev database
+            javaexec {
+                main = "util.ResetDB"
+                classpath = sourceSets.test.get().runtimeClasspath
+                environment("JDBC_DATABASE_URL", DEV_JDBC_DATABASE_URL)
+            }
+
+            pg_dump(
+                connectionString = DEV_JDBC_DATABASE_URL,
+                target = devPath,
+                extraArgs = arrayOf(
+                    "--create",
+                    "--exclude-table", "flyway_schema_history"
+                )
+            )
+
+            val old = System.out
+            val migrationStatements = ByteArrayOutputStream().use { os ->
+                System.setOut(PrintStream(os))
+
+                cz.startnet.utils.pgdiff.Main.main(
+                    arrayOf(
+                        "--ignore-start-with",
+                        livePath,
+                        devPath
+                    )
+                )
+                os.toString()
+            }
+            System.setOut(old)
+
+//        val migrationStatements = ByteArrayOutputStream().use { os ->
+//            javaexec {
+//                main = "cz.startnet.utils.pgdiff.Main"
+//                classpath = files("apgdiff-2.4.jar")
+//                args = listOf("--ignore-start-with", dumps.resolve("v0.sql").path, dumps.resolve("v1.sql").path)
+//                standardOutput = os
+//            }
+//            os.toString()
+//        }
+
+            logger.lifecycle("migration statements \n$migrationStatements")
+
+            file("src/main/resources/db/migration/next.sql")
+                .writeText(migrationStatements)
+            // TODO: write statements to file
+        }
+    }
+}
 
 repositories {
     jcenter()
@@ -35,6 +134,15 @@ dependencies {
     implementation("io.ktor:ktor-html-builder:$ktorVersion")
     implementation("io.ktor:ktor-serialization:$ktorVersion")
     implementation("ch.qos.logback:logback-classic:$logbackVersion")
+
+    implementation("org.postgresql:postgresql:42.2.2")
+
+    implementation("org.jetbrains.exposed:exposed-core:0.20.3")
+    implementation("org.jetbrains.exposed:exposed-dao:0.20.3")
+    implementation("org.jetbrains.exposed:exposed-jdbc:0.20.3")
+
+//    implementation ("com.improve_future:harmonica:1.1.24")
+//    implementation (group = "org.reflections", name= "reflections", version= "0.9.11")
 
     testImplementation(kotlin("test-junit"))
 }
