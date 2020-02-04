@@ -71,6 +71,6 @@ object Postgres {
 }
 
 object Flyway {
-//    const val version = "_"    
-    const val version  = "6.2.1"
+    const val version = "+"    
+//    const val version  = "6.2.1"
 }
