@@ -84,6 +84,9 @@ task<DefaultTask>("depsize") {
     }
 }
 
+/***
+//TODO: erro Task with name 'browserProductionWebpack' not found in project ':frontend'.
+
 tasks.getByName("browserProductionWebpack").apply {
     doLast {
         val rootDirPath = rootDir.absolutePath.replace('\\', '/')
@@ -97,3 +100,4 @@ tasks.getByName("browserProductionWebpack").apply {
         )
     }
 }
+**/
