@@ -13,7 +13,7 @@ RefreshVersions
 
 - Frontend
   - Redux/Statemachine
-    - [ ] process `LobbyEvents`
+    - [x] process `LobbyEvents`
   - UI
     - [ ] track points for players
     - [ ] change figure shapes for players
@@ -23,7 +23,7 @@ RefreshVersions
 
 - [ ] User
   - [ ] Backend
-    - [ ] add User storage (SQLDelight?)
+    - [ ] add User storage (Postgres + Exposed)
     - [ ] add routes for setting user data (password, displayname)
   - [ ] Frontend
     - [ ] add views

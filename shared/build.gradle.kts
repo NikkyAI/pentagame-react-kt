@@ -74,23 +74,22 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 api(kotlin("stdlib"))
-                api("org.jetbrains.kotlinx:kotlinx-serialization-runtime-common:${Serialization.version}")
-                api("org.jetbrains.kotlinx:kotlinx-coroutines-core-common:${Coroutines.version}")
+                api("org.jetbrains.kotlinx:kotlinx-serialization-runtime-common:_")
+                api("org.jetbrains.kotlinx:kotlinx-coroutines-core-common:_")
 
                 api(d2v("core"))
                 api(d2v("color"))
 
                 // logging
-//                api("com.soywiz.korlibs.klogger:klogger-metadata:1.8.1")
-                api("com.soywiz.korlibs.klogger:klogger:${KLogger.version}")
-                api("io.github.microutils:kotlin-logging-common:${KotlinLogging.version}")
+                api("com.soywiz.korlibs.klogger:klogger:_")
+                api("io.github.microutils:kotlin-logging-common:_")
 
                 // Redux
-                api("org.reduxkotlin:redux-kotlin:${ReduxKotlin.version}")
-                api("org.reduxkotlin:redux-kotlin-reselect:${ReduxKotlin.version}")
+                api("org.reduxkotlin:redux-kotlin:_")
+                api("org.reduxkotlin:redux-kotlin-reselect:_")
 
 //                api(project(":ksvg"))
-                api("com.github.nwillc:ksvg:${KSvg.version}")
+                api("com.github.nwillc:ksvg:3.0.0-SNAPSHOT")
             }
 
             kotlin.srcDirs(genCommonSrcKt.path)
@@ -107,33 +106,27 @@ kotlin {
             dependencies {
                 api(kotlin("stdlib-jdk8"))
 
-                // need this ? why does metadata not work ?
-                api("org.jetbrains.kotlinx:kotlinx-serialization-runtime:${Serialization.version}")
+                api("org.jetbrains.kotlinx:kotlinx-serialization-runtime:_")
 
                 // KTOR
-                api(ktor("server-core", Ktor.version))
-                api(ktor("server-cio", Ktor.version))
-                api(ktor("websockets", Ktor.version))
-                api(ktor("jackson", Ktor.version))
+                api(ktor("server-core"))
+                api(ktor("server-cio"))
+                api(ktor("websockets"))
+                api(ktor("jackson"))
 
                 // logging
-                api("com.soywiz.korlibs.klogger:klogger-jvm:_")
+//                api("com.soywiz.korlibs.klogger:klogger-jvm:_")
 
                 // serialization
-//                api("org.jetbrains.kotlinx:kotlinx-serialization-runtime:${Serialization.version}")
+//                api("org.jetbrains.kotlinx:kotlinx-serialization-runtime:_")
 
                 // Jackson
                 api("com.fasterxml.jackson.core:jackson-databind:_")
                 api("com.fasterxml.jackson.module:jackson-module-kotlin:_")
 
                 // logging
-                api("ch.qos.logback:logback-classic:${Logback.version}")
-                api("io.github.microutils:kotlin-logging:${KotlinLogging.version}")
-
-                // mongodb
-//                    implementation("org.litote.kmongo:kmongo-serialization:3.11.1")
-//                api("org.litote.kmongo:kmongo-coroutine-serialization:3.11.1")
-//                api("org.litote.kmongo:kmongo-id:3.11.1")
+                api("ch.qos.logback:logback-classic:_")
+                api("io.github.microutils:kotlin-logging:_")
             }
             kotlin.srcDirs(genBackendResource.path)
         }
@@ -163,7 +156,7 @@ kotlin {
             dependencies {
                 // logging
                 api("com.soywiz.korlibs.klogger:klogger-js:_")
-                api("io.github.microutils:kotlin-logging-js:${KotlinLogging.version}")
+                api("io.github.microutils:kotlin-logging-js:_")
 
                 // ktor client
                 api(ktor("client-core-js"))
@@ -182,19 +175,28 @@ kotlin {
 
                 // temp fix ?
                 api(npm("text-encoding"))
+                api(npm("abort-controller"))
 
                 api(npm("redux-logger"))
 
-                val kotlinWrappersVersion = "_"
+                val kotlinWrappersVersion = "pre.90-kotlin-1.3.61"
                 api("org.jetbrains:kotlin-react:16.9.0-${kotlinWrappersVersion}")
                 api("org.jetbrains:kotlin-react-dom:16.9.0-${kotlinWrappersVersion}")
-//                api("org.jetbrains:kotlin-react-router-dom:4.3.1-${kotlinWrappersVersion}")
                 api("org.jetbrains:kotlin-css:1.0.0-${kotlinWrappersVersion}")
                 api("org.jetbrains:kotlin-css-js:1.0.0-${kotlinWrappersVersion}")
                 api("org.jetbrains:kotlin-styled:1.0.0-${kotlinWrappersVersion}")
 
                 api("org.jetbrains:kotlin-redux:4.0.0-${kotlinWrappersVersion}")
                 api("org.jetbrains:kotlin-react-redux:5.0.7-${kotlinWrappersVersion}")
+
+//                api("org.jetbrains:kotlin-react:_")
+//                api("org.jetbrains:kotlin-react-dom:_")
+//                api("org.jetbrains:kotlin-css:_")
+//                api("org.jetbrains:kotlin-css-js:_")
+//                api("org.jetbrains:kotlin-styled:_")
+
+//                api("org.jetbrains:kotlin-redux:_")
+//                api("org.jetbrains:kotlin-react-redux:_")
 
                 // material UI components
                 api(project(":muirwik"))

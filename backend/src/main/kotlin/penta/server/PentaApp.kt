@@ -17,7 +17,6 @@ import io.ktor.sessions.Sessions
 import io.ktor.sessions.cookie
 import io.ktor.websocket.WebSockets
 import org.jetbrains.exposed.sql.Database
-import org.slf4j.Marker
 import org.slf4j.event.Level
 import java.time.Duration
 
@@ -39,6 +38,8 @@ fun Application.main() {
     install(WebSockets) {
         pingPeriod = Duration.ofMillis(1000)
         timeout = Duration.ofMillis(2000)
+//        pingPeriodMillis = 1000
+//        timeoutMillis = 2000
     }
 
 //    install(HttpsRedirect)
@@ -54,6 +55,7 @@ fun Application.main() {
         exposeHeader("SESSION")
 //        exposeHeader("Set-Cookie")
         maxAge = Duration.ofMinutes(20)
+//        maxAgeInSeconds = 20 * 60
     }
     install(XForwardedHeaderSupport)
 //    install(EncryptionEnforcementFeature)
