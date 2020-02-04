@@ -6,6 +6,7 @@ import java.time.format.DateTimeFormatter
 plugins {
     kotlin("multiplatform")
     id("kotlinx-serialization")
+    id("de.fayard.dependencies")
 }
 
 val genCommonSrcKt = buildDir.resolve("gen-src/commonMain/kotlin").apply { mkdirs() }
@@ -116,14 +117,14 @@ kotlin {
                 api(ktor("jackson", Ktor.version))
 
                 // logging
-                api("com.soywiz.korlibs.klogger:klogger-jvm:1.8.1")
+                api("com.soywiz.korlibs.klogger:klogger-jvm:_")
 
                 // serialization
 //                api("org.jetbrains.kotlinx:kotlinx-serialization-runtime:${Serialization.version}")
 
                 // Jackson
-                api("com.fasterxml.jackson.core:jackson-databind:2.9.5")
-                api("com.fasterxml.jackson.module:jackson-module-kotlin:2.9.5")
+                api("com.fasterxml.jackson.core:jackson-databind:_")
+                api("com.fasterxml.jackson.module:jackson-module-kotlin:_")
 
                 // logging
                 api("ch.qos.logback:logback-classic:${Logback.version}")
@@ -161,7 +162,7 @@ kotlin {
             dependsOn(commonClient)
             dependencies {
                 // logging
-                api("com.soywiz.korlibs.klogger:klogger-js:1.8.1")
+                api("com.soywiz.korlibs.klogger:klogger-js:_")
                 api("io.github.microutils:kotlin-logging-js:${KotlinLogging.version}")
 
                 // ktor client
@@ -184,7 +185,7 @@ kotlin {
 
                 api(npm("redux-logger"))
 
-                val kotlinWrappersVersion = "pre.89-kotlin-1.3.60"
+                val kotlinWrappersVersion = "_"
                 api("org.jetbrains:kotlin-react:16.9.0-${kotlinWrappersVersion}")
                 api("org.jetbrains:kotlin-react-dom:16.9.0-${kotlinWrappersVersion}")
 //                api("org.jetbrains:kotlin-react-router-dom:4.3.1-${kotlinWrappersVersion}")

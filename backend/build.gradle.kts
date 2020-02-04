@@ -8,6 +8,7 @@ plugins {
     id("com.github.johnrengelman.shadow") version "5.0.0"
     id("org.flywaydb.flyway") version Flyway.version
     application
+    id("de.fayard.dependencies")    
 }
 
 val gen_resource = buildDir.resolve("gen-src/resources").apply { mkdirs() }
