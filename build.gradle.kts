@@ -2,7 +2,6 @@ plugins {
     kotlin("multiplatform") version Kotlin.version// apply false
     id("kotlinx-serialization") version Kotlin.version// apply false
     id("de.fayard.refreshVersions") version "0.8.6"
-    `build-scan`
     `maven-publish`
 }
 
@@ -49,12 +48,6 @@ val stage = tasks.create("stage") {
 // debugging
 System.getenv().forEach { (key, value) ->
     logger.info("$key : $value")
-}
-
-buildScan {
-    termsOfServiceAgree = "yes"
-    publishAlwaysIf(true)
-    termsOfServiceUrl = "https://gradle.com/terms-of-service"
 }
 
 tasks.register<DefaultTask>("hello") {

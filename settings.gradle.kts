@@ -18,6 +18,11 @@ pluginManagement {
         }
     }
 }
+//plugins {
+//  id("com.gradle.enterprise").version("3.1.1")
+//}
+
+
 
 enableFeaturePreview("GRADLE_METADATA")
 
@@ -29,3 +34,13 @@ include("shared")
 include(":muirwik")
 
 project(":muirwik").projectDir = rootDir.resolve("muirwik/muirwik-components")
+
+/**
+gradleEnterprise {
+    buildScan {
+        termsOfServiceAgree = "yes"
+        publishAlwaysIf(true)
+        termsOfServiceUrl = "https://gradle.com/terms-of-service"
+    }
+}  
+ **/  
