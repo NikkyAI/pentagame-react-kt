@@ -6,8 +6,8 @@ import io.ktor.application.install
 import io.ktor.features.StatusPages
 import io.ktor.http.HttpStatusCode
 import io.ktor.response.respond
-import kotlinx.io.PrintWriter
-import kotlinx.io.StringWriter
+import java.io.PrintWriter
+import java.io.StringWriter
 
 fun Application.install() {
     install(StatusPages) {

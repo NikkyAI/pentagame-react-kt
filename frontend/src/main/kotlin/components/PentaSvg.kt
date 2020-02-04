@@ -457,8 +457,13 @@ private fun SVG.draw(scale: Int, svgProps: PentaSvgProps) {
             is Piece.Player -> {
                 val isCurrentPlayer = piece.playerId == svgProps.boardState.currentPlayer.id
                 console.debug("playerPiece: $piece")
-                val selectable = isYourTurn && isCurrentPlayer && svgProps.boardState.selectedPlayerPiece == null
-                val swappable = isYourTurn && selectedPieceIsCurrentPlayer
+                val selectable = isYourTurn
+                    && isCurrentPlayer
+                    && field != null
+                    && svgProps.boardState.selectedPlayerPiece == null
+                val swappable = isYourTurn
+                    && selectedPieceIsCurrentPlayer
+                    && field != null
                 console.info("playerPiece: ", piece, "selectable: ", selectable, "swappable", swappable)
                 drawPlayer(
                     figureId = piece.figureId,

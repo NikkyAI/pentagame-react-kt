@@ -6,7 +6,6 @@ import io.ktor.http.Url
 import io.ktor.http.cio.websocket.CloseReason
 import io.ktor.http.cio.websocket.Frame
 import io.ktor.http.cio.websocket.close
-import mu.KotlinLogging
 import penta.network.GameSessionInfo
 import penta.network.GameEvent
 import penta.util.json

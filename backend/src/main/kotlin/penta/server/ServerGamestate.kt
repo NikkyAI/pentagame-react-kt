@@ -9,7 +9,7 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.channels.ClosedSendChannelException
 import kotlinx.coroutines.launch
-import kotlinx.io.IOException
+import java.io.IOException
 import kotlinx.serialization.list
 import kotlinx.serialization.serializer
 import org.jetbrains.exposed.sql.SizedCollection
@@ -85,7 +85,6 @@ class ServerGamestate(
                 )
             )
 
-            var oldHistory: List<PentaMove> = boardStateStore.state.history.toList()
             logger.info { "play back history" }
             outgoing.send(
                 Frame.Text(
@@ -94,6 +93,7 @@ class ServerGamestate(
                         boardStateStore.state.history.map { it.toSerializable() })
                 )
             )
+            val sentMoves: MutableList<PentaMove> = boardStateStore.state.history.toMutableList()
 
             val historySelector = SelectorBuilder<BoardState>()
                 .withSingleField { boardStateStore.state.history }
@@ -103,7 +103,7 @@ class ServerGamestate(
             unsubscribe = boardStateStore.subscribe {
                 historySelector.getIfChangedIn(boardStateStore.state)?.let { history ->
                     logger.info { "history triggered change: ${history.size}" }
-                    val moves = history.toList() - oldHistory
+                    val moves = history.toList() - sentMoves
                     if (moves.isEmpty()) {
                         logger.error { "no difference in moves" }
                     }
@@ -113,7 +113,7 @@ class ServerGamestate(
                             outgoing.send(Frame.Text(json.stringify(serializer, move.toSerializable())))
                         }
                     }
-                    oldHistory = boardStateStore.state.history.toList()
+                    sentMoves += moves
 
                     logger.info { "writing history to db" }
                     transaction {
@@ -132,33 +132,26 @@ class ServerGamestate(
                         )
                     }
                 }
-            }
-//            historySelector.onChangeIn(boardStateStore.state) { history ->
-//
-//            }
-            playerSelector.onChangeIn(boardStateStore.state) { players ->
-                logger.info { "players triggered change: $players" }
-                logger.info { "writing players to db" }
-                transaction {
-                    addLogger(StdOutSqlLogger)
-                    val game = Game.find(Games.gameId eq serverGameId).firstOrNull()
+
+                playerSelector.getIfChangedIn(boardStateStore.state)?.let { players ->
+                    logger.info { "players triggered change: $players" }
+                    logger.info { "writing players to db" }
+                    transaction {
+                        addLogger(StdOutSqlLogger)
+                        val game = Game.find(Games.gameId eq serverGameId).firstOrNull()
 //                        val game = Game.all().find { it.gameId == id }
-                    if (game == null) {
-                        logger.error { "could not find $serverGameId" }
-                        return@transaction
-                    }
-                    game.players = SizedCollection(
-                        players.mapNotNull {
-                            UserManager.findDBUser(it.id)
+                        if (game == null) {
+                            logger.error { "could not find $serverGameId" }
+                            return@transaction
                         }
-                    )
+                        game.players = SizedCollection(
+                            players.mapNotNull {
+                                UserManager.findDBUser(it.id)
+                            }
+                        )
+                    }
                 }
             }
-//            illegalMoveSelector.onChangeIn(boardStateStore.state) { illegalMove ->
-//                if(illegalMove != null) {
-//
-//                }
-//            }
 
             while (true) {
                 val notationJson = (incoming.receive() as Frame.Text).readText()

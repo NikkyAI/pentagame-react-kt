@@ -8,7 +8,7 @@ import io.ktor.http.cio.websocket.readText
 import io.ktor.websocket.DefaultWebSocketServerSession
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.channels.ClosedSendChannelException
-import kotlinx.io.IOException
+import java.io.IOException
 import penta.network.LobbyEvent
 import penta.server.GlobalState.Companion.store
 import penta.util.exhaustive
