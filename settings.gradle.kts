@@ -18,9 +18,9 @@ pluginManagement {
         }
     }
 }
-//plugins {
-//  id("com.gradle.enterprise").version("3.1.1")
-//}
+plugins {
+  id("com.gradle.enterprise").version("3.1.1")
+}
 
 
 
@@ -35,12 +35,11 @@ include(":muirwik")
 
 project(":muirwik").projectDir = rootDir.resolve("muirwik/muirwik-components")
 
-/**
+
 gradleEnterprise {
     buildScan {
         termsOfServiceAgree = "yes"
         publishAlwaysIf(true)
         termsOfServiceUrl = "https://gradle.com/terms-of-service"
     }
-}  
- **/  
+}
