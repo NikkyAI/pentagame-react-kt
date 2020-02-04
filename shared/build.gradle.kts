@@ -6,6 +6,7 @@ import java.time.format.DateTimeFormatter
 plugins {
     kotlin("multiplatform")
     id("kotlinx-serialization")
+    id("de.fayard.dependencies")
 }
 
 val genCommonSrcKt = buildDir.resolve("gen-src/commonMain/kotlin").apply { mkdirs() }

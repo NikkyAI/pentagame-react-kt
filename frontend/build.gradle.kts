@@ -1,5 +1,6 @@
 plugins {
     kotlin("js")
+    id("de.fayard.dependencies")
 }
 
 kotlin {
