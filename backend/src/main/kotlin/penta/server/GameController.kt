@@ -17,4 +17,10 @@ object GameController {
     fun get(gameId: String): ServerGamestate? {
         return store.state.games.find { it.serverGameId == gameId }
     }
+
+    fun listActiveGames() = store.state.games.filter {
+        it.boardStateStore.state.let {
+            it.winner == null
+        }
+    }
 }

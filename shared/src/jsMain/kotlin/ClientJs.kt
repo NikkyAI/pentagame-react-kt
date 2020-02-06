@@ -7,7 +7,6 @@ import io.ktor.client.features.json.JsonFeature
 import io.ktor.client.features.json.serializer.KotlinxSerializer
 import io.ktor.client.features.websocket.WebSockets
 import kotlinx.coroutines.Dispatchers
-import mu.KotlinLogging
 import org.w3c.notifications.DENIED
 import org.w3c.notifications.GRANTED
 import org.w3c.notifications.Notification

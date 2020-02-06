@@ -8,6 +8,11 @@ kotlin {
         // new kotlin("js") stuff
         useCommonJs()
         browser {
+            dceTask {
+                dceOptions {
+                    keep("ktor-ktor-io.\$\$importsForInline\$\$.ktor-ktor-io.io.ktor.utils.io")
+                }
+            }
             runTask {
                 sourceMaps = true
             }

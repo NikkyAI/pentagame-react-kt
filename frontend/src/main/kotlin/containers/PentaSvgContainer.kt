@@ -27,7 +27,7 @@ interface PentaSvgDispatchProps : RProps {
     var dispatchConnection: (penta.ConnectionState) -> Unit
 }
 
-val pentaSvg =
+val pentaSvgInteractive =
     rConnect<State, Action<*>, WrapperAction, PentaSvgParameters, PentaSvgStateProps, PentaSvgDispatchProps, PentaSvgProps>(
         { state, configProps ->
             console.debug("PentaViz update state")

@@ -36,10 +36,10 @@ fun Application.main() {
     )
 
     install(WebSockets) {
-        pingPeriod = Duration.ofMillis(1000)
-        timeout = Duration.ofMillis(2000)
-//        pingPeriodMillis = 1000
-//        timeoutMillis = 2000
+//        pingPeriod = Duration.ofMillis(1000)
+//        timeout = Duration.ofMillis(2000)
+        pingPeriodMillis = 1000
+        timeoutMillis = 2000
     }
 
 //    install(HttpsRedirect)
@@ -54,8 +54,8 @@ fun Application.main() {
 //        header("Set-Cookie")
         exposeHeader("SESSION")
 //        exposeHeader("Set-Cookie")
-        maxAge = Duration.ofMinutes(20)
-//        maxAgeInSeconds = 20 * 60
+//        maxAge = Duration.ofMinutes(20)
+        maxAgeInSeconds = 20 * 60
     }
     install(XForwardedHeaderSupport)
 //    install(EncryptionEnforcementFeature)

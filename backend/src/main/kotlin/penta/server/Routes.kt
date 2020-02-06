@@ -173,7 +173,7 @@ fun Application.routes() = routing {
             call.respondText(
                 text = json.stringify(
                     GameSessionInfo.serializer().list,
-                    store.state.games.map { gameState ->
+                    GameController.listActiveGames().map { gameState ->
                         gameState.info
                     }
                 ),

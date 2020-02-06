@@ -33,13 +33,15 @@ settings.setupVersionPlaceholdersResolving()
 
 enableFeaturePreview("GRADLE_METADATA")
 
-includeBuild("ksvg")
+//includeBuild("ksvg")
 
 include("backend")
 include("frontend")
 include("shared")
 include(":muirwik")
+include(":ksvg")
 
+project(":ksvg").projectDir = rootDir.resolve("ksvg")
 project(":muirwik").projectDir = rootDir.resolve("muirwik/muirwik-components")
 
 

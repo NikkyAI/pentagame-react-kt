@@ -15,7 +15,7 @@ import com.ccfraser.muirwik.components.mTab
 import com.ccfraser.muirwik.components.mTabs
 import com.ccfraser.muirwik.components.mTypography
 import com.ccfraser.muirwik.components.spacingUnits
-import containers.pentaSvg
+import containers.pentaSvgInteractive
 import kotlinx.css.flexGrow
 import kotlinx.css.marginTop
 import react.RBuilder
@@ -38,7 +38,7 @@ class App : RComponent<RProps, RState>() {
                 flexGrow = 1.0
             }
             mGridItem(xs = MGridSize.cells6) {
-                pentaSvg {}
+                pentaSvgInteractive {}
             }
             mGridItem(xs = MGridSize.cells6) {
                 mTypography("Pentagame", variant = MTypographyVariant.h2)

@@ -13,8 +13,8 @@ object Data2Viz {
 }
 
 object Ktor {
-    const val version = "1.2.6"
-//    const val version = "1.3.0"
+//    const val version = "1.2.6"
+    const val version = "1.3.0"
 //    const val version = "1.3.0-rc3-1.3.70-eap-42"
 }
 

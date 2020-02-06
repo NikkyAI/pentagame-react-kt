@@ -5,7 +5,7 @@ import com.soywiz.klogger.Logger
 import io.ktor.client.features.websocket.webSocket
 import io.ktor.client.request.post
 import io.ktor.client.request.request
-import io.ktor.client.response.HttpResponse
+import io.ktor.client.statement.HttpResponse
 import io.ktor.http.ContentType
 import io.ktor.http.HttpMethod
 import io.ktor.http.URLBuilder

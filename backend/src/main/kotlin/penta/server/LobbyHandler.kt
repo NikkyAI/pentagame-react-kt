@@ -8,11 +8,11 @@ import io.ktor.http.cio.websocket.readText
 import io.ktor.websocket.DefaultWebSocketServerSession
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.channels.ClosedSendChannelException
-import java.io.IOException
 import penta.network.LobbyEvent
 import penta.server.GlobalState.Companion.store
 import penta.util.exhaustive
 import penta.util.json
+import java.io.IOException
 
 object LobbyHandler {
     private val logger = Logger(this::class.simpleName!!)
@@ -32,9 +32,10 @@ object LobbyHandler {
                         LobbyEvent.InitialSync(
                             users = observingSessions.keys.map { it.userId },
                             chat = store.state.lobbyState.chat.take(50),
-                            games = store.state.games.associate { gameState ->
-                                gameState.serverGameId to gameState.info
-                            }
+                            games = GameController.listActiveGames()
+                                .associate { gameState ->
+                                    gameState.serverGameId to gameState.info
+                                }
                         )
                     )
                 )

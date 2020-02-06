@@ -23,6 +23,7 @@ import org.w3c.dom.events.Event
 import org.w3c.dom.events.MouseEvent
 import org.w3c.dom.svg.SVGCircleElement
 import org.w3c.dom.svg.SVGElement
+import penta.BoardState
 import penta.ConnectionState
 import penta.PentaColors
 import penta.PentaMove
@@ -31,6 +32,7 @@ import penta.calculatePiecePos
 import penta.cornerPoint
 import penta.drawFigure
 import penta.drawPlayer
+import penta.logic.Field
 import penta.logic.Field.ConnectionField
 import penta.logic.Field.Goal
 import penta.logic.Field.Start
@@ -39,10 +41,13 @@ import react.RBuilder
 import react.RComponent
 import react.RState
 import react.createRef
+import react.useCallback
+import react.useMemo
 import styled.css
 import styled.styledDiv
 import styled.styledSvg
 import util.forEach
+import util.memo
 import kotlin.dom.clear
 
 interface PentaSvgProps : PentaSvgStateProps, PentaSvgDispatchProps
@@ -68,6 +73,22 @@ class PentaSvg(props: PentaSvgProps) : RComponent<PentaSvgProps, RState>(props) 
                 props.dispatchMoveLocal(move)
             }
         }
+    }
+
+    private fun doSaveImage(event: Event) {
+        val scale = 1000
+
+        val svg = SVG.svg {
+            viewBox = "0 0 $scale $scale"
+
+            draw(scale, props)
+        }
+
+        val svgFile = buildString {
+            svg.render(this, RenderMode.FILE)
+        }
+
+        console.log(svgFile)
     }
 
     override fun RBuilder.render() {
@@ -104,7 +125,6 @@ class PentaSvg(props: PentaSvgProps) : RComponent<PentaSvgProps, RState>(props) 
                     console.log(svgFile)
                 }
             )
-
         }
     }
 
@@ -120,7 +140,7 @@ class PentaSvg(props: PentaSvgProps) : RComponent<PentaSvgProps, RState>(props) 
 //        console.log("props: ${props.boardState}")
 //        console.log("nextProps: ${nextProps.boardState}")
 
-        // TODO: access isPlayBack ?
+        // access isPlayBack
         when (val conn = nextProps.connection){
             is ConnectionState.ConnectedToGame -> {
                 if (conn.isPlayback) return false
@@ -229,6 +249,278 @@ private fun SVG.draw(scale: Int, svgProps: PentaSvgProps) {
     val isYourTurn = if (svgProps.connection is ConnectionState.ConnectedToGame) {
         svgProps.boardState.currentPlayer.id == svgProps.connection.userId
     } else true
+    val selectedPieceIsCurrentPlayer = boardState.selectedPlayerPiece?.playerId == svgProps.boardState.currentPlayer.id
+    val selectedPlayerPieceField = if (selectedPieceIsCurrentPlayer) {
+        svgProps.boardState.positions[boardState.selectedPlayerPiece?.id] ?: run {
+            throw IllegalStateException("cannot find field for ${boardState.selectedPlayerPiece}")
+        }
+    } else null
+    val hasBlockerSelected =
+        isYourTurn && (boardState.selectedBlackPiece != null || boardState.selectedGrayPiece != null)
+
+    // background circle
+    circle {
+        cx = "${0.5 * scale}"
+        cy = "${0.5 * scale}"
+        r = "${(PentaMath.R_ / PentaMath.R_ * scale) / 2}"
+        fill = PentaColors.BACKGROUND.rgbHex
+//            fill = Colors.Web.blue.rgbHex
+    }
+
+    // outer ring
+    circle {
+        cx = "${0.5 * scale}"
+        cy = "${0.5 * scale}"
+        r = "${(PentaMath.r / PentaMath.R_ * scale) / 2}"
+        stroke = PentaColors.FOREGROUND.rgbHex
+        strokeWidth = "$lineWidth"
+        fill = PentaColors.BACKGROUND.rgbHex
+    }
+
+    val emptyFields = PentaBoard.fields - svgProps.boardState.positions.mapNotNull { (_, field) -> field }
+
+    PentaBoard.fields.forEach { field ->
+        val canMoveToField = if (selectedPlayerPieceField != null) {
+            svgProps.boardState.canMove(selectedPlayerPieceField, field)
+        } else false
+
+        val canPlaceBlocker = hasBlockerSelected && field in emptyFields
+
+        val scaledPos = field.pos / PentaMath.R_ * scale
+        val radius = (field.radius / PentaMath.R_ * scale)
+        when (field) {
+            is Start -> {
+                circle {
+                    // TODO: add path checking, only make reachable pieces clickable
+                    if (isYourTurn && (selectedPieceIsCurrentPlayer || canPlaceBlocker)) {
+                        cssClass = field.id
+                    }
+                    cx = "${scaledPos.x}"
+                    cy = "${scaledPos.y}"
+                    r = "${radius - lineWidth}"
+                    stroke = field.color.rgbHex
+                    strokeWidth = lineWidth.toString()
+                    fill = if (canMoveToField || canPlaceBlocker) {
+                        PentaColors.FOREGROUND.brighten()
+                    } else {
+                        PentaColors.FOREGROUND
+                    }.rgbHex
+                }
+            }
+            is Goal -> {
+                circle {
+                    // TODO: add path checking, only make reachable pieces clickable
+                    if (isYourTurn && (selectedPieceIsCurrentPlayer || canPlaceBlocker)) {
+                        cssClass = field.id
+                    }
+                    cx = "${scaledPos.x}"
+                    cy = "${scaledPos.y}"
+                    r = "${radius - (lineWidth / 2)}"
+                    fill = if (canMoveToField || canPlaceBlocker) {
+                        field.color.brighten()
+                    } else {
+                        field.color
+                    }.rgbHex
+//                    strokeWidth = "${scaledLineWidth / 10}"
+//                    stroke = "#28292b"
+                }
+            }
+            is ConnectionField -> {
+                circle {
+                    // TODO: add path checking, only make reachable pieces clickable
+                    if (isYourTurn && (selectedPieceIsCurrentPlayer || canPlaceBlocker)) {
+                        cssClass = field.id
+                    }
+                    cx = "${scaledPos.x}"
+                    cy = "${scaledPos.y}"
+                    r = "${radius - (lineWidth / 10)}"
+                    fill = if (canMoveToField || canPlaceBlocker) {
+                        field.color.brighten()
+                    } else {
+                        field.color
+                    }.rgbHex
+                    strokeWidth = "${lineWidth / 2}"
+                    stroke = PentaColors.BACKGROUND.rgbHex
+                    asDynamic().onclick = { it: Any -> console.log("clicked $it ") }
+                }
+            }
+        }
+    }
+
+    // add corner fields
+    svgProps.boardState.players.forEachIndexed { i, player ->
+        console.debug("init face $player")
+        val centerPos = cornerPoint(
+            index = i,
+            angleDelta = 0.deg,
+            radius = (PentaMath.R_ + (3 * PentaMath.s))
+        ) / PentaMath.R_ * scale
+        val blackPos = cornerPoint(
+            index = i,
+            angleDelta = -10.deg,
+            radius = (PentaMath.R_ + (3 * PentaMath.s))
+        ) / PentaMath.R_ * scale
+        val greyPos = cornerPoint(
+            index = i,
+            angleDelta = 10.deg,
+            radius = (PentaMath.R_ + (3 * PentaMath.s))
+        ) / PentaMath.R_ * scale
+        val blockerRadius = Piece.Blocker.RADIUS / PentaMath.R_ * scale
+
+        val pieceRadius = (PentaMath.s / PentaMath.R_ * scale) / 2
+
+        // draw figure background
+        val bgColor = Colors.Web.lightgrey.brighten(0.5).rgbHex
+
+        circle {
+            cx = "${centerPos.x}"
+            cy = "${centerPos.y}"
+            r = "${pieceRadius * 2}"
+            fill = bgColor
+
+            // draw ring around current player
+            if (player.id == svgProps.boardState.currentPlayer.id) {
+                stroke = 0.col.rgbHex
+                strokeWidth = "3.0"
+            }
+        }
+        // draw black blocker background
+        circle {
+            cx = "${blackPos.x}"
+            cy = "${blackPos.y}"
+            r = "${blockerRadius * 2}"
+            stroke = Colors.Web.grey.rgbHex
+            strokeWidth = "2.0"
+            fill = bgColor
+        }
+        // draw grey blocker background
+        circle {
+            cx = "${greyPos.x}"
+            cy = "${greyPos.y}"
+            r = "${blockerRadius * 2}"
+            stroke = Colors.Web.grey.rgbHex
+            strokeWidth = "2.0"
+            fill = bgColor
+        }
+
+        // draw player face
+        drawFigure(
+            figureId = player.figureId,
+            center = centerPos,
+            radius = pieceRadius,
+            color = Colors.Web.black,
+            selected = svgProps.boardState.currentPlayer.id == player.id
+        )
+
+        // show gray slot when selecting gray
+        if (
+            svgProps.boardState.currentPlayer.id == player.id &&
+            svgProps.boardState.selectingGrayPiece
+        ) {
+            circle {
+                cx = "${greyPos.x}"
+                cy = "${greyPos.y}"
+                r = "$blockerRadius"
+                stroke = Colors.Web.grey.rgbHex
+                strokeWidth = "2.0"
+                fill = Colors.Web.white.rgbHex
+            }
+        }
+    }
+
+    svgProps.boardState.figures.forEach { piece ->
+        val pos = calculatePiecePos(piece, svgProps.boardState.positions[piece.id], svgProps.boardState)
+        val field = svgProps.boardState.positions[piece.id]
+        console.debug("drawing piece ${piece.id} on field $field")
+        val scaledPos = pos / PentaMath.R_ * scale
+        val radius = (piece.radius / PentaMath.R_ * scale)
+        val canMoveToFigure =
+            if (selectedPlayerPieceField != null && field != null && selectedPlayerPieceField != field) {
+                svgProps.boardState.canMove(selectedPlayerPieceField, field)
+            } else false
+        when (piece) {
+            is Piece.GrayBlocker -> {
+                // TODO replace with 5-pointed shape
+                circle {
+                    // TODO: add path checking, only make reachable pieces clickable
+                    if (isYourTurn && selectedPieceIsCurrentPlayer) {
+                        cssClass = piece.id
+                    }
+                    cx = "${scaledPos.x}"
+                    cy = "${scaledPos.y}"
+                    r = "$radius"
+                    fill = if (canMoveToFigure) {
+                        piece.color.brighten()
+                    } else {
+                        piece.color
+                    }.rgbHex
+                }
+            }
+            is Piece.BlackBlocker -> {
+                //TODO: replace with 7-pointed shape
+                circle {
+                    // TODO: add path checking, only make reachable pieces clickable
+                    if (isYourTurn && selectedPieceIsCurrentPlayer) {
+                        cssClass = piece.id
+                    }
+                    cx = "${scaledPos.x}"
+                    cy = "${scaledPos.y}"
+
+                    r = "$radius"
+                    fill = if (canMoveToFigure) {
+                        piece.color.brighten()
+                    } else {
+                        piece.color
+                    }.rgbHex
+                }
+            }
+            is Piece.Player -> {
+                val isCurrentPlayer = piece.playerId == svgProps.boardState.currentPlayer.id
+                console.debug("playerPiece: $piece")
+                val selectable = isYourTurn
+                    && isCurrentPlayer
+                    && field != null
+                    && svgProps.boardState.selectedPlayerPiece == null
+                val swappable = isYourTurn
+                    && selectedPieceIsCurrentPlayer
+                    && field != null
+                console.info("playerPiece: ", piece, "selectable: ", selectable, "swappable", swappable)
+                drawPlayer(
+                    figureId = piece.figureId,
+                    center = scaledPos,
+                    radius = radius,
+                    piece = piece,
+                    selected = svgProps.boardState.selectedPlayerPiece == piece,
+                    highlight = selectable && !hasBlockerSelected,
+                    clickable = selectable || swappable
+                )
+            }
+        }
+    }
+
+    // TODO add other info
+}
+
+data class DrawProps(
+    val boardState: BoardState,
+    val figures: Map<Field, Piece>,
+    val canMoveToField: Map<Field, Boolean>,
+    val drawCorners: Boolean = true,
+    val interactive: Boolean = true,
+    val isYourTurn: Boolean? = null
+//if (svgProps.connection is ConnectionState.ConnectedToGame) {
+//        svgProps.boardState.currentPlayer.id == svgProps.connection.userId
+//    } else false
+)
+
+fun SVG.drawPentagame(scale: Int, svgProps: DrawProps) {
+    val lineWidth = 0.1 / PentaMath.R_ * scale
+
+    console.debug("lineWidth: $lineWidth")
+
+    val boardState = svgProps.boardState
+
+    val isYourTurn = svgProps.isYourTurn ?: true
     val selectedPieceIsCurrentPlayer = boardState.selectedPlayerPiece?.playerId == svgProps.boardState.currentPlayer.id
     val selectedPlayerPieceField = if (selectedPieceIsCurrentPlayer) {
         svgProps.boardState.positions[boardState.selectedPlayerPiece?.id] ?: run {

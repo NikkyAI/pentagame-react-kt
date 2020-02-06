@@ -45,6 +45,7 @@ import react.RState
 import react.dom.form
 import react.invoke
 import react.redux.rConnect
+import react.useMemo
 import reducers.State
 import redux.WrapperAction
 import styled.css
@@ -76,9 +77,9 @@ class TextConnection(props: TextConnectionProps) : RComponent<TextConnectionProp
             label = "Url",
             variant = MFormControlVariant.filled,
             defaultValue = props.connection.baseUrl.toString(),
-            onChange = { event ->
+            onChange = useMemo({{ event: Event ->
                 urlValue = (event.target as HTMLInputElement).value
-            }
+            }}, arrayOf())
         ) {
             css {
                 width = 100.pct
@@ -115,20 +116,6 @@ class TextConnection(props: TextConnectionProps) : RComponent<TextConnectionProp
             }
         }
     }
-
-//    private fun login() {
-//        GlobalScope.launch {
-//            val returnedState = penta.WSClient.login(
-//                urlInput = urlValue,
-//                userIdInput = idValue,
-//                passwordInput = passwordValue,
-//                dispatch = props.dispatchConnection
-//            )
-//            when (val nextState = returnedState) {
-//                is ConnectionState.Authenticated -> requestGameList(connection = nextState)
-//            }
-//        }
-//    }
 
     private fun RBuilder.loginSubmitButton() {
         mButton(
@@ -251,7 +238,7 @@ class TextConnection(props: TextConnectionProps) : RComponent<TextConnectionProp
                             caption = "Create Game",
                             variant = MButtonVariant.contained,
                             color = MColor.primary,
-                            onClick = { event ->
+                            onClick = {
                                 GlobalScope.launch {
                                     penta.WSClient.createGameAndConnect(
                                         state,

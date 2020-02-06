@@ -1,6 +1,6 @@
 plugins {
-    kotlin("multiplatform") version Kotlin.version// apply false
-    id("kotlinx-serialization") version Kotlin.version// apply false
+    kotlin("multiplatform") version Kotlin.version
+    id("kotlinx-serialization") version Kotlin.version
     id("de.fayard.refreshVersions") // version "0.8.6"
     `maven-publish`
 }
@@ -20,7 +20,6 @@ allprojects {
         maven(url = "https://dl.bintray.com/data2viz/data2viz/")
         maven(url = "https://dl.bintray.com/korlibs/korlibs/")
         maven(url = "https://dl.bintray.com/kotlin/exposed")
-        maven(url = "https://dl.bintray.com/kenjiohtsuka/m")
 //        mavenLocal()
     }
 
@@ -59,7 +58,6 @@ tasks.register<DefaultTask>("hello") {
 }
 
 kotlin {
-    jvm()
     js {
         useCommonJs()
         browser {
@@ -76,11 +74,6 @@ kotlin {
                 metaInfo = true
                 main = "call"
             }
-        }
-        mavenPublication { // Setup the publication for the target
-//            artifactId = "ksvg-js"
-            // Add a docs JAR artifact (it should be a custom task):
-//            artifact(javadocJar)
         }
     }
 }

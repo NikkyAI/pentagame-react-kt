@@ -9,13 +9,11 @@ import debug
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.css.margin
-import kotlinx.serialization.list
+import org.w3c.dom.events.Event
 import penta.BoardState
 import penta.ConnectionState
 import penta.PentaMove
 import penta.PlayerState
-import penta.network.GameEvent
-import penta.util.json
 import react.RBuilder
 import react.RClass
 import react.RComponent
@@ -49,6 +47,9 @@ private fun GameSetupProps.dispatchMove(move: PentaMove) {
 
 class GameSetupControls(props: GameSetupProps) : RComponent<GameSetupProps, RState>(props) {
 
+    private val startGame: (Event) -> Unit =  {
+        props.dispatchMove(PentaMove.InitGame)
+    }
     override fun RBuilder.render() {
         if (props.boardState == undefined) {
             return
