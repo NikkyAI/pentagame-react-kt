@@ -24,7 +24,6 @@ import penta.network.GameSessionInfo
 import penta.network.LoginRequest
 import penta.network.LoginResponse
 import penta.network.ServerStatus
-import penta.server.GlobalState.Companion.store
 import kotlin.random.Random
 import kotlin.IllegalArgumentException
 
@@ -59,7 +58,7 @@ fun Application.routes() = routing {
 
         val gameId = call.parameters["gameId"] ?: throw IllegalArgumentException("missing parameter gameId")
 
-        val game = store.state.games.find {
+        val game = GlobalState.getState().games.find {
             it.serverGameId == gameId
         } ?: run {
             return@webSocket close(CloseReason(CloseReason.Codes.CANNOT_ACCEPT, "game not found"))

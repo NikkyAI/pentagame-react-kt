@@ -45,7 +45,6 @@ import react.RState
 import react.dom.form
 import react.invoke
 import react.redux.rConnect
-import react.useMemo
 import reducers.State
 import redux.WrapperAction
 import styled.css
@@ -77,9 +76,9 @@ class TextConnection(props: TextConnectionProps) : RComponent<TextConnectionProp
             label = "Url",
             variant = MFormControlVariant.filled,
             defaultValue = props.connection.baseUrl.toString(),
-            onChange = useMemo({{ event: Event ->
+            onChange = { event: Event ->
                 urlValue = (event.target as HTMLInputElement).value
-            }}, arrayOf())
+            }
         ) {
             css {
                 width = 100.pct

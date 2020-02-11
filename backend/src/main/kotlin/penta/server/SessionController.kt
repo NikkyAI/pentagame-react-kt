@@ -19,7 +19,7 @@ object SessionController {
         return sessions[sessionId]
     }
 
-    operator fun set(session: UserSession, call: ApplicationCall) {
+    fun set(session: UserSession, call: ApplicationCall) {
         val sessionId = getUnusedSessionId()
         sessions[sessionId] = session
         call.response.header(KEY, sessionId)

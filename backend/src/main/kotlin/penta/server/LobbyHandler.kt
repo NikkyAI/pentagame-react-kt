@@ -9,7 +9,6 @@ import io.ktor.websocket.DefaultWebSocketServerSession
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.channels.ClosedSendChannelException
 import penta.network.LobbyEvent
-import penta.server.GlobalState.Companion.store
 import penta.util.exhaustive
 import penta.util.json
 import java.io.IOException
@@ -25,13 +24,14 @@ object LobbyHandler {
             logger.info { "sending observers" }
             logger.info { "sending chat history" }
             logger.info { "sending game list" }
+            val state = GlobalState.getState()
             outgoing.send(
                 Frame.Text(
                     json.stringify(
                         serializer,
                         LobbyEvent.InitialSync(
-                            users = observingSessions.keys.map { it.userId },
-                            chat = store.state.lobbyState.chat.take(50),
+                            users = state.observingSessions.keys.map { it.userId },
+                            chat = state.lobbyState.chat.take(50),
                             games = GameController.listActiveGames()
                                 .associate { gameState ->
                                     gameState.serverGameId to gameState.info
@@ -46,7 +46,7 @@ object LobbyHandler {
 //            observeringSessions[session] = this
 
             // TODO: also send initial sync through action ?
-            store.dispatch(GlobalState.GlobalAction.AddSession(session, this))
+            GlobalState.dispatch(GlobalState.GlobalAction.AddSession(session, this))
 
             while (true) {
                 val notationJson = (incoming.receive() as Frame.Text).readText()
@@ -59,7 +59,7 @@ object LobbyHandler {
                 when (event) {
                     is LobbyEvent.Message -> {
                         if (session.userId == event.userId) {
-                            store.dispatch(event)
+                            GlobalState.dispatch(event)
 //                            chatHistoryAdd(event)
                         } else {
                             logger.error { "user ${session.userId} sent message from ${event.userId}" }
@@ -71,19 +71,19 @@ object LobbyHandler {
                 }.exhaustive
             }
         } catch (e: IOException) {
-            store.dispatch(GlobalState.GlobalAction.RemoveSession(session))
+            GlobalState.dispatch(GlobalState.GlobalAction.RemoveSession(session))
             val reason = closeReason.await()
             logger.debug { "onClose ${session.userId} $reason ${e.message}" }
         } catch (e: ClosedReceiveChannelException) {
-            store.dispatch(GlobalState.GlobalAction.RemoveSession(session))
+            GlobalState.dispatch(GlobalState.GlobalAction.RemoveSession(session))
             val reason = closeReason.await()
             logger.error { "onClose ${session.userId} $reason" }
         } catch (e: ClosedSendChannelException) {
-            store.dispatch(GlobalState.GlobalAction.RemoveSession(session))
+            GlobalState.dispatch(GlobalState.GlobalAction.RemoveSession(session))
             val reason = closeReason.await()
             logger.error { "onClose ${session.userId} $reason" }
         } catch (e: Exception) {
-            store.dispatch(GlobalState.GlobalAction.RemoveSession(session))
+            GlobalState.dispatch(GlobalState.GlobalAction.RemoveSession(session))
             logger.error { e }
             logger.error { "exception onClose ${session.userId} ${e.message}" }
         } finally {

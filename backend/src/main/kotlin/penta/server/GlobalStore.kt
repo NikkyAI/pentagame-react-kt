@@ -5,6 +5,9 @@ import io.ktor.http.cio.websocket.Frame
 import io.ktor.websocket.DefaultWebSocketServerSession
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.newSingleThreadContext
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.list
 import org.jetbrains.exposed.sql.SizedCollection
 import org.jetbrains.exposed.sql.Slf4jSqlDebugLogger
@@ -66,13 +69,14 @@ data class GlobalState(
                 )
             }
             is GlobalAction.AddGame -> {
+                val boardState = runBlocking { action.game.getBoardState() }
                 val game = transaction {
                     addLogger(Slf4jSqlDebugLogger)
                     Game.new {
                         gameId = action.game.serverGameId
                         history = json.stringify(
                             GameEvent.serializer().list,
-                            action.game.boardStateStore.state.history.map { it.toSerializable() }
+                            boardState.history.map { it.toSerializable() }
                         )
                         owner = UserManager.toDBUser(action.game.owner)
                     }
@@ -80,7 +84,7 @@ data class GlobalState(
                 transaction {
                     addLogger(Slf4jSqlDebugLogger)
                     game.players = SizedCollection(
-                        action.game.boardStateStore.state.players.mapNotNull {
+                        boardState.players.mapNotNull {
                             UserManager.findDBUser(it.id)
                         }
                     )
@@ -122,25 +126,52 @@ data class GlobalState(
 
     companion object {
         private val logger = Logger(this::class.simpleName!!)
-        val store = createStore(
-            GlobalState::reduce,
-            GlobalState(),
-            applyMiddleware(loggingMiddleware(GlobalState.logger))
-        )
+//        private val context = newSingleThreadContext("store")
+//        private val store = runBlocking(context) {
+//            sameThreadEnforcementWrapper(
+//                createStore(
+//                    GlobalState::reduce,
+//                    GlobalState(),
+//                    applyMiddleware(loggingMiddleware(GlobalState.logger))
+//                ),
+//                context
+//            )
+//        }
+//        suspend fun getState() = withContext(context) {
+//            store.state
+//        }
+//        suspend fun dispatch(action: Any) = withContext(context) {
+//            store.dispatch(action)
+//        }
+        private val lock = object {}
+
+        private var state = GlobalState()
+        fun getState(): GlobalState {
+            synchronized(lock) {
+                return state
+            }
+        }
+        fun dispatch(action: Any)  {
+            synchronized(lock) {
+                state = state.reduce(action)
+            }
+        }
 
         fun loadGames(): List<ServerGamestate> {
             return transaction {
-                Game.all().map {
+                Game.all().map { game ->
                     GameController.idCounter++
                     ServerGamestate(
-                        it.gameId,
-                        it.owner.let { u ->
+                        game.gameId,
+                        game.owner.let { u ->
                             UserManager.convert(u)
                         }
                     ).apply {
                         // apply all history
-                        json.parse(GameEvent.serializer().list, it.history).forEach {
-                            boardStateStore.dispatch(it)
+                        runBlocking {
+                            json.parse(GameEvent.serializer().list, game.history).forEach { move ->
+                                boardDispatch(move)
+                            }
                         }
                     }
                 }

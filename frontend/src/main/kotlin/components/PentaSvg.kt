@@ -42,12 +42,10 @@ import react.RComponent
 import react.RState
 import react.createRef
 import react.useCallback
-import react.useMemo
 import styled.css
 import styled.styledDiv
 import styled.styledSvg
 import util.forEach
-import util.memo
 import kotlin.dom.clear
 
 interface PentaSvgProps : PentaSvgStateProps, PentaSvgDispatchProps
