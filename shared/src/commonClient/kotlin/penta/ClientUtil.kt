@@ -7,7 +7,6 @@ import io.data2viz.color.Colors
 import io.data2viz.geom.Point
 import io.data2viz.math.Angle
 import io.data2viz.math.deg
-import mu.KotlinLogging
 import penta.logic.Piece
 import penta.logic.Field
 import penta.logic.Field.Start

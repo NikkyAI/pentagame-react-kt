@@ -88,8 +88,8 @@ kotlin {
                 api("org.reduxkotlin:redux-kotlin:_")
                 api("org.reduxkotlin:redux-kotlin-reselect:_")
 
-                api(project(":ksvg"))
-//                api("com.github.nwillc:ksvg:3.0.0-SNAPSHOT")
+//                api(project(":ksvg"))
+                api("com.github.nwillc:ksvg:3.0.0")
             }
 
             kotlin.srcDirs(genCommonSrcKt.path)
@@ -201,6 +201,8 @@ kotlin {
                 // material UI components
                 api(project(":muirwik"))
 //                api(project(":muirwik"))
+
+                api("com.github.nwillc:ksvg-js:3.0.0")
             }
         }
 

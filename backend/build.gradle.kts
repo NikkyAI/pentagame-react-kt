@@ -31,6 +31,7 @@ val flywayUrl = System.getenv()["JDBC_DATABASE_URL"] ?: if (hasDevUrl) {
     null
 }
 if(flywayUrl != null) {
+//    val jdbc = split_jdbc(flywayUrl)
     flyway {
         url = flywayUrl
         schemas = arrayOf("public")
@@ -60,6 +61,7 @@ if (hasDevUrl && hasLiveUrl) {
         val dumps = buildDir.resolve("dumps")
 
         doFirst {
+            dumps.mkdirs()
             val livePath = dumps.resolve("live_schema.sql").path
             val devPath = dumps.resolve("dev_schema.sql").path
 
@@ -86,6 +88,8 @@ if (hasDevUrl && hasLiveUrl) {
                 target = devPath,
                 extraArgs = arrayOf(
                     "--create",
+                    "--no-owner",
+                    "--no-acl",
                     "--exclude-table", "flyway_schema_history"
                 )
             )

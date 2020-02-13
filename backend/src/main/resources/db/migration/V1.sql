@@ -6,14 +6,12 @@ CREATE TABLE games (
 	owner uuid NOT NULL
 );
 
-ALTER TABLE games OWNER TO postgres;
 
 CREATE TABLE players_in_games (
 	"user" uuid NOT NULL,
 	game uuid NOT NULL
 );
 
-ALTER TABLE players_in_games OWNER TO postgres;
 
 CREATE TABLE users (
 	id uuid NOT NULL,
@@ -23,7 +21,6 @@ CREATE TABLE users (
 	"temporaryUser" boolean NOT NULL
 );
 
-ALTER TABLE users OWNER TO postgres;
 
 ALTER TABLE games
 	ADD CONSTRAINT games_pkey PRIMARY KEY (id);

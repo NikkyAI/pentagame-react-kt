@@ -39,9 +39,9 @@ include("backend")
 include("frontend")
 include("shared")
 include(":muirwik")
-include(":ksvg")
+//include(":ksvg")
 
-project(":ksvg").projectDir = rootDir.resolve("ksvg")
+//project(":ksvg").projectDir = rootDir.resolve("ksvg")
 project(":muirwik").projectDir = rootDir.resolve("muirwik/muirwik-components")
 
 

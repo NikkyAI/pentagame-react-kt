@@ -20,6 +20,7 @@ allprojects {
         maven(url = "https://dl.bintray.com/data2viz/data2viz/")
         maven(url = "https://dl.bintray.com/korlibs/korlibs/")
         maven(url = "https://dl.bintray.com/kotlin/exposed")
+        maven(url = "https://dl.bintray.com/nwillc/maven")
 //        mavenLocal()
     }
 
@@ -39,6 +40,7 @@ val stage = tasks.create("stage") {
     dependsOn(":backend:flywayMigrate")
     dependsOn(":backend:flywayValidate")
     dependsOn(":backend:shadowJar")
+
     doLast {
         logger.lifecycle("jar was compiled")
     }
