@@ -92,6 +92,19 @@ class ServerGamestate(
 
     private val serializer = GameEvent.serializer()
 
+    suspend fun <T> doForDifferent(original: List<T>, new: List<T>, op: suspend (T)->Unit) {
+        new.forEachIndexed { i, e ->
+            val other = original.elementAtOrNull(i)
+            if(other == null) {
+                op(e)
+            } else {
+                if(other != e) {
+                    throw IllegalStateException("history differs")
+                }
+            }
+        }
+    }
+
     suspend fun handle(wss: DefaultWebSocketServerSession, session: UserSession) = with(wss) {
         var unsubscribe: StoreSubscription = {}
         try {
@@ -128,17 +141,24 @@ class ServerGamestate(
                 unsubscribe = boardStateStore.subscribe {
                     historySelector.getIfChangedIn(boardStateStore.state)?.let { history ->
                         logger.info { "history triggered change: ${history.size}" }
-                        val moves = history.toList() - sentMoves
-                        if (moves.isEmpty()) {
-                            logger.error { "no difference in moves" }
-                        }
                         GlobalScope.launch(handler) {
-                            moves.forEach { move ->
+                            doForDifferent(sentMoves, history) { move ->
                                 logger.info { "transmitting move $move" }
                                 outgoing.send(Frame.Text(json.stringify(serializer, move.toSerializable())))
+                                sentMoves += move
                             }
                         }
-                        sentMoves += moves
+//                        val moves = history.toList() - sentMoves
+//                        if (moves.isEmpty()) {
+//                            logger.error { "no difference in moves" }
+//                        }
+//                        GlobalScope.launch(handler) {
+//                            moves.forEach { move ->
+//                                logger.info { "transmitting move $move" }
+//                                outgoing.send(Frame.Text(json.stringify(serializer, move.toSerializable())))
+//                            }
+//                        }
+//                        sentMoves += moves
 
                         logger.info { "writing history to db" }
                         transaction {

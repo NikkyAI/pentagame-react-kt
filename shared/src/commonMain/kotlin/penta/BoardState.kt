@@ -487,12 +487,21 @@ data class BoardState private constructor(
                                         move
                                     )
                                 }
+                            } else {
+                                requireMove(selectedPlayerPiece != null) {
+                                    PentaMove.IllegalMove(
+                                        "cannot deselect because there is no piece selected",
+                                        move
+                                    )
+                                }
                             }
                         }
+                        logger.info { "last before: ${nextState.history.size} ${nextState.history.lastOrNull()}" }
                         nextState = nextState.copy(
                             history = nextState.history + move,
                             selectedPlayerPiece = move.playerPiece
                         )
+                        logger.info { "last after: ${nextState.history.size} ${nextState.history.lastOrNull()}" }
                     }
                     is PentaMove.PlayerJoin -> {
                         with(originalState) {
