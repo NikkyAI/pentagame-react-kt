@@ -48,7 +48,7 @@ project(":muirwik").projectDir = rootDir.resolve("muirwik/muirwik-components")
 gradleEnterprise {
     buildScan {
         termsOfServiceAgree = "yes"
-        publishAlwaysIf(true)
+//        publishAlwaysIf(true)
         termsOfServiceUrl = "https://gradle.com/terms-of-service"
     }
 }
