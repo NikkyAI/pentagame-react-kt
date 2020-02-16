@@ -89,7 +89,7 @@ kotlin {
                 api("org.reduxkotlin:redux-kotlin-reselect:_")
 
 //                api(project(":ksvg"))
-                api("com.github.nwillc:ksvg:3.0.0")
+//                api("com.github.nwillc:ksvg:3.0.0")
             }
 
             kotlin.srcDirs(genCommonSrcKt.path)

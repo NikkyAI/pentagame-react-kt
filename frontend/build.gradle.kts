@@ -1,3 +1,5 @@
+import org.gradle.language.jvm.tasks.ProcessResources
+
 plugins {
     kotlin("js")
     id("de.fayard.dependencies")
@@ -89,8 +91,38 @@ task<DefaultTask>("depsize") {
     }
 }
 
+//tasks.getByName<ProcessResources>("processResources") {
+//    val toDownload = mutableMapOf<String, String>()
+//
+//    filesMatching("*.html") {
+//        filter {  content ->
+//            val regex = Regex("<link rel=\"stylesheet\" href=\"(.+)\" />")
+//            content.replace(regex) { matchResult ->
+//                val url = matchResult.groupValues[1]
+//                val filename = url.substringAfterLast('/')
+//                val hashed = de.undercouch.gradle.tasks.download.org.apache.commons.codec.digest.DigestUtils.md5Hex(url)
+//                toDownload += hashed to url
+//                "<link rel=\"stylesheet\" href=\"/$hashed\" /> <!-- $filename -->"
+//            }
+//        }
+//    }
+//
+//    doLast {
+//        val dir = buildDir.resolve("processedResources")
+//            .resolve("Js")
+//            .resolve("main")
+//        toDownload.forEach { filename, url ->
+//            logger.lifecycle("downloading $url -> $filename")
+//            val destFile = dir.resolve(filename)
+//            destFile.parentFile.mkdirs()
+//            destFile.createNewFile()
+//            downloadFile(url, destFile)
+//        }
+//    }
+//}
+
 /***
-//TODO: erro Task with name 'browserProductionWebpack' not found in project ':frontend'.
+//TODO: error Task with name 'browserProductionWebpack' not found in project ':frontend'.
 
 tasks.getByName("browserProductionWebpack").apply {
     doLast {
