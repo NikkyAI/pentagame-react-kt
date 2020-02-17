@@ -1,12 +1,12 @@
 package penta
 
-import penta.logic.Piece
 import penta.logic.Field
+import penta.logic.Piece
 import penta.network.GameEvent
 
 sealed class PentaMove {
     abstract fun toSerializable(): GameEvent
-    abstract fun asNotation(): String
+    abstract fun asNotation(): String // TODO: move notation serializer/parser to GameEvent
 
     interface Move {
         val playerPiece: Piece.Player
@@ -134,17 +134,24 @@ sealed class PentaMove {
     }
 
     data class SelectGrey(
+        val from: Field,
+//        val before: Piece.GrayBlocker?,
         val grayPiece: Piece.GrayBlocker?
-    ): PentaMove() {
+    ) : PentaMove() {
         override fun asNotation(): String = "select grey ${grayPiece?.id}"
-        override fun toSerializable(): GameEvent = GameEvent.SelectGrey(grayPiece?.id)
+        override fun toSerializable(): GameEvent = GameEvent.SelectGrey(
+            from = from.id,
+//            before = before?.id,
+            id = grayPiece?.id
+        )
     }
 
     data class SelectPlayerPiece(
+        val before: Piece.Player?,
         val playerPiece: Piece.Player?
-    ): PentaMove() {
+    ) : PentaMove() {
         override fun asNotation(): String = "select player ${playerPiece?.id}"
-        override fun toSerializable(): GameEvent = GameEvent.SelectPlayerPiece(playerPiece?.id)
+        override fun toSerializable(): GameEvent = GameEvent.SelectPlayerPiece(before?.id, playerPiece?.id)
     }
 
     data class PlayerJoin(val player: PlayerState) : PentaMove() {
@@ -181,5 +188,12 @@ sealed class PentaMove {
         }
 
         override fun toSerializable() = GameEvent.IllegalMove(message, move.toSerializable())
+    }
+
+    data class Undo(val moves: List<GameEvent>) : PentaMove() {
+        override fun asNotation(): String = "UNDO ${moves.map { it }}"
+        override fun toSerializable(): GameEvent = GameEvent.Undo(
+            moves.map { it }
+        )
     }
 }

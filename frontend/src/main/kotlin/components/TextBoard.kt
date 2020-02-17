@@ -79,6 +79,26 @@ class TextBoard(props: TextBoardProps) : RComponent<TextBoardProps, RState>(prop
                     margin(1.spacingUnits)
                 }
             }
+            val lastMove = props.boardState.history.lastOrNull()
+            if (lastMove != null) {
+                mButton(
+                    caption = "Undo ${lastMove.asNotation()}",
+                    variant = MButtonVariant.outlined,
+                    onClick = {
+                        props.dispatchMove(
+                            PentaMove.Undo(
+                                moves = listOf(lastMove.toSerializable())
+                            )
+                        )
+                    }
+                ) {
+                    css {
+                        margin(1.spacingUnits)
+                    }
+                }
+            } else {
+                +"no move to undo"
+            }
         }
 
         div {
@@ -89,6 +109,7 @@ class TextBoard(props: TextBoardProps) : RComponent<TextBoardProps, RState>(prop
                         mListItem(it.id, it.figureId)
                     }
                 }
+                mTypography("turn: $turn")
                 mTypography("currentPlayer: $currentPlayer")
                 mTypography("selectedPlayerPiece: $selectedPlayerPiece")
                 mTypography("selectedBlackPiece: $selectedBlackPiece")
@@ -117,6 +138,23 @@ class TextBoard(props: TextBoardProps) : RComponent<TextBoardProps, RState>(prop
                                 }
                                 mTableCell { +it::class.simpleName.toString() }
                                 mTableCell { +positions[it.id]?.id.toString() }
+                            }
+                        }
+                    }
+                }
+                mTypography("History")
+                mTable {
+                    mTableHead {
+                        mTableRow {
+                            mTableCell { +"noation" }
+                            mTableCell { +"move" }
+                        }
+                    }
+                    mTableBody {
+                        history.forEach {
+                            mTableRow {
+                                mTableCell { +it.asNotation() }
+                                mTableCell { +it.toString() }
                             }
                         }
                     }

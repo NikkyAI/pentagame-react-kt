@@ -1,9 +1,8 @@
 package penta
 
 import com.soywiz.klogger.Logger
-import mu.KotlinLogging
-import penta.logic.Piece
 import penta.logic.Field
+import penta.logic.Piece
 
 /**
  * determines what action to take when clicking on fields or pieces
@@ -60,7 +59,12 @@ object PentagameClick {
             if (selectedPlayerPiece == null) {
                 logger.info { "selecting: $clickedPiece" }
                 // TODO: boardStateStore.dispatch(...)
-                dispatch(PentaMove.SelectPlayerPiece(clickedPiece))
+                dispatch(
+                    PentaMove.SelectPlayerPiece(
+                        before = boardState.selectedPlayerPiece,
+                        playerPiece = clickedPiece
+                    )
+                )
 //                boardStore.dispatch(PentaMove.SelectPlayerPiece(clickedPiece))
 //                selectedPlayerPiece = clickedPieceg
 //                client.PentaViz.updateBoard()
@@ -69,7 +73,10 @@ object PentagameClick {
             if (selectedPlayerPiece == clickedPiece) {
                 logger.info { "deselecting: $clickedPiece" }
 
-                dispatch(PentaMove.SelectPlayerPiece(null))
+                dispatch(PentaMove.SelectPlayerPiece(
+                    before = boardState.selectedPlayerPiece,
+                    playerPiece = null
+                ))
 //                boardStore.dispatch(PentaMove.SelectGrey(null))
 //                selectedPlayerPiece = null
 //                client.PentaViz.updateBoard()
@@ -78,12 +85,16 @@ object PentagameClick {
         }
 
         if (selectingGrayPiece
+            && selectedGrayPiece == null
             && selectedPlayerPiece == null
             && clickedPiece is Piece.GrayBlocker
         ) {
             logger.info { "selecting: $clickedPiece" }
             // TODO: boardStateStore.dispatch(...)
-            dispatch(penta.PentaMove.SelectGrey(clickedPiece))
+            dispatch(penta.PentaMove.SelectGrey(
+                from = boardState.positions[clickedPiece.id]!!,
+                grayPiece = clickedPiece
+            ))
 //            boardStore.C(PentaMove.SelectGrey(clickedPiece))
 //            selectedGrayPiece = clickedPiece
 //            selectingGrayPiece = false
@@ -95,26 +106,26 @@ object PentagameClick {
         if (selectedPlayerPiece != null && currentPlayer.id == selectedPlayerPiece!!.playerId) {
             val playerPiece = selectedPlayerPiece!!
             val sourceField = positions[playerPiece.id] ?: run {
-                logger.error{"piece if off the board already"}
+                logger.error { "piece if off the board already" }
                 return
             }
             val targetField = positions[clickedPiece.id]
             if (targetField == null) {
-                logger.error{"$clickedPiece is not on the board"}
+                logger.error { "$clickedPiece is not on the board" }
 //                selectedPlayerPiece = null
                 return
             }
             if (sourceField == targetField) {
-                logger.error {"cannot move piece onto the same field as before" }
+                logger.error { "cannot move piece onto the same field as before" }
                 return
             }
 
             if (!canMove(sourceField, targetField)) {
-                logger.error {"can not find path" }
+                logger.error { "can not find path" }
                 return
             }
 
-            logger.info {"moving: ${playerPiece.id} -> $targetField"}
+            logger.info { "moving: ${playerPiece.id} -> $targetField" }
 
             val move: PentaMove = when (clickedPiece) {
                 is Piece.Player -> {
@@ -146,7 +157,7 @@ object PentagameClick {
 
             return
         }
-        logger.info {"no action on click"}
+        logger.info { "no action on click" }
     }
 
     fun canClickField(targetField: Field, dispatch: (PentaMove) -> Unit, boardState: BoardState): Boolean {
@@ -188,13 +199,13 @@ object PentagameClick {
                 }
                 selectedBlackPiece != null -> {
                     if (positions.values.any { it == targetField }) {
-                        logger.info {"target position not empty"}
+                        logger.info { "target position not empty" }
                         return false
                     }
                 }
                 selectedGrayPiece != null -> {
                     if (positions.values.any { it == targetField }) {
-                        logger.info {"target position not empty"}
+                        logger.info { "target position not empty" }
                         return false
                     }
                 }
@@ -211,23 +222,23 @@ object PentagameClick {
     fun clickField(targetField: Field, dispatch: (PentaMove) -> Unit, boardState: BoardState) =
         with(boardState) {
             if (!canClickField(targetField, dispatch, boardState)) return
-            logger.info {"currentPlayer: $currentPlayer"}
-            logger.info {"selected player piece: $selectedPlayerPiece"}
-            logger.info {"selected black piece: $selectedBlackPiece"}
-            logger.info {"selected gray piece: $selectedGrayPiece"}
+            logger.info { "currentPlayer: $currentPlayer" }
+            logger.info { "selected player piece: $selectedPlayerPiece" }
+            logger.info { "selected black piece: $selectedBlackPiece" }
+            logger.info { "selected gray piece: $selectedGrayPiece" }
             val move = when {
                 selectedPlayerPiece != null && currentPlayer.id == selectedPlayerPiece!!.playerId -> {
                     val playerPiece = selectedPlayerPiece!!
 
                     val sourceField = positions[playerPiece.id]!!
                     if (sourceField == targetField) {
-                        logger.error {"cannot move piece onto the same field as before"}
+                        logger.error { "cannot move piece onto the same field as before" }
                         return
                     }
 
                     // check if targetField is empty
                     if (positions.values.any { it == targetField }) {
-                        logger.info {"target position not empty"}
+                        logger.info { "target position not empty" }
                         // TODO: if there is only one piece on the field, click that piece instead ?
                         val pieces = positions.filterValues { it == targetField }.keys
                             .map { id ->
@@ -241,11 +252,11 @@ object PentagameClick {
                     }
 
                     if (!canMove(sourceField, targetField)) {
-                        logger.error {"can not find path"}
+                        logger.error { "can not find path" }
                         return
                     }
 
-                    logger.info {"moving: ${playerPiece.id} -> $targetField"}
+                    logger.info { "moving: ${playerPiece.id} -> $targetField" }
 
                     penta.PentaMove.MovePlayer(
                         playerPiece = playerPiece, from = sourceField, to = targetField
@@ -255,13 +266,13 @@ object PentagameClick {
                     val blackPiece = selectedBlackPiece!!
 
                     if (positions.values.any { it == targetField }) {
-                        logger.error {"target position not empty"}
+                        logger.error { "target position not empty" }
                         return
                     }
-                    logger.info {"history last: ${history.last()}"}
+                    logger.info { "history last: ${history.last()}" }
                     val lastMove = history.last() as PentaMove.Move
                     if (lastMove !is PentaMove.CanSetBlack) {
-                        logger.error {"last move cannot set black"}
+                        logger.error { "last move cannot set black" }
                         return
                     }
 
@@ -273,7 +284,7 @@ object PentagameClick {
                     val grayPiece = selectedGrayPiece!!
 
                     if (positions.values.any { it == targetField }) {
-                        logger.error {"target position not empty"}
+                        logger.error { "target position not empty" }
                         return
                     }
                     val originPos = positions[grayPiece.id]
@@ -283,7 +294,7 @@ object PentagameClick {
                     )
                 }
                 else -> {
-                    logger.error {"else case not handled"}
+                    logger.error { "else case not handled" }
                     return
                 }
             }

@@ -134,21 +134,27 @@ sealed class GameEvent {
 
     @Serializable
     data class SelectGrey(
+        val from: String,
+//        val before: String?,
         val id: String?
     ) : GameEvent() {
         override fun asMove(boardState: BoardState) =
             PentaMove.SelectGrey(
-                grayPiece = id?.let { boardState.figures.filterIsInstance<Piece.GrayBlocker>().first { it.id == id } }
+                from = PentaBoard.get(from)!!,
+//                before = before?.let { boardState.figures.filterIsInstance<Piece.GrayBlocker>().first { it.id == before } },
+                grayPiece = id?.let { boardState.figures.filterIsInstance<Piece.GrayBlocker>().first { p -> p.id == it } }
             )
     }
 
     @Serializable
     data class SelectPlayerPiece(
+        val before: String?,
         val id: String?
     ) : GameEvent() {
         override fun asMove(boardState: BoardState) =
             PentaMove.SelectPlayerPiece(
-                playerPiece = id?.let { boardState.figures.filterIsInstance<Piece.Player>().first { it.id == id } }
+                before = before?.let { boardState.figures.filterIsInstance<Piece.Player>().first { p -> p.id == it } },
+                playerPiece = id?.let { boardState.figures.filterIsInstance<Piece.Player>().first { p -> p.id == it } }
             )
     }
 
@@ -186,6 +192,15 @@ sealed class GameEvent {
         }
     }
 
+    @Serializable
+    data class Undo(
+        val moves: List<GameEvent>
+    ) : GameEvent() {
+        override fun asMove(boardState: BoardState): PentaMove = PentaMove.Undo(
+            moves = moves.map { it }
+        )
+    }
+
     companion object {
         fun install(builder: SerializersModuleBuilder) {
             builder.polymorphic<GameEvent> {
@@ -202,6 +217,7 @@ sealed class GameEvent {
                 InitGame::class with ObjectSerializer(InitGame)
                 Win::class with Win.serializer()
                 IllegalMove::class with IllegalMove.serializer()
+                Undo::class with Undo.serializer()
             }
         }
     }
