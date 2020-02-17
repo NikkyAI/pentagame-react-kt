@@ -2,8 +2,10 @@ package components
 
 import com.ccfraser.muirwik.components.button.MButtonVariant
 import com.ccfraser.muirwik.components.button.mButton
+import com.ccfraser.muirwik.components.form.mFormControlLabel
 import com.ccfraser.muirwik.components.list.mList
 import com.ccfraser.muirwik.components.list.mListItem
+import com.ccfraser.muirwik.components.mSwitch
 import com.ccfraser.muirwik.components.mTypography
 import com.ccfraser.muirwik.components.spacingUnits
 import com.ccfraser.muirwik.components.table.mTable
@@ -11,6 +13,7 @@ import com.ccfraser.muirwik.components.table.mTableBody
 import com.ccfraser.muirwik.components.table.mTableCell
 import com.ccfraser.muirwik.components.table.mTableHead
 import com.ccfraser.muirwik.components.table.mTableRow
+import com.ccfraser.muirwik.components.transitions.mCollapse
 import debug
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -31,6 +34,7 @@ import react.RState
 import react.dom.div
 import react.invoke
 import react.redux.rConnect
+import react.setState
 import reducers.State
 import redux.WrapperAction
 import styled.css
@@ -43,6 +47,8 @@ interface TextBoardProps : TextBoardStateProps, TextBoardDispatchProps {
 }
 
 class TextBoard(props: TextBoardProps) : RComponent<TextBoardProps, RState>(props) {
+    var figureSwitch: Boolean = false
+    var historySwitch: Boolean = false
     fun TextBoardProps.dispatchMove(move: PentaMove) {
         when (val c = connection) {
             is ConnectionState.ConnectedToGame -> {
@@ -116,45 +122,77 @@ class TextBoard(props: TextBoardProps) : RComponent<TextBoardProps, RState>(prop
                 mTypography("selectedGrayPiece: $selectedGrayPiece")
                 mTypography("selectingGrayPiece: $selectingGrayPiece")
                 mTypography("gameStarted: $gameStarted")
-                mTypography("Figures")
-                mTable {
-                    mTableHead {
-                        mTableRow {
-                            mTableCell { +"id" }
-                            mTableCell { +"color" }
-                            mTableCell { +"type" }
-                            mTableCell { +"position" }
-                        }
-                    }
-                    mTableBody {
-                        figures.forEach {
+//                mTypography("Figures")
+                mFormControlLabel(
+                    label = "Figures",
+                    control = mSwitch(
+                        checked = figureSwitch,
+                        onChange = { event, state ->
+                            setState {
+                                figureSwitch = state
+                            }
+                        },
+                        addAsChild = false
+                    )
+                )
+
+                mCollapse(
+                    show = figureSwitch
+                ) {
+                    mTable {
+                        mTableHead {
                             mTableRow {
-                                mTableCell { +it.id }
-                                mTableCell {
-                                    css {
-                                        backgroundColor = Color(it.color.rgbHex)
+                                mTableCell { +"id" }
+                                mTableCell { +"color" }
+                                mTableCell { +"type" }
+                                mTableCell { +"position" }
+                            }
+                        }
+                        mTableBody {
+                            figures.forEach {
+                                mTableRow {
+                                    mTableCell { +it.id }
+                                    mTableCell {
+                                        css {
+                                            backgroundColor = Color(it.color.rgbHex)
+                                        }
+                                        mTypography(it.color.rgbHex)
                                     }
-                                    mTypography(it.color.rgbHex)
+                                    mTableCell { +it::class.simpleName.toString() }
+                                    mTableCell { +positions[it.id]?.id.toString() }
                                 }
-                                mTableCell { +it::class.simpleName.toString() }
-                                mTableCell { +positions[it.id]?.id.toString() }
                             }
                         }
                     }
                 }
-                mTypography("History")
-                mTable {
-                    mTableHead {
-                        mTableRow {
-                            mTableCell { +"noation" }
-                            mTableCell { +"move" }
-                        }
-                    }
-                    mTableBody {
-                        history.forEach {
+//                mTypography("History")
+
+                mFormControlLabel(
+                    label = "History",
+                    control = mSwitch(
+                        checked = historySwitch,
+                        onChange = { event, state ->
+                            setState {
+                                historySwitch = state
+                            }
+                        },
+                        addAsChild = false
+                    )
+                )
+                mCollapse(show = historySwitch) {
+                    mTable {
+                        mTableHead {
                             mTableRow {
-                                mTableCell { +it.asNotation() }
-                                mTableCell { +it.toString() }
+                                mTableCell { +"noation" }
+                                mTableCell { +"move" }
+                            }
+                        }
+                        mTableBody {
+                            history.forEach {
+                                mTableRow {
+                                    mTableCell { +it.asNotation() }
+                                    mTableCell { +it.toString() }
+                                }
                             }
                         }
                     }
