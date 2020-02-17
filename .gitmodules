@@ -1,6 +1,3 @@
 [submodule "muirwik"]
 	path = muirwik
 	url = https://github.com/NikkyAI/muirwik.git
-[submodule "ksvg"]
-	path = ksvg
-	url = https://github.com/NikkyAI/ksvg.git
