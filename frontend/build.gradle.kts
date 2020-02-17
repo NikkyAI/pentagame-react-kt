@@ -1,5 +1,3 @@
-import org.gradle.language.jvm.tasks.ProcessResources
-
 plugins {
     kotlin("js")
     id("de.fayard.dependencies")

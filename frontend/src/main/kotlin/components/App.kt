@@ -1,5 +1,6 @@
 package components
 
+import com.ccfraser.muirwik.components.HRefOptions
 import com.ccfraser.muirwik.components.MGridSize
 import com.ccfraser.muirwik.components.MGridSpacing
 import com.ccfraser.muirwik.components.MGridWrap
@@ -11,10 +12,12 @@ import com.ccfraser.muirwik.components.MTypographyVariant
 import com.ccfraser.muirwik.components.mGridContainer
 import com.ccfraser.muirwik.components.mGridItem
 import com.ccfraser.muirwik.components.mIcon
+import com.ccfraser.muirwik.components.mLink
 import com.ccfraser.muirwik.components.mTab
 import com.ccfraser.muirwik.components.mTabs
 import com.ccfraser.muirwik.components.mTypography
 import com.ccfraser.muirwik.components.spacingUnits
+import com.ccfraser.muirwik.components.variant
 import containers.pentaSvgInteractive
 import kotlinx.css.flexGrow
 import kotlinx.css.marginTop
@@ -54,13 +57,45 @@ class App : RComponent<RProps, RState>() {
                     mGridItem(xs = MGridSize.cellsTrue) {
                         when (tabValue as Tabs) {
                             Tabs.help -> {
-                                mTypography("Rules")
+                                mTypography("Rules", paragraph = true)
+                                mTypography(text = null, paragraph = true) {
+                                    mLink(
+                                        text = "Illustated Rules (English)",
+                                        hRefOptions = HRefOptions(
+                                            href = "http://pentagame.org/pdf/Illustrated_Rules.pdf",
+                                            targetBlank = true
+                                        )
+                                    ) {
+                                        attrs.variant = MTypographyVariant.button
+                                    }
+                                }
+
+                                mTypography(text = null,  paragraph = true) {
+                                    mLink(
+                                        text = "Illustated Rules (German)",
+                                        hRefOptions = HRefOptions(
+                                            href = "http://pentagame.org/pdf/Illustrated_Rules__German_.pdf",
+                                            targetBlank = true
+                                        )
+                                    ) {
+                                        attrs.variant = MTypographyVariant.button
+                                    }
+                                }
                             }
                             Tabs.multiplayer -> {
                                 textConnection {}
                             }
                             Tabs.about ->  {
                                 mTypography("About")
+                                mLink(
+                                    text = "About Pentagame",
+                                    hRefOptions = HRefOptions(
+                                        href = "http://pentagame.org/",
+                                        targetBlank = true
+                                    )
+                                ) {
+                                    attrs.variant = MTypographyVariant.button
+                                }
                             }
                             Tabs.debug_game -> {
                                 textBoardState {}
