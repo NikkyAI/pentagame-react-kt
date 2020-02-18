@@ -36,7 +36,7 @@ allprojects {
 val stage = tasks.create("stage") {
     // TODO: add :backend:shadowJar
     // TODO: update jar path
-//    dependsOn("clean")
+    dependsOn("clean")
     dependsOn(":backend:flywayMigrate")
     dependsOn(":backend:flywayValidate")
     dependsOn(":backend:shadowJar")
