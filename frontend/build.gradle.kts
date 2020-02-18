@@ -1,3 +1,4 @@
+import de.undercouch.gradle.tasks.download.org.apache.commons.codec.digest.DigestUtils
 plugins {
     kotlin("js")
     id("de.fayard.dependencies")
@@ -89,35 +90,55 @@ task<DefaultTask>("depsize") {
     }
 }
 
-//tasks.getByName<ProcessResources>("processResources") {
-//    val toDownload = mutableMapOf<String, String>()
-//
-//    filesMatching("*.html") {
-//        filter {  content ->
-//            val regex = Regex("<link rel=\"stylesheet\" href=\"(.+)\" />")
-//            content.replace(regex) { matchResult ->
-//                val url = matchResult.groupValues[1]
-//                val filename = url.substringAfterLast('/')
-//                val hashed = de.undercouch.gradle.tasks.download.org.apache.commons.codec.digest.DigestUtils.md5Hex(url)
-//                toDownload += hashed to url
-//                "<link rel=\"stylesheet\" href=\"/$hashed\" /> <!-- $filename -->"
-//            }
-//        }
-//    }
-//
-//    doLast {
-//        val dir = buildDir.resolve("processedResources")
-//            .resolve("Js")
-//            .resolve("main")
-//        toDownload.forEach { filename, url ->
-//            logger.lifecycle("downloading $url -> $filename")
-//            val destFile = dir.resolve(filename)
-//            destFile.parentFile.mkdirs()
-//            destFile.createNewFile()
-//            downloadFile(url, destFile)
-//        }
-//    }
-//}
+tasks.getByName<ProcessResources>("processResources") {
+    val downloadCss = mutableMapOf<String, String>()
+    val processCss = mutableMapOf<String, String>()
+
+    filesMatching("*.html") {
+        filter {  content ->
+            val regex = Regex("<link rel=\"stylesheet\" href=\"(.+)\" />")
+            content.replace(regex) { matchResult ->
+                val url = matchResult.groupValues[1]
+                val filename = url.substringAfterLast('/')
+                val hashed = "css/" + DigestUtils.md5Hex(url) + ".css"
+                downloadCss += hashed to url
+                "<link rel=\"stylesheet\" href=\"$hashed\" /> <!-- $filename -->"
+            }
+        }
+    }
+
+    doLast {
+        val dir = buildDir.resolve("processedResources")
+            .resolve("Js")
+            .resolve("main")
+        downloadCss.forEach { filename, url ->
+            logger.lifecycle("downloading $url -> $filename")
+            val destFile = dir.resolve(filename)
+            destFile.parentFile.mkdirs()
+            destFile.createNewFile()
+            downloadFile(url, destFile)
+
+            logger.lifecycle("filtering $filename")
+            val ttfUrlRegex = Regex("""url\((http.*?\.ttf)\)""")
+            destFile.writeText(
+                destFile.readText().replace(ttfUrlRegex) { result ->
+                    val ttfUrl = result.groupValues[1]
+//                    val filename = ttfUrl.substringAfterLast('/')
+                    val newTtfPath = "ttf/" + DigestUtils.md5Hex(ttfUrl) + ".ttf"
+                    val ttfFile = dir.resolve(newTtfPath)
+                    logger.lifecycle("downloading $ttfUrl -> $newTtfPath")
+                    ttfFile.parentFile.mkdirs()
+                    ttfFile.createNewFile()
+                    downloadFile(ttfUrl, ttfFile)
+
+                    logger.lifecycle("replacing: $ttfUrl -> $newTtfPath")
+                    "url(../$newTtfPath) /* $url */ "
+                }
+            )
+
+        }
+    }
+}
 
 /***
 //TODO: error Task with name 'browserProductionWebpack' not found in project ':frontend'.

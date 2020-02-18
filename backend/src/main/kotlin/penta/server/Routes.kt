@@ -14,6 +14,7 @@ import io.ktor.http.content.resources
 import io.ktor.http.content.static
 import io.ktor.request.receive
 import io.ktor.response.respondText
+import io.ktor.routing.contentType
 import io.ktor.routing.get
 import io.ktor.routing.post
 import io.ktor.routing.routing
@@ -32,6 +33,7 @@ fun Application.routes() = routing {
     static("/") {
         resources("static")
         defaultResource("static/index.html")
+//        this.contentType(ContentType("text/css"))
     }
 
     webSocket("ws/lobby") {
