@@ -62,7 +62,7 @@ class App : RComponent<RProps, RState>() {
                                     mLink(
                                         text = "Illustated Rules (English)",
                                         hRefOptions = HRefOptions(
-                                            href = "http://pentagame.org/pdf/Illustrated_Rules.pdf",
+                                            href = "https://pentagame.org/pdf/Illustrated_Rules.pdf",
                                             targetBlank = true
                                         )
                                     ) {
@@ -74,7 +74,7 @@ class App : RComponent<RProps, RState>() {
                                     mLink(
                                         text = "Illustated Rules (German)",
                                         hRefOptions = HRefOptions(
-                                            href = "http://pentagame.org/pdf/Illustrated_Rules__German_.pdf",
+                                            href = "https://pentagame.org/pdf/Illustrated_Rules__German_.pdf",
                                             targetBlank = true
                                         )
                                     ) {
@@ -90,7 +90,16 @@ class App : RComponent<RProps, RState>() {
                                 mLink(
                                     text = "About Pentagame",
                                     hRefOptions = HRefOptions(
-                                        href = "http://pentagame.org/",
+                                        href = "https://pentagame.org/",
+                                        targetBlank = true
+                                    )
+                                ) {
+                                    attrs.variant = MTypographyVariant.button
+                                }
+                                mLink(
+                                    text = "Github",
+                                    hRefOptions = HRefOptions(
+                                        href = "https://github.com/NikkyAI/pentagame",
                                         targetBlank = true
                                     )
                                 ) {

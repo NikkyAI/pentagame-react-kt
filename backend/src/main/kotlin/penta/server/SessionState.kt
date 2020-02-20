@@ -6,11 +6,13 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import mu.KotlinLogging
 import org.reduxkotlin.Reducer
+import penta.PlayerState
 import penta.util.exhaustive
 import penta.util.handler
 
 data class SessionState(
-    val observingSessions: Map<UserSession, DefaultWebSocketServerSession> = mapOf()
+    val observingSessions: Map<UserSession, DefaultWebSocketServerSession> = mapOf(),
+    val playingUsers: Map<PlayerState, User> = mapOf()
 ) {
     companion object {
         private val logger = Logger(this::class.simpleName!!)

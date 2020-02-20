@@ -15,6 +15,7 @@ val json = Json(
         classDiscriminator = "type"
     ), context = SerializersModule {
         GameEvent.install(this)
+        SessionEvent.install(this)
         LoginResponse.install(this)
         LobbyEvent.install(this)
     })

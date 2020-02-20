@@ -1,6 +1,7 @@
 package penta
 
 import penta.logic.Field
+import penta.logic.GameType
 import penta.logic.Piece
 import penta.network.GameEvent
 
@@ -171,17 +172,23 @@ sealed class PentaMove {
 //        override fun toSerializable() = GameEvent.ObserverLeave(id)
 //    }
 
-    object InitGame : PentaMove() {
-        override fun asNotation(): String = ">>>"
-        override fun toSerializable() = GameEvent.InitGame
-        override fun toString() = "InitGame"
+    // TODO: also initialize player count / gamemode
+    data class InitGame(
+        val gameType: GameType
+    ) : PentaMove() {
+        override fun asNotation(): String = ">>> $gameType"
+        override fun toSerializable() = GameEvent.InitGame(
+            gameType = gameType
+        )
     }
 
+    // is this a move ?
     data class Win(val players: List<String>) : PentaMove() {
         override fun asNotation(): String = "winner: ${players.joinToString(" & ")}"
         override fun toSerializable() = GameEvent.Win(players)
     }
 
+    // TODO: session specific
     data class IllegalMove(val message: String, val move: PentaMove) : PentaMove() {
         override fun asNotation(): String {
             TODO("not implemented") //To change body of created functions use File | Settings | File Templates.

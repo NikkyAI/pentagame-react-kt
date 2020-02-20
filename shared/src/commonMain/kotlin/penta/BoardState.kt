@@ -3,8 +3,10 @@ package penta
 import PentaBoard
 import actions.Action
 import com.soywiz.klogger.Logger
+import penta.BoardState.Companion.processMove
 import penta.logic.Field
 import penta.logic.Field.Goal
+import penta.logic.GameType
 import penta.logic.Piece
 import penta.network.GameEvent
 import penta.util.exhaustive
@@ -32,9 +34,6 @@ data class BoardState private constructor(
     val illegalMove: PentaMove.IllegalMove? = null
 ) {
     object RemoveIllegalMove
-    enum class GameType {
-        TWO, THREE, FOUR, TWO_VS_TO
-    }
 
     companion object {
         private val logger = Logger("BoardState")
@@ -94,6 +93,18 @@ data class BoardState private constructor(
                 is GameEvent -> {
                     reduceFunc(state, action.asMove(state))
                 }
+                is SessionEvent.Undo -> {
+                    WithMutableState(state).apply {
+                        action.moves.forEach { reverseNotation ->
+                            logger.info { "reverseNotation $reverseNotation" }
+                            val toReverseMove = reverseNotation.asMove(nextState)
+                            requireMove(nextState.history.last() == toReverseMove) {
+                                PentaMove.IllegalMove("cannot undo move $toReverseMove", toReverseMove)
+                            }
+                            nextState = processMove(toReverseMove, true)
+                        }
+                    }.nextState
+                }
                 is PentaMove -> {
                     WithMutableState(state).processMove(action)
                 }
@@ -110,6 +121,8 @@ data class BoardState private constructor(
 
         fun WithMutableState.handleIllegalMove(illegalMove: PentaMove.IllegalMove) {
             nextState = originalState.copy(
+                // TODO pass IllegalMove to session state ?
+                // is this sufficient ?
                 illegalMove = illegalMove
             )
         }

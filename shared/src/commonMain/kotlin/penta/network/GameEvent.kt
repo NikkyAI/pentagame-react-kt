@@ -5,13 +5,11 @@ import kotlinx.serialization.Polymorphic
 import kotlinx.serialization.PolymorphicSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModuleBuilder
-import mu.KotlinLogging
 import penta.BoardState
 import penta.PentaMove
 import penta.PlayerState
 import penta.logic.Piece
-import penta.util.ObjectSerializer
-import com.soywiz.klogger.*
+import penta.logic.GameType
 
 @Polymorphic
 @Serializable(PolymorphicSerializer::class)
@@ -158,6 +156,7 @@ sealed class GameEvent {
             )
     }
 
+    @Deprecated("move logic to SessionEvent")
     @Serializable
     data class PlayerJoin(
         val player: PlayerState
@@ -168,9 +167,15 @@ sealed class GameEvent {
             )
     }
 
-    object InitGame : GameEvent() {
+    // TODO: also initialize player count / gamemode
+    @Serializable
+    data class InitGame(
+        val gameType: GameType
+    ) : GameEvent() {
         override fun asMove(boardState: BoardState) =
-            PentaMove.InitGame
+            PentaMove.InitGame(
+                gameType = gameType
+            )
     }
 
     @Serializable
@@ -182,6 +187,7 @@ sealed class GameEvent {
         )
     }
 
+    @Deprecated("move logic to SessionEvent")
     @Serializable
     data class IllegalMove(
         val message: String,
@@ -192,6 +198,7 @@ sealed class GameEvent {
         }
     }
 
+    // TODO: move to SessionEvents
     @Serializable
     data class Undo(
         val moves: List<GameEvent>
@@ -214,7 +221,7 @@ sealed class GameEvent {
                 SelectGrey::class with SelectGrey.serializer()
                 SelectPlayerPiece::class with SelectPlayerPiece.serializer()
                 PlayerJoin::class with PlayerJoin.serializer()
-                InitGame::class with ObjectSerializer(InitGame)
+                InitGame::class with InitGame.serializer()
                 Win::class with Win.serializer()
                 IllegalMove::class with IllegalMove.serializer()
                 Undo::class with Undo.serializer()

@@ -27,6 +27,7 @@ import org.reduxkotlin.createStore
 import penta.BoardState
 import penta.PentaMove
 import penta.PlayerState
+import penta.logic.GameType
 import penta.network.GameEvent
 import penta.network.GameSessionInfo
 import penta.server.db.Game
@@ -287,10 +288,22 @@ class ServerGamestate(
 
     suspend fun requestStart(user: User) {
         if (user.userId == owner.userId) {
-            withContext(boardContext) {
-                boardStateStore.dispatch(PentaMove.InitGame)
+            val playingUsers = withContext(sessionContext) {
+                sessionStore.state.playingUsers
             }
-//            processMove(PentaMove.InitGame)
+            withContext(boardContext) {
+                // TODO: count people in session and initialize
+                val gameType = when(playingUsers.size) {
+                    2 -> GameType.TWO
+                    3 -> GameType.THREE
+                    4 -> GameType.FOUR
+                    else -> error("cannot handle ${playingUsers}")
+                }
+
+                boardStateStore.dispatch(
+                    PentaMove.InitGame(gameType = gameType)
+                )
+            }
         }
     }
 }
