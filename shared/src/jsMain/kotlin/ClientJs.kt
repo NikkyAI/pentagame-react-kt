@@ -15,6 +15,7 @@ import org.w3c.notifications.NotificationPermission
 import penta.util.json
 
 private val logger = Logger("ClientKt")
+//@showcase
 actual val client: HttpClient = HttpClient(Js).config {
     install(WebSockets) {
 

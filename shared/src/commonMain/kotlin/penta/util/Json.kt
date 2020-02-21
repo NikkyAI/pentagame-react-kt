@@ -7,6 +7,7 @@ import penta.network.GameEvent
 import penta.network.LobbyEvent
 import penta.network.LoginResponse
 
+//@showcase
 val json = Json(
     JsonConfiguration(
         unquoted = false,

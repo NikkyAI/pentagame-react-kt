@@ -3,6 +3,7 @@ package penta
 import client
 import com.soywiz.klogger.Logger
 import io.ktor.client.features.websocket.webSocket
+import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.request
 import io.ktor.client.statement.HttpResponse
@@ -44,7 +45,7 @@ object WSClient {
         }.build()
         logger.info { "url: $url" }
         return try {
-            client.request<ServerStatus>(url) {}
+            client.get<ServerStatus>(url) // @showcase
         } catch (exception: Exception) {
             logger.error { exception }
             logger.error { "request failed" }
