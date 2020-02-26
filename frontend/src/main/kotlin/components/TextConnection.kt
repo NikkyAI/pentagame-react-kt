@@ -257,7 +257,7 @@ class TextConnection(props: TextConnectionProps) : RComponent<TextConnectionProp
                     props.games.forEach { (id, gameSessionInfo) ->
                         mListItem("id", gameSessionInfo.id) {
                             mListItemText("owner", gameSessionInfo.owner)
-                            mListItemText("players", "${gameSessionInfo.players}")
+                            mListItemText("players", "${gameSessionInfo.playingUsers}")
                             mListItemText("observers", "${gameSessionInfo.observers}")
                             mListItemText("running", "${gameSessionInfo.running}")
                             mListItemSecondaryAction {

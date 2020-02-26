@@ -27,6 +27,7 @@ import org.reduxkotlin.createStore
 import penta.BoardState
 import penta.PentaMove
 import penta.PlayerState
+import penta.UserInfo
 import penta.logic.GameType
 import penta.network.GameEvent
 import penta.network.GameSessionInfo
@@ -80,11 +81,14 @@ class ServerGamestate(
             val boardState = runBlocking(boardContext) {
                 boardStateStore.state
             }
+            val sessionState = runBlocking(sessionContext) {
+                sessionStore.state
+            }
             return GameSessionInfo(
                 id = serverGameId,
                 owner = owner.userId,
                 running = boardState.gameStarted,
-                players = boardState.players.map { it.id },
+                playingUsers = sessionState.playingUsers.map { it.value.displayName }, // TODO: access sessionStore
                 observers = runBlocking(sessionContext) {
                     sessionStore.state.observingSessions.keys.map { it.userId }
                 }
@@ -137,7 +141,7 @@ class ServerGamestate(
                 val historySelector = SelectorBuilder<BoardState>()
                     .withSingleField { boardStateStore.state.history }
                 val playerSelector = SelectorBuilder<BoardState>()
-                    .withSingleField { boardStateStore.state.players }
+                    .withSingleField { boardStateStore.state.gameType.players }
 
                 unsubscribe = boardStateStore.subscribe {
                     historySelector.getIfChangedIn(boardStateStore.state)?.let { history ->
@@ -261,24 +265,36 @@ class ServerGamestate(
         }
     }
 
-    suspend fun requestJoin(user: User) {
-        withContext(boardContext) {
-
-            if (boardStateStore.state.players.size > 3) {
+    suspend fun requestJoin(user: User, shape: String, player: PlayerState) {
+        val success = withContext(boardContext) {
+            if (boardStateStore.state.players.size >= boardStateStore.state.gameType.playerCount) {
                 logger.error { "max player limit reached" }
+                return@withContext false
+            }
+            if (boardStateStore.state.gameStarted) {
+                logger.error { "game has already started" }
+                return@withContext false
+            }
+            true
+        }
+        if(!success) return
+
+        withContext(sessionContext) {
+            val existingUser = sessionStore.state.playingUsers[player]
+            if (existingUser != null) {
+                logger.error { "there is already $existingUser on $player" }
                 return@withContext
             }
             if (boardStateStore.state.gameStarted) {
                 logger.error { "game has already started" }
                 return@withContext
             }
-
-            val shapes = listOf("triangle", "square", "cross", "circle")
-            boardStateStore.dispatch(
-                PentaMove.PlayerJoin(
-                    PlayerState(
-                        user.userId,
-                        shapes[boardStateStore.state.players.size]
+            sessionStore.dispatch(
+                SessionEvent.PlayerJoin(
+                    player = player,
+                    user = UserInfo(
+                        id = user.userId,
+                        figureId = shape
                     )
                 )
             )

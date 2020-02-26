@@ -3,6 +3,7 @@ package penta.logic
 import io.data2viz.color.Color
 import penta.PentaColor
 import penta.PentaColors
+import penta.PlayerState
 import penta.logic.Field.Goal
 
 sealed class Piece {
@@ -38,8 +39,8 @@ sealed class Piece {
 
     data class Player(
         override val id: String,
-        val playerId: String,
-        val figureId: String,
+        val player: PlayerState,
+//        val figureId: String,
         override val pentaColor: PentaColor
     ) : Piece() {
         override val radius: Double get() = RADIUS

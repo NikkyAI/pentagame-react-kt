@@ -24,6 +24,8 @@ import kotlinx.serialization.list
 import penta.BoardState
 import penta.ConnectionState
 import penta.PentaMove
+import penta.PlayerState
+import penta.UserInfo
 import penta.network.GameEvent
 import penta.util.json
 import react.RBuilder
@@ -111,8 +113,8 @@ class TextBoard(props: TextBoardProps) : RComponent<TextBoardProps, RState>(prop
             with(props.boardState) {
                 mTypography("Players")
                 mList {
-                    players.forEach {
-                        mListItem(it.id, it.figureId)
+                    props.playingUsers.forEach { (player, user) ->
+                        mListItem(player.toString(), user.id + " " + user.figureId)
                     }
                 }
                 mTypography("turn: $turn")
@@ -214,7 +216,9 @@ interface TextBoardsStateParameters : RProps {
 
 //TODO: find a way to compose interface while keeping these private
 interface TextBoardStateProps : RProps {
+    var state: State
     var boardState: BoardState
+    var playingUsers: Map<PlayerState, UserInfo>
     var connection: ConnectionState
 }
 
@@ -228,7 +232,9 @@ val textBoardState =
             console.debug("TextBoardContainer.state")
             console.debug("state: ", state)
             console.debug("configProps: ", configProps)
+            this.state = state
             boardState = state.boardState
+            playingUsers = state.playingUsers
             connection = state.multiplayerState.connectionState
         },
         { dispatch, configProps ->

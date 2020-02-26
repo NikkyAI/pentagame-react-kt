@@ -3,7 +3,10 @@ package penta
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class PlayerState(
-    val id: String,
-    var figureId: String
-)
+// TODO: switch to enum ?
+enum class PlayerState {
+    PLAYER_1, PLAYER_2, PLAYER_3, PLAYER_4;
+
+    val id: String
+        get() = this.name
+}

@@ -54,7 +54,7 @@ object PentagameClick {
         if (
         // make sure you are not selecting black or gray
             selectedGrayPiece == null && selectedBlackPiece == null && !selectingGrayPiece
-            && clickedPiece is Piece.Player && currentPlayer.id == clickedPiece.playerId
+            && clickedPiece is Piece.Player && currentPlayer == clickedPiece.player
         ) {
             if (selectedPlayerPiece == null) {
                 logger.info { "selecting: $clickedPiece" }
@@ -103,7 +103,7 @@ object PentagameClick {
 //            client.PentaViz.updateBoard()
             return
         }
-        if (selectedPlayerPiece != null && currentPlayer.id == selectedPlayerPiece!!.playerId) {
+        if (selectedPlayerPiece != null && currentPlayer == selectedPlayerPiece!!.player) {
             val playerPiece = selectedPlayerPiece!!
             val sourceField = positions[playerPiece.id] ?: run {
                 logger.error { "piece if off the board already" }
@@ -129,7 +129,7 @@ object PentagameClick {
 
             val move: PentaMove = when (clickedPiece) {
                 is Piece.Player -> {
-                    if (playerPiece.playerId == clickedPiece.playerId) {
+                    if (playerPiece.player == clickedPiece.player) {
                         PentaMove.SwapOwnPiece(
                             playerPiece = playerPiece, otherPlayerPiece = clickedPiece,
                             from = sourceField, to = targetField
@@ -179,7 +179,7 @@ object PentagameClick {
 //                }
 //            }
             when {
-                selectedPlayerPiece != null && currentPlayer.id == selectedPlayerPiece!!.playerId -> {
+                selectedPlayerPiece != null && currentPlayer == selectedPlayerPiece!!.player -> {
                     val playerPiece = selectedPlayerPiece!!
 
                     val sourcePos = positions[playerPiece.id]!!
@@ -227,7 +227,7 @@ object PentagameClick {
             logger.info { "selected black piece: $selectedBlackPiece" }
             logger.info { "selected gray piece: $selectedGrayPiece" }
             val move = when {
-                selectedPlayerPiece != null && currentPlayer.id == selectedPlayerPiece!!.playerId -> {
+                selectedPlayerPiece != null && currentPlayer == selectedPlayerPiece!!.player -> {
                     val playerPiece = selectedPlayerPiece!!
 
                     val sourceField = positions[playerPiece.id]!!

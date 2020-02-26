@@ -28,6 +28,8 @@ import penta.ConnectionState
 import penta.PentaColors
 import penta.PentaMove
 import penta.PentagameClick
+import penta.PlayerState
+import penta.UserInfo
 import penta.calculatePiecePos
 import penta.cornerPoint
 import penta.drawFigure
@@ -41,7 +43,6 @@ import react.RBuilder
 import react.RComponent
 import react.RState
 import react.createRef
-import react.useCallback
 import styled.css
 import styled.styledDiv
 import styled.styledSvg
@@ -246,8 +247,8 @@ private fun SVG.draw(scale: Int, svgProps: PentaSvgProps) {
 
     val isYourTurn = if (svgProps.connection is ConnectionState.ConnectedToGame) {
         svgProps.boardState.currentPlayer.id == svgProps.connection.userId
-    } else true
-    val selectedPieceIsCurrentPlayer = boardState.selectedPlayerPiece?.playerId == svgProps.boardState.currentPlayer.id
+    } else true // in local game it is always your turn
+    val selectedPieceIsCurrentPlayer = boardState.selectedPlayerPiece?.player == svgProps.boardState.currentPlayer
     val selectedPlayerPieceField = if (selectedPieceIsCurrentPlayer) {
         svgProps.boardState.positions[boardState.selectedPlayerPiece?.id] ?: run {
             throw IllegalStateException("cannot find field for ${boardState.selectedPlayerPiece}")
@@ -346,7 +347,7 @@ private fun SVG.draw(scale: Int, svgProps: PentaSvgProps) {
     }
 
     // add corner fields
-    svgProps.boardState.players.forEachIndexed { i, player ->
+    svgProps.boardState.gameType.players.forEachIndexed { i, player ->
         console.debug("init face $player")
         val centerPos = cornerPoint(
             index = i,
@@ -401,14 +402,20 @@ private fun SVG.draw(scale: Int, svgProps: PentaSvgProps) {
             fill = bgColor
         }
 
-        // draw player face
-        drawFigure(
-            figureId = player.figureId,
-            center = centerPos,
-            radius = pieceRadius,
-            color = Colors.Web.black,
-            selected = svgProps.boardState.currentPlayer.id == player.id
-        )
+        val playinguser = svgProps.playingUsers[player]
+        if(playinguser != null) {
+            // draw player face
+            drawFigure(
+                figureId = playinguser.figureId,
+                center = centerPos,
+                radius = pieceRadius,
+                color = Colors.Web.black,
+                selected = svgProps.boardState.currentPlayer.id == player.id
+            )
+        } else {
+            console.warn("no player $player in ${svgProps.playingUsers}")
+            //TODO: render placeholder figures
+        }
 
         // show gray slot when selecting gray
         if (
@@ -473,7 +480,8 @@ private fun SVG.draw(scale: Int, svgProps: PentaSvgProps) {
                 }
             }
             is Piece.Player -> {
-                val isCurrentPlayer = piece.playerId == svgProps.boardState.currentPlayer.id
+                val playinguser = svgProps.playingUsers[piece.player]
+                val isCurrentPlayer = piece.player == svgProps.boardState.currentPlayer
                 console.debug("playerPiece: $piece")
                 val selectable = isYourTurn
                     && isCurrentPlayer
@@ -483,15 +491,21 @@ private fun SVG.draw(scale: Int, svgProps: PentaSvgProps) {
                     && selectedPieceIsCurrentPlayer
                     && field != null
                 console.info("playerPiece: ", piece, "selectable: ", selectable, "swappable", swappable)
-                drawPlayer(
-                    figureId = piece.figureId,
-                    center = scaledPos,
-                    radius = radius,
-                    piece = piece,
-                    selected = svgProps.boardState.selectedPlayerPiece == piece,
-                    highlight = selectable && !hasBlockerSelected,
-                    clickable = selectable || swappable
-                )
+                if(playinguser != null) {
+
+                    drawPlayer(
+//                    figureId = piece.figureId,
+                        figureId = playinguser.figureId,
+                        center = scaledPos,
+                        radius = radius,
+                        piece = piece,
+                        selected = svgProps.boardState.selectedPlayerPiece == piece,
+                        highlight = selectable && !hasBlockerSelected,
+                        clickable = selectable || swappable
+                    )
+                } else {
+
+                }
             }
         }
     }
@@ -501,6 +515,7 @@ private fun SVG.draw(scale: Int, svgProps: PentaSvgProps) {
 
 data class DrawProps(
     val boardState: BoardState,
+    val playingUsers: Map<PlayerState, UserInfo>,
     val figures: Map<Field, Piece>,
     val canMoveToField: Map<Field, Boolean>,
     val drawCorners: Boolean = true,
@@ -519,7 +534,7 @@ fun SVG.drawPentagame(scale: Int, svgProps: DrawProps) {
     val boardState = svgProps.boardState
 
     val isYourTurn = svgProps.isYourTurn ?: true
-    val selectedPieceIsCurrentPlayer = boardState.selectedPlayerPiece?.playerId == svgProps.boardState.currentPlayer.id
+    val selectedPieceIsCurrentPlayer = boardState.selectedPlayerPiece?.player == svgProps.boardState.currentPlayer
     val selectedPlayerPieceField = if (selectedPieceIsCurrentPlayer) {
         svgProps.boardState.positions[boardState.selectedPlayerPiece?.id] ?: run {
             throw IllegalStateException("cannot find field for ${boardState.selectedPlayerPiece}")
@@ -618,7 +633,7 @@ fun SVG.drawPentagame(scale: Int, svgProps: DrawProps) {
     }
 
     // add corner fields
-    svgProps.boardState.players.forEachIndexed { i, player ->
+    svgProps.boardState.gameType.players.forEachIndexed { i, player ->
         console.debug("init face $player")
         val centerPos = cornerPoint(
             index = i,
@@ -675,7 +690,7 @@ fun SVG.drawPentagame(scale: Int, svgProps: DrawProps) {
 
         // draw player face
         drawFigure(
-            figureId = player.figureId,
+            figureId = svgProps.playingUsers[player]!!.figureId,
             center = centerPos,
             radius = pieceRadius,
             color = Colors.Web.black,
@@ -745,7 +760,7 @@ fun SVG.drawPentagame(scale: Int, svgProps: DrawProps) {
                 }
             }
             is Piece.Player -> {
-                val isCurrentPlayer = piece.playerId == svgProps.boardState.currentPlayer.id
+                val isCurrentPlayer = piece.player == svgProps.boardState.currentPlayer
                 console.debug("playerPiece: $piece")
                 val selectable = isYourTurn
                     && isCurrentPlayer
@@ -755,15 +770,18 @@ fun SVG.drawPentagame(scale: Int, svgProps: DrawProps) {
                     && selectedPieceIsCurrentPlayer
                     && field != null
                 console.info("playerPiece: ", piece, "selectable: ", selectable, "swappable", swappable)
-                drawPlayer(
-                    figureId = piece.figureId,
-                    center = scaledPos,
-                    radius = radius,
-                    piece = piece,
-                    selected = svgProps.boardState.selectedPlayerPiece == piece,
-                    highlight = selectable && !hasBlockerSelected,
-                    clickable = selectable || swappable
-                )
+                val playinguser = svgProps.playingUsers[piece.player]
+                if(playinguser != null) {
+                    drawPlayer(
+                        figureId = playinguser.figureId,
+                        center = scaledPos,
+                        radius = radius,
+                        piece = piece,
+                        selected = svgProps.boardState.selectedPlayerPiece == piece,
+                        highlight = selectable && !hasBlockerSelected,
+                        clickable = selectable || swappable
+                    )
+                }
             }
         }
     }

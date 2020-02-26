@@ -2,6 +2,8 @@ import kotlinx.serialization.modules.SerializersModuleBuilder
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Polymorphic
 import kotlinx.serialization.PolymorphicSerializer
+import penta.PlayerState
+import penta.UserInfo
 import penta.network.GameEvent
 
 @Polymorphic
@@ -9,8 +11,8 @@ import penta.network.GameEvent
 sealed class SessionEvent {
     @Serializable
     data class PlayerJoin(
-        val playerId: String, // TODO: make enum
-        val user: String // UserInfo
+        val player: PlayerState, // TODO: make enum
+        val user: UserInfo // UserInfo
     ) : SessionEvent() {
 //        override fun asMove(boardState: BoardState) =
 //            PentaMove.PlayerJoin(

@@ -10,6 +10,7 @@ import penta.PentaMove
 import penta.PlayerState
 import penta.logic.Piece
 import penta.logic.GameType
+import penta.util.ObjectSerializer
 
 @Polymorphic
 @Serializable(PolymorphicSerializer::class)
@@ -19,7 +20,7 @@ sealed class GameEvent {
 
     @Serializable
     data class MovePlayer(
-        val player: String,
+        val player: PlayerState,
         val piece: String,
         val from: String,
         val to: String
@@ -27,7 +28,7 @@ sealed class GameEvent {
         override fun asMove(boardState: BoardState) =
             PentaMove.MovePlayer(
                 playerPiece = boardState.figures.filterIsInstance<Piece.Player>()
-                    .first { it.playerId == player && it.id == piece },
+                    .first { it.player == player && it.id == piece },
                 from = PentaBoard.get(from)!!,
                 to = PentaBoard.get(to)!!
             )
@@ -35,7 +36,7 @@ sealed class GameEvent {
 
     @Serializable
     data class ForcedMovePlayer(
-        val player: String,
+        val player: PlayerState,
         val piece: String,
         val from: String,
         val to: String
@@ -43,7 +44,7 @@ sealed class GameEvent {
         override fun asMove(boardState: BoardState) =
             PentaMove.ForcedPlayerMove(
                 playerPiece = boardState.figures.filterIsInstance<Piece.Player>()
-                    .first { it.playerId == player && it.id == piece },
+                    .first { it.player == player && it.id == piece },
                 from = PentaBoard.get(from)!!,
                 to = PentaBoard.get(to)!!
             )
@@ -51,7 +52,7 @@ sealed class GameEvent {
 
     @Serializable
     data class SwapOwnPiece(
-        val player: String,
+        val player: PlayerState,
         val piece: String,
         val otherPiece: String,
         val from: String,
@@ -60,9 +61,9 @@ sealed class GameEvent {
         override fun asMove(boardState: BoardState) =
             PentaMove.SwapOwnPiece(
                 playerPiece = boardState.figures.filterIsInstance<Piece.Player>()
-                    .first { it.playerId == player && it.id == piece },
+                    .first { it.player == player && it.id == piece },
                 otherPlayerPiece = boardState.figures.filterIsInstance<Piece.Player>()
-                    .first { it.playerId == player && it.id == otherPiece },
+                    .first { it.player == player && it.id == otherPiece },
                 from = PentaBoard[from]!!,
                 to = PentaBoard[to]!!
             )
@@ -70,8 +71,8 @@ sealed class GameEvent {
 
     @Serializable
     data class SwapHostilePieces(
-        val player: String,
-        val otherPlayer: String,
+        val player: PlayerState,
+        val otherPlayer: PlayerState,
         val piece: String,
         val otherPiece: String,
         val from: String,
@@ -80,9 +81,9 @@ sealed class GameEvent {
         override fun asMove(boardState: BoardState): PentaMove =
             PentaMove.SwapHostilePieces(
                 playerPiece = boardState.figures.filterIsInstance<Piece.Player>()
-                    .first { it.playerId == player && it.id == piece },
+                    .first { it.player == player && it.id == piece },
                 otherPlayerPiece = boardState.figures.filterIsInstance<Piece.Player>()
-                    .first { it.playerId == otherPlayer && it.id == otherPiece },
+                    .first { it.player == otherPlayer && it.id == otherPiece },
                 from = PentaBoard.get(from)!!,
                 to = PentaBoard.get(to)!!
             )
@@ -90,8 +91,8 @@ sealed class GameEvent {
 
     @Serializable
     data class CooperativeSwap(
-        val player: String,
-        val otherPlayer: String,
+        val player: PlayerState,
+        val otherPlayer: PlayerState,
         val piece: String,
         val otherPiece: String,
         val from: String,
@@ -156,26 +157,31 @@ sealed class GameEvent {
             )
     }
 
-    @Deprecated("move logic to SessionEvent")
-    @Serializable
-    data class PlayerJoin(
-        val player: PlayerState
-    ) : GameEvent() {
-        override fun asMove(boardState: BoardState) =
-            PentaMove.PlayerJoin(
-                player = player
-            )
-    }
+//    @Deprecated("move logic to SessionEvent")
+//    @Serializable
+//    data class PlayerJoin(
+//        val player: PlayerState
+//    ) : GameEvent() {
+//        override fun asMove(boardState: BoardState) =
+//            PentaMove.PlayerJoin(
+//                player = player
+//            )
+//    }
 
     // TODO: also initialize player count / gamemode
     @Serializable
-    data class InitGame(
+    data class SetGameType(
         val gameType: GameType
     ) : GameEvent() {
         override fun asMove(boardState: BoardState) =
-            PentaMove.InitGame(
+            PentaMove.SetGameType(
                 gameType = gameType
             )
+    }
+    // TODO: also initialize player count / gamemode
+    @Serializable
+    object InitGame: GameEvent() {
+        override fun asMove(boardState: BoardState) = PentaMove.InitGame
     }
 
     @Serializable
@@ -220,8 +226,9 @@ sealed class GameEvent {
                 SetGrey::class with SetGrey.serializer()
                 SelectGrey::class with SelectGrey.serializer()
                 SelectPlayerPiece::class with SelectPlayerPiece.serializer()
-                PlayerJoin::class with PlayerJoin.serializer()
-                InitGame::class with InitGame.serializer()
+//                PlayerJoin::class with PlayerJoin.serializer()
+                SetGameType::class with SetGameType.serializer()
+                InitGame::class with ObjectSerializer(InitGame)
                 Win::class with Win.serializer()
                 IllegalMove::class with IllegalMove.serializer()
                 Undo::class with Undo.serializer()

@@ -1,5 +1,6 @@
 package components
 
+import SessionEvent
 import com.ccfraser.muirwik.components.MColor
 import com.ccfraser.muirwik.components.button.MButtonVariant
 import com.ccfraser.muirwik.components.button.mButton
@@ -9,11 +10,12 @@ import debug
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.css.margin
-import org.w3c.dom.events.Event
 import penta.BoardState
 import penta.ConnectionState
 import penta.PentaMove
 import penta.PlayerState
+import penta.UserInfo
+import penta.logic.GameType
 import react.RBuilder
 import react.RClass
 import react.RComponent
@@ -45,57 +47,96 @@ private fun GameSetupProps.dispatchMove(move: PentaMove) {
     }
 }
 
+private fun GameSetupProps.dispatchSessionEvent(sessionEvent: SessionEvent) {
+    when (val c = connection) {
+        is ConnectionState.ConnectedToGame -> {
+            GlobalScope.launch {
+                c.sendSessionEvent(sessionEvent)
+            }
+        }
+        else -> {
+            dispatchSesionEventLocal(sessionEvent)
+        }
+    }
+}
+
 class GameSetupControls(props: GameSetupProps) : RComponent<GameSetupProps, RState>(props) {
 
-    private val startGame: (Event) -> Unit =  {
-        props.dispatchMove(PentaMove.InitGame)
-    }
     override fun RBuilder.render() {
         if (props.boardState == undefined) {
             return
         }
 
         styledDiv {
+            //TODO: add reset game button
+
             if (!props.boardState.gameStarted) {
-                val conn = props.connection
-                if (conn is ConnectionState.ConnectedToGame) {
+                GameType.values().forEach { type ->
+                    if (type != props.boardState.gameType) {
+                        mButton(
+                            caption = "mode $type",
+                            variant = MButtonVariant.contained,
+                            //startIcon = mIcon("add", addAsChild = false),
+                            onClick = {
+                                props.dispatchMove(
+                                    PentaMove.SetGameType(
+                                        gameType = type
+                                    )
+                                )
+                            }
+                        ) {
+                            css {
+                                margin(1.spacingUnits)
+                            }
+                        }
+                    }
+                }
+            }
+            val conn = props.connection
+            if (conn is ConnectionState.ConnectedToGame) {
+                if (!props.boardState.gameStarted) {
                     val localSymbols = listOf("triangle", "square", "cross", "circle")
                     localSymbols.forEach { symbol ->
-                        if (props.boardState.players.none { it.figureId == symbol || it.id == conn.userId }) {
-                            mButton(
-                                caption = "Join as $symbol",
-                                variant = MButtonVariant.outlined,
-                                startIcon = mIcon("add", addAsChild = false),
-                                onClick = {
-                                    props.dispatchMove(
-                                        PentaMove.PlayerJoin(
-                                            PlayerState(conn.userId, symbol)
+                        props.boardState.gameType.players.forEach { player ->
+                            if (props.playingUsers[player] == null) {
+                                mButton(
+                                    caption = "Join $player as $symbol",
+                                    variant = MButtonVariant.outlined,
+                                    startIcon = mIcon("add", addAsChild = false),
+                                    onClick = {
+                                        //                                        val username = if
+                                        props.dispatchSessionEvent(
+                                            SessionEvent.PlayerJoin(
+                                                player = player,
+                                                user = UserInfo(conn.userId, symbol)
+                                            )
                                         )
-                                    )
-                                }
-                            ) {
-                                css {
-                                    margin(1.spacingUnits)
+                                    }
+                                ) {
+                                    css {
+                                        margin(1.spacingUnits)
+                                    }
                                 }
                             }
                         }
                     }
-                } else {
-                    val localSymbols = listOf("triangle", "square", "cross", "circle")
-                    localSymbols.forEach { symbol ->
-                        if (props.boardState.players.none { it.figureId == symbol }) {
+                }
+            } else {
+
+                val localSymbols = listOf("triangle", "square", "cross", "circle")
+                localSymbols.forEach { symbol ->
+                    props.boardState.gameType.players.forEach { player ->
+                        if (props.playingUsers[player] == null) {
                             mButton(
-                                caption = "Add $symbol",
+                                caption = "Join $player as $symbol",
                                 variant = MButtonVariant.outlined,
                                 startIcon = mIcon("add", addAsChild = false),
                                 onClick = {
-                                    val playerCount = props.boardState.players.size
-                                    props.dispatchMove(
-                                        PentaMove.PlayerJoin(
-                                            PlayerState(
-                                                "local$playerCount",
-                                                symbol
-                                            )
+                                    //                                        val username = if
+                                    props.dispatchSessionEvent(
+                                        SessionEvent.PlayerJoin(
+                                            player = player,
+                                            user = UserInfo("local_$player", symbol)
                                         )
                                     )
                                 }
@@ -107,8 +148,11 @@ class GameSetupControls(props: GameSetupProps) : RComponent<GameSetupProps, RSta
                         }
                     }
                 }
+            }
+
+            if (!props.boardState.gameStarted) {
                 mButton(
-                    caption = "Start Game",
+                    caption = "Start Game ${props.boardState.gameType}",
                     variant = MButtonVariant.contained,
                     color = MColor.primary,
                     onClick = { props.dispatchMove(PentaMove.InitGame) }
@@ -117,6 +161,18 @@ class GameSetupControls(props: GameSetupProps) : RComponent<GameSetupProps, RSta
                         margin(1.spacingUnits)
                     }
                 }
+//                GameType.values().forEach { gameType ->
+//                    mButton(
+//                        caption = "Start Game $gameType",
+//                        variant = MButtonVariant.contained,
+//                        color = MColor.primary,
+//                        onClick = { props.dispatchMove(PentaMove.InitGame(gameType)) }
+//                    ) {
+//                        css {
+//                            margin(1.spacingUnits)
+//                        }
+//                    }
+//                }
             }
         }
 
@@ -138,21 +194,26 @@ interface GameSetupStateParameters : RProps {
 
 //TODO: find a way to compose interface while keeping these private
 interface GameSetupStateProps : RProps {
+    var state: State
     var boardState: BoardState
+    var playingUsers: Map<PlayerState, UserInfo>
     var connection: ConnectionState
 }
 
 interface GameSetupDispatchProps : RProps {
     var dispatchMoveLocal: (PentaMove) -> Unit
+    var dispatchSesionEventLocal: (SessionEvent) -> Unit
 }
 
 val gameSetupControls =
-    rConnect<State, PentaMove, WrapperAction, GameSetupStateParameters, GameSetupStateProps, GameSetupDispatchProps, GameSetupProps>(
+    rConnect<State, Any /*PentaMove*/, WrapperAction, GameSetupStateParameters, GameSetupStateProps, GameSetupDispatchProps, GameSetupProps>(
         { state, configProps ->
             console.debug("TextBoardContainer.state")
             console.debug("state: ", state)
             console.debug("configProps: ", configProps)
+            this.state = state
             boardState = state.boardState
+            playingUsers = state.playingUsers
             connection = state.multiplayerState.connectionState
         },
         { dispatch, configProps ->
@@ -166,5 +227,6 @@ val gameSetupControls =
 //            }
 //            relay = { dispatch(Action(it)) }
             dispatchMoveLocal = { dispatch(it) }
+            dispatchSesionEventLocal = { dispatch(it) }
         }
     )(GameSetupControls::class.js.unsafeCast<RClass<GameSetupProps>>())

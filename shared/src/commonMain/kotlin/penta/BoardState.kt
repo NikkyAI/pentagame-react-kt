@@ -3,7 +3,6 @@ package penta
 import PentaBoard
 import actions.Action
 import com.soywiz.klogger.Logger
-import penta.BoardState.Companion.processMove
 import penta.logic.Field
 import penta.logic.Field.Goal
 import penta.logic.GameType
@@ -12,11 +11,12 @@ import penta.network.GameEvent
 import penta.util.exhaustive
 import penta.util.requireMove
 
+@Suppress("DataClassPrivateConstructor")
 data class BoardState private constructor(
-    val players: List<PlayerState> = listOf(),
-    val currentPlayer: PlayerState = PlayerState("_", "triangle"),
+//    val players: List<PlayerState> = listOf(),
+    val currentPlayer: PlayerState = PlayerState.PLAYER_1,
     val gameType: GameType = GameType.TWO,
-    val scoringColors: Map<String, Array<PentaColor>> = mapOf(),
+    val scoringColors: Map<PlayerState, Array<PentaColor>> = mapOf(),
     val figures: List<Piece> = listOf(),
     val positions: Map<String, Field?> = mapOf(),
     val history: List<PentaMove> = listOf(),
@@ -33,6 +33,10 @@ data class BoardState private constructor(
     val selectingGrayPiece: Boolean = false,
     val illegalMove: PentaMove.IllegalMove? = null
 ) {
+    @Deprecated("use gameType.players", ReplaceWith("gameType.players"))
+    val players: List<PlayerState>
+        get() = gameType.players
+
     object RemoveIllegalMove
 
     companion object {
@@ -60,8 +64,19 @@ data class BoardState private constructor(
                         it.position = null
                     }
                 }
+                val playerPieces = nextState.gameType.players.flatMap { p ->
+                    (0 until 5).map { i ->
+                        Piece.Player(
+                            "p${p.ordinal}_$i",
+                            p,
+                            PentaColor.values()[i]
+                        ).also {
+                            it.position = PentaBoard.c[i]
+                        }
+                    }
+                }
                 nextState = nextState.copy(
-                    figures = listOf(*blacks.toTypedArray(), *greys.toTypedArray())
+                    figures = listOf(*blacks.toTypedArray(), *greys.toTypedArray(), *playerPieces.toTypedArray())
                 )
             }.nextState
         }
@@ -142,7 +157,7 @@ data class BoardState private constructor(
                                         move
                                     )
                                 }
-                                requireMove(move.playerPiece.playerId == currentPlayer.id) {
+                                requireMove(move.playerPiece.player == currentPlayer) {
                                     PentaMove.IllegalMove(
                                         "move is not from currentPlayer: ${currentPlayer.id}",
                                         move
@@ -259,7 +274,7 @@ data class BoardState private constructor(
                                         move
                                     )
                                 }
-                                requireMove(move.playerPiece.playerId == currentPlayer.id) {
+                                requireMove(move.playerPiece.player == currentPlayer) {
                                     PentaMove.IllegalMove(
                                         "move is not from currentPlayer: ${currentPlayer.id}",
                                         move
@@ -324,7 +339,7 @@ data class BoardState private constructor(
                                         move
                                     )
                                 }
-                                requireMove(move.playerPiece.playerId == currentPlayer.id) {
+                                requireMove(move.playerPiece.player == currentPlayer) {
                                     PentaMove.IllegalMove(
                                         "move is not from currentPlayer: ${currentPlayer.id}",
                                         move
@@ -336,7 +351,7 @@ data class BoardState private constructor(
                                         move
                                     )
                                 }
-                                requireMove(move.otherPlayerPiece.playerId == currentPlayer.id) {
+                                requireMove(move.otherPlayerPiece.player == currentPlayer) {
                                     PentaMove.IllegalMove(
                                         "piece ${move.otherPlayerPiece.id} is not from another player",
                                         move
@@ -387,7 +402,7 @@ data class BoardState private constructor(
                                     )
 
                                 }
-                                requireMove(move.playerPiece.playerId == currentPlayer.id) {
+                                requireMove(move.playerPiece.player == currentPlayer) {
                                     PentaMove.IllegalMove(
                                         "move is not from currentPlayer: ${currentPlayer.id}",
                                         move
@@ -399,7 +414,7 @@ data class BoardState private constructor(
                                         move
                                     )
                                 }
-                                requireMove(move.otherPlayerPiece.playerId != currentPlayer.id) {
+                                requireMove(move.otherPlayerPiece.player != currentPlayer) {
                                     PentaMove.IllegalMove(
                                         "piece ${move.otherPlayerPiece.id} is from another player",
                                         move
@@ -412,7 +427,7 @@ data class BoardState private constructor(
                                     )
                                 }
                                 val lastMove = history.findLast {
-                                    it is PentaMove.Move && it.playerPiece.playerId == move.playerPiece.playerId
+                                    it is PentaMove.Move && it.playerPiece.player == move.playerPiece.player
                                 }
                                 requireMove(lastMove != move) {
                                     PentaMove.IllegalMove(
@@ -610,7 +625,7 @@ data class BoardState private constructor(
                         if (!undo) {
                             with(originalState) {
                                 if (move.playerPiece != null) {
-                                    requireMove(currentPlayer.id == move.playerPiece.playerId) {
+                                    requireMove(currentPlayer == move.playerPiece.player) {
                                         PentaMove.IllegalMove(
                                             "selected piece ${move.playerPiece} is not owned by current player ${currentPlayer.id}",
                                             move
@@ -639,6 +654,7 @@ data class BoardState private constructor(
                             )
                         }
                     }
+                    /*
                     is PentaMove.PlayerJoin -> {
                         with(originalState) {
                             requireMove(!gameStarted) {
@@ -709,6 +725,54 @@ data class BoardState private constructor(
                             nextState = nextState.copy(history = history + move)
                         }
                     }
+                    */
+                    is PentaMove.SetGameType -> {
+                        with(originalState) {
+                            requireMove(!gameStarted) {
+                                PentaMove.IllegalMove(
+                                    "game is already started",
+                                    move
+                                )
+                            }
+                        }
+                        //TODO: remove all previous layer pieces
+                        val playerPieces = move.gameType.players.flatMap { p ->
+                            (0 until 5).map { i ->
+                                Piece.Player(
+                                    "p${p.ordinal}_$i",
+                                    p,
+                                    PentaColor.values()[i]
+                                ).also {
+                                    it.position = PentaBoard.c[i]
+                                }
+                            }
+                        }
+//                        val playerPieces = (0 until nextState.players.size).flatMap { p ->
+//                            (0 until 5).map { i ->
+//                                Piece.Player(
+//                                    "p$p$i",
+//                                    nextState.players[p].id,
+//                                    nextState.players[p].figureId,
+//                                    PentaColor.values()[i]
+//                                ).also {
+//                                    it.position = PentaBoard.c[i]
+//                                }
+//                            }
+//                        }
+                        // TODO: update player pieces
+                        with(nextState) {
+                            nextState = nextState.copy(
+                                history = history + move,
+                                gameType = move.gameType,
+                                figures = listOf<Piece>(
+                                    // keep all black and grey blockers
+                                    *figures.filterIsInstance<Piece.BlackBlocker>().toTypedArray(),
+                                    *figures.filterIsInstance<Piece.GrayBlocker>().toTypedArray(),
+                                    *playerPieces.toTypedArray()
+                                )
+                            )
+                        }
+                    }
                     is PentaMove.InitGame -> {
                         with(originalState) {
                             requireMove(!gameStarted) {
@@ -717,12 +781,12 @@ data class BoardState private constructor(
                                     move
                                 )
                             }
-                            requireMove(players.isNotEmpty()) {
-                                PentaMove.IllegalMove(
-                                    "there is no players",
-                                    move
-                                )
-                            }
+//                            requireMove(players.isNotEmpty()) {
+//                                PentaMove.IllegalMove(
+//                                    "there is no players",
+//                                    move
+//                                )
+//                            }
                         }
                         // TODO: setup UI for players related stuff here
 
@@ -740,8 +804,9 @@ data class BoardState private constructor(
                             nextState = nextState.copy(
                                 gameStarted = true,
                                 turn = 0,
-                                history = history + move,
-                                currentPlayer = players.first()
+                                history = history + move
+//                                gameType = move.gameType
+//                                currentPlayer = players.first()
                             )
                         }
 
@@ -784,12 +849,11 @@ data class BoardState private constructor(
                     return nextState
                 }
 
-                checkWin()
 
                 with(nextState) {
                     if (selectedBlackPiece == null && selectedGrayPiece == null && !selectingGrayPiece
+                        && move !is PentaMove.SetGameType
                         && move !is PentaMove.InitGame
-                        && move !is PentaMove.PlayerJoin
                         && move !is PentaMove.Win
                         && move !is PentaMove.SelectPlayerPiece
                         && move !is PentaMove.SelectGrey
@@ -798,11 +862,13 @@ data class BoardState private constructor(
                     ) {
                         logger.info { "incrementing turn after ${move.asNotation()}" }
                         nextState = nextState.copy(
-                            currentPlayer = players[(turn + 1) % players.count()],
+                            currentPlayer = gameType.players[(turn + 1) % gameType.players.size],
                             turn = turn + 1
                         )
                     }
                 }
+                checkWin()
+
 //        if(forceMoveNextPlayer) {
                 forceMovePlayerPiece(nextState.currentPlayer)
 //        }
@@ -837,7 +903,7 @@ data class BoardState private constructor(
 
                 val colors = nextState.figures
                     .filterIsInstance<Piece.Player>()
-                    .filter { it.playerId == move.playerPiece.playerId }
+                    .filter { it.player == move.playerPiece.player }
                     .filter { it.position == null }
                     .map { it.pentaColor }
                     .toTypedArray()
@@ -848,7 +914,7 @@ data class BoardState private constructor(
                     .firstOrNull()
 
                 nextState = nextState.copy(
-                    scoringColors = nextState.scoringColors + (move.playerPiece.playerId to colors),
+                    scoringColors = nextState.scoringColors + (move.playerPiece.player to colors),
                     // set gamestate to `MOVE_GREY`
                     selectedGrayPiece = selectedGrayPiece,
                     selectingGrayPiece = selectedGrayPiece == null
@@ -867,7 +933,7 @@ data class BoardState private constructor(
             with(nextState) {
                 if (selectingGrayPiece || selectingGrayPiece) return
                 val playerPieces =
-                    figures.filterIsInstance<Piece.Player>().filter { it.playerId == player.id }
+                    figures.filterIsInstance<Piece.Player>().filter { it.player == player }
                 for (playerPiece in playerPieces) {
                     val field = playerPiece.position as? Goal ?: continue
                     if (field.pentaColor != playerPiece.pentaColor) continue
@@ -888,11 +954,11 @@ data class BoardState private constructor(
 
         fun WithMutableState.checkWin() = with(nextState) {
             // check win after last players turn
-            if (winner != null || turn % players.size != players.size - 1) return
+            if (winner != null || turn % gameType.players.size != gameType.players.size - 1) return
             if (selectingGrayPiece || selectedGrayPiece != null || selectedBlackPiece != null) return
-            val winners = players.filter { player ->
+            val winners = gameType.players.filter { player ->
                 val playerPieces =
-                    figures.filterIsInstance<Piece.Player>().filter { it.playerId == player.id }
+                    figures.filterIsInstance<Piece.Player>().filter { it.player == player }
                 val offBoardPieces = playerPieces.filter { it.position == null }
 
                 offBoardPieces.size >= 3

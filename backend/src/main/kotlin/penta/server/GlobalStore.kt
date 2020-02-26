@@ -81,14 +81,16 @@ data class GlobalState(
                         owner = UserManager.toDBUser(action.game.owner)
                     }
                 }
-                transaction {
-                    addLogger(Slf4jSqlDebugLogger)
-                    game.players = SizedCollection(
-                        boardState.players.mapNotNull {
-                            UserManager.findDBUser(it.id)
-                        }
-                    )
-                }
+                // TODO: deal with users in game ?
+                // TODO: get sessionState here
+//                transaction {
+//                    addLogger(Slf4jSqlDebugLogger)
+//                    game.players = SizedCollection(
+//                        boardState.players.mapNotNull {
+//                            UserManager.findDBUser(it.id)
+//                        }
+//                    )
+//                }
                 copy(games = games + action.game)
                     .reduce(LobbyEvent.UpdateGame(action.game.info))
             }

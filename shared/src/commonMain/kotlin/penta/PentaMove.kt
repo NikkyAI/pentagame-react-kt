@@ -28,10 +28,10 @@ sealed class PentaMove {
         override val from: Field,
         override val to: Field
     ) : PentaMove(), Move, CanSetBlack, CanSetGrey {
-        override fun asNotation(): String = "${playerPiece.playerId}: ${playerPiece.id} (${from.id} -> ${to.id})"
+        override fun asNotation(): String = "${playerPiece.player}: ${playerPiece.id} (${from.id} -> ${to.id})"
         override fun toSerializable() =
             GameEvent.MovePlayer(
-                player = playerPiece.playerId,
+                player = playerPiece.player,
                 piece = playerPiece.id,
                 from = from.id,
                 to = to.id
@@ -44,10 +44,10 @@ sealed class PentaMove {
         override val from: Field,
         override val to: Field
     ) : PentaMove(), Move, CanSetGrey {
-        override fun asNotation(): String = "${playerPiece.playerId}: ${playerPiece.id} (${from.id} -> ${to.id})"
+        override fun asNotation(): String = "${playerPiece.player}: ${playerPiece.id} (${from.id} -> ${to.id})"
         override fun toSerializable() =
             GameEvent.ForcedMovePlayer(
-                player = playerPiece.playerId,
+                player = playerPiece.player,
                 piece = playerPiece.id,
                 from = from.id,
                 to = to.id
@@ -62,11 +62,11 @@ sealed class PentaMove {
         override val to: Field
     ) : PentaMove(), Swap, CanSetGrey {
         override fun asNotation(): String =
-            "${playerPiece.playerId}: ${playerPiece.id} ${otherPlayerPiece.id}{${otherPlayerPiece.playerId}} (${from.id} <-> ${to.id})"
+            "${playerPiece.player}: ${playerPiece.id} ${otherPlayerPiece.id}{${otherPlayerPiece.player}} (${from.id} <-> ${to.id})"
 
         override fun toSerializable() =
             GameEvent.SwapOwnPiece(
-                player = playerPiece.playerId,
+                player = playerPiece.player,
                 piece = playerPiece.id,
                 otherPiece = otherPlayerPiece.id,
                 from = from.id,
@@ -82,12 +82,12 @@ sealed class PentaMove {
         override val to: Field
     ) : PentaMove(), Swap, CanSetGrey {
         override fun asNotation(): String =
-            "${playerPiece.playerId}: ${playerPiece.id} ${otherPlayerPiece.id}{${otherPlayerPiece.playerId}} (${from.id} <+> ${to.id})"
+            "${playerPiece.player}: ${playerPiece.id} ${otherPlayerPiece.id}{${otherPlayerPiece.player}} (${from.id} <+> ${to.id})"
 
         override fun toSerializable() =
             GameEvent.SwapHostilePieces(
-                player = playerPiece.playerId,
-                otherPlayer = otherPlayerPiece.playerId,
+                player = playerPiece.player,
+                otherPlayer = otherPlayerPiece.player,
                 piece = playerPiece.id,
                 otherPiece = otherPlayerPiece.id,
                 from = from.id,
@@ -103,12 +103,12 @@ sealed class PentaMove {
         override val to: Field
     ) : PentaMove(), Swap, CanSetGrey {
         override fun asNotation(): String =
-            "${playerPiece.playerId}: ${playerPiece.id} ${otherPlayerPiece.id}{${otherPlayerPiece.playerId}} (${from.id} <=> ${to.id})"
+            "${playerPiece.player}: ${playerPiece.id} ${otherPlayerPiece.id}{${otherPlayerPiece.player}} (${from.id} <=> ${to.id})"
 
         override fun toSerializable() =
             GameEvent.CooperativeSwap(
-                player = playerPiece.playerId,
-                otherPlayer = otherPlayerPiece.playerId,
+                player = playerPiece.player,
+                otherPlayer = otherPlayerPiece.player,
                 piece = playerPiece.id,
                 otherPiece = otherPlayerPiece.id,
                 from = from.id,
@@ -155,10 +155,10 @@ sealed class PentaMove {
         override fun toSerializable(): GameEvent = GameEvent.SelectPlayerPiece(before?.id, playerPiece?.id)
     }
 
-    data class PlayerJoin(val player: PlayerState) : PentaMove() {
-        override fun asNotation(): String = ">>> [${player.id}]"
-        override fun toSerializable() = GameEvent.PlayerJoin(player)
-    }
+//    data class PlayerJoin(val player: PlayerState) : PentaMove() {
+//        override fun asNotation(): String = ">>> [${player.id}]"
+//        override fun toSerializable() = GameEvent.PlayerJoin(player)
+//    }
 
 //    @Deprecated("not a move")
 //    data class ObserverJoin(val id: String) : PentaMove() {
@@ -172,14 +172,19 @@ sealed class PentaMove {
 //        override fun toSerializable() = GameEvent.ObserverLeave(id)
 //    }
 
-    // TODO: also initialize player count / gamemode
-    data class InitGame(
+    data class SetGameType(
         val gameType: GameType
-    ) : PentaMove() {
-        override fun asNotation(): String = ">>> $gameType"
-        override fun toSerializable() = GameEvent.InitGame(
+    ): PentaMove() {
+        override fun asNotation(): String = "chgametpe $gameType"
+        override fun toSerializable() = GameEvent.SetGameType(
             gameType = gameType
         )
+    }
+
+    // TODO: also initialize player count / gamemode
+    object InitGame: PentaMove() {
+        override fun asNotation(): String = ">>> "
+        override fun toSerializable() = GameEvent.InitGame
     }
 
     // is this a move ?

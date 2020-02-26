@@ -1,5 +1,6 @@
 package reducers
 
+import SessionEvent
 import actions.Action
 import com.soywiz.klogger.Logger
 import io.ktor.http.Url
@@ -7,18 +8,20 @@ import penta.BoardState
 import penta.BoardState.Companion.processMove
 import penta.ConnectionState
 import penta.PentaMove
+import penta.PlayerState
+import penta.UserInfo
 import penta.network.GameEvent
 import penta.network.LobbyEvent
 import penta.redux.MultiplayerState
 import penta.util.exhaustive
 import kotlin.browser.document
-import kotlin.browser.window
 
 data class State(
     val boardState: BoardState = BoardState.create(),
     val multiplayerState: MultiplayerState = MultiplayerState(
         connectionState = ConnectionState.Disconnected(baseUrl = Url(document.location!!.href))
-    )
+    ),
+    val playingUsers: Map<PlayerState, UserInfo> = mapOf()
 //    val array: Array<String> = emptyArray()
 ) {
     fun reduce(action: Any): State {
@@ -32,6 +35,26 @@ data class State(
             is GameEvent -> {
                 val move = action.asMove(boardState)
                 copy(boardState = BoardState.Companion.WithMutableState(boardState).processMove(move))
+            }
+            is SessionEvent -> {
+                when(action) {
+                    is SessionEvent.PlayerJoin -> {
+                        val existingUser = playingUsers[action.player]
+                        if (existingUser != null) {
+                            logger.error { "there is already $existingUser on ${action.player}" }
+                            return this
+                        }
+                        copy(
+                            playingUsers = playingUsers + (action.player to action.user)
+                        )
+                    }
+                    is SessionEvent.IllegalMove -> TODO()
+                    is SessionEvent.Undo -> {
+                        copy(
+                            boardState = BoardState.reduceFunc(boardState, action)
+                        )
+                    }
+                }
             }
             is BoardState -> {
                 // TODO: split into actions

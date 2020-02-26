@@ -6,6 +6,9 @@ import components.PentaSvgProps
 import debug
 import penta.PentaMove
 import penta.BoardState
+import penta.ConnectionState
+import penta.PlayerState
+import penta.UserInfo
 import react.RClass
 import react.RProps
 import react.invoke
@@ -18,8 +21,10 @@ interface PentaSvgParameters : RProps {
 }
 
 interface PentaSvgStateProps : RProps {
+    var state: State
     var boardState: BoardState
-    var connection: penta.ConnectionState
+    var playingUsers: Map<PlayerState, UserInfo>
+    var connection: ConnectionState
 }
 
 interface PentaSvgDispatchProps : RProps {
@@ -33,7 +38,9 @@ val pentaSvgInteractive =
             console.debug("PentaViz update state")
             console.debug("state:", state)
             console.debug("configProps: ", configProps)
+            this.state = state
             boardState = state.boardState
+            playingUsers = state.playingUsers
             connection = state.multiplayerState.connectionState
             // todo: trigger redraw here
         },

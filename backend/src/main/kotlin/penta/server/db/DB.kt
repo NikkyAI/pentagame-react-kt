@@ -8,6 +8,7 @@ import org.jetbrains.exposed.sql.StdOutSqlLogger
 import org.jetbrains.exposed.sql.addLogger
 import org.jetbrains.exposed.sql.transactions.transaction
 import penta.PlayerState
+import penta.logic.GameType
 import penta.network.GameEvent
 import penta.util.json
 import java.util.UUID
@@ -56,9 +57,9 @@ fun main() {
         val newGame = Game.new(UUID.randomUUID()) {
             gameId = "game_0"
             history = json.stringify(
-                GameEvent.serializer().list, listOf(
-                    GameEvent.PlayerJoin(PlayerState("someuser", "tiangle")),
-                    GameEvent.InitGame
+                GameEvent.serializer().list, listOf<GameEvent>(
+//                    GameEvent.PlayerJoin(PlayerState("someuser", "tiangle")),
+                    GameEvent.InitGame(GameType.TWO)
                 )
             )
             players = SizedCollection(

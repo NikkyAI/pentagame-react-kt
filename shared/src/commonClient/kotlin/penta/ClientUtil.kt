@@ -32,7 +32,7 @@ fun canClickPiece(clickedPiece: Piece, boardState: BoardState): Boolean {
         if (
         // make sure you are not selecting black or gray
             selectedGrayPiece == null && selectedBlackPiece == null && !selectingGrayPiece
-            && clickedPiece is Piece.Player && currentPlayer.id == clickedPiece.playerId
+            && clickedPiece is Piece.Player && currentPlayer == clickedPiece.player
         ) {
             if (selectedPlayerPiece == null) {
                 return true
@@ -49,7 +49,7 @@ fun canClickPiece(clickedPiece: Piece, boardState: BoardState): Boolean {
             return true
         }
 
-        if (selectedPlayerPiece != null && currentPlayer.id == selectedPlayerPiece!!.playerId) {
+        if (selectedPlayerPiece != null && currentPlayer == selectedPlayerPiece!!.player) {
             val playerPiece = selectedPlayerPiece!!
             val sourcePos = positions[playerPiece.id] ?: run {
                 return false

@@ -19,8 +19,8 @@ class Tests {
             applyMiddleware(/*loggingMiddleware(logger)*/)
         )
         logger.info { "initialized" }
-        boardStore.dispatch(Action(PentaMove.PlayerJoin(PlayerState("eve", "square"))))
-        boardStore.dispatch(Action(PentaMove.InitGame))
+//        boardStore.dispatch(Action(PentaMove.PlayerJoin(PlayerState("eve", "square"))))
+//        boardStore.dispatch(Action(PentaMove.InitGame))
     }
 
 }

@@ -1,5 +1,6 @@
 package penta
 
+import SessionEvent
 import com.soywiz.klogger.Logger
 import io.ktor.client.features.websocket.DefaultClientWebSocketSession
 import io.ktor.http.Url
@@ -85,6 +86,11 @@ sealed class ConnectionState {
         suspend fun sendMove(move: PentaMove) {
             websocketSessionGame.outgoing.send(
                 Frame.Text(json.stringify(GameEvent.serializer(), move.toSerializable()))
+            )
+        }
+        suspend fun sendSessionEvent(event: SessionEvent) {
+            websocketSessionGame.outgoing.send(
+                Frame.Text(json.stringify(SessionEvent.serializer(), event))
             )
         }
 
