@@ -304,20 +304,20 @@ class ServerGamestate(
 
     suspend fun requestStart(user: User) {
         if (user.userId == owner.userId) {
-            val playingUsers = withContext(sessionContext) {
-                sessionStore.state.playingUsers
-            }
+//            val playingUsers = withContext(sessionContext) {
+//                sessionStore.state.playingUsers
+//            }
             withContext(boardContext) {
                 // TODO: count people in session and initialize
-                val gameType = when(playingUsers.size) {
-                    2 -> GameType.TWO
-                    3 -> GameType.THREE
-                    4 -> GameType.FOUR
-                    else -> error("cannot handle ${playingUsers}")
-                }
+//                val gameType = when(playingUsers.size) {
+//                    2 -> GameType.TWO
+//                    3 -> GameType.THREE
+//                    4 -> GameType.FOUR
+//                    else -> error("cannot handle ${playingUsers}")
+//                }
 
                 boardStateStore.dispatch(
-                    PentaMove.InitGame(gameType = gameType)
+                    PentaMove.InitGame
                 )
             }
         }

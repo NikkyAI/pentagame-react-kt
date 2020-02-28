@@ -12,13 +12,14 @@ sealed class SessionEvent {
     @Serializable
     data class PlayerJoin(
         val player: PlayerState, // TODO: make enum
-        val user: UserInfo // UserInfo
-    ) : SessionEvent() {
-//        override fun asMove(boardState: BoardState) =
-//            PentaMove.PlayerJoin(
-//                player = player
-//            )
-    }
+        val user: UserInfo
+    ) : SessionEvent()
+
+    @Serializable
+    class PlayerLeave(
+        val player: PlayerState, // TODO: make enum
+        val user: UserInfo
+    ) : SessionEvent()
 
     @Serializable
     data class IllegalMove(
@@ -39,6 +40,7 @@ sealed class SessionEvent {
         fun install(builder: SerializersModuleBuilder) {
             builder.polymorphic<SessionEvent> {
                 PlayerJoin::class with PlayerJoin.serializer()
+                PlayerLeave::class with PlayerLeave.serializer()
                 IllegalMove::class with IllegalMove.serializer()
             }
         }

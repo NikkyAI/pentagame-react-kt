@@ -189,7 +189,7 @@ class TextConnection(props: TextConnectionProps) : RComponent<TextConnectionProp
                             justify = MGridJustify.center
                         ) {
                             css {
-                                flexGrow = 1.0
+//                                flexGrow = 1.0
                             }
                             mGridItem(xs = MGridSize.cells12) {
                                 urlInput()

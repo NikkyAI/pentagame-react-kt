@@ -110,14 +110,15 @@ data class BoardState private constructor(
                 }
                 is SessionEvent.Undo -> {
                     WithMutableState(state).apply {
-                        action.moves.forEach { reverseNotation ->
-                            logger.info { "reverseNotation $reverseNotation" }
-                            val toReverseMove = reverseNotation.asMove(nextState)
-                            requireMove(nextState.history.last() == toReverseMove) {
-                                PentaMove.IllegalMove("cannot undo move $toReverseMove", toReverseMove)
-                            }
-                            nextState = processMove(toReverseMove, true)
-                        }
+                        processMove(PentaMove.Undo(moves = action.moves))
+//                        action.moves.forEach { reverseNotation ->
+//                            logger.info { "reverseNotation $reverseNotation" }
+//                            val toReverseMove = reverseNotation.asMove(nextState)
+//                            requireMove(nextState.history.last() == toReverseMove) {
+//                                PentaMove.IllegalMove("cannot undo move $toReverseMove", toReverseMove)
+//                            }
+//                            nextState = processMove(toReverseMove, true)
+//                        }
                     }.nextState
                 }
                 is PentaMove -> {
@@ -238,6 +239,9 @@ data class BoardState private constructor(
                                 nextState = nextState.copy(history = history + move)
                             }
                         } else {
+                            val undoTurn = (!nextState.selectingGrayPiece)
+                                    && nextState.selectedGrayPiece == null
+                                    && nextState.selectedBlackPiece == null
                             if (nextState.selectingGrayPiece == true) {
                                 nextState = nextState.copy(
                                     selectingGrayPiece = false
@@ -261,7 +265,7 @@ data class BoardState private constructor(
                             nextState = nextState.copy(
                                 selectedPlayerPiece = move.playerPiece,
                                 history = nextState.history.dropLast(1),
-                                turn = nextState.turn - 1
+                                turn = nextState.turn - if(undoTurn) 1 else 0
                             )
                         }
                     }
@@ -297,6 +301,10 @@ data class BoardState private constructor(
                                 nextState = nextState.copy(history = history + move)
                             }
                         } else {
+
+                            val undoTurn = (!nextState.selectingGrayPiece)
+                                    && nextState.selectedGrayPiece == null
+                                    && nextState.selectedBlackPiece == null
                             if (nextState.selectingGrayPiece == true) {
                                 nextState = nextState.copy(
                                     selectingGrayPiece = false
@@ -320,7 +328,7 @@ data class BoardState private constructor(
                             nextState = nextState.copy(
                                 selectedPlayerPiece = move.playerPiece,
                                 history = nextState.history.dropLast(1),
-                                turn = nextState.turn - 1
+                                turn = nextState.turn - if(undoTurn) 1 else 0
                             )
                         }
                     }
@@ -376,13 +384,35 @@ data class BoardState private constructor(
                                 nextState = nextState.copy(history = history + move)
                             }
                         } else {
+                            val undoTurn = (!nextState.selectingGrayPiece)
+                                    && nextState.selectedGrayPiece == null
+                                    && nextState.selectedBlackPiece == null
+
+                            if (nextState.selectingGrayPiece == true) {
+                                nextState = nextState.copy(
+                                    selectingGrayPiece = false
+                                )
+                            }
+                            if (nextState.selectedBlackPiece != null) {
+                                nextState.selectedBlackPiece!!.position = move.to
+                                nextState = nextState.copy(
+                                    selectedBlackPiece = null
+                                )
+                            }
+                            if (nextState.selectedGrayPiece != null) {
+                                // move back to center / off-board
+                                nextState.selectedGrayPiece!!.position = null
+                                nextState = nextState.copy(
+                                    selectedGrayPiece = null
+                                )
+                            }
                             move.playerPiece.position = move.from
                             move.otherPlayerPiece.position = move.to
 
                             nextState = nextState.copy(
                                 selectedPlayerPiece = move.playerPiece,
                                 history = nextState.history.dropLast(1),
-                                turn = nextState.turn - 1
+                                turn = nextState.turn - if(undoTurn) 1 else 0
                             )
                         }
                     }
@@ -447,6 +477,28 @@ data class BoardState private constructor(
                                 nextState = nextState.copy(history = history + move)
                             }
                         } else {
+                            val undoTurn = (!nextState.selectingGrayPiece)
+                                    && nextState.selectedGrayPiece == null
+                                    && nextState.selectedBlackPiece == null
+
+                            if (nextState.selectingGrayPiece == true) {
+                                nextState = nextState.copy(
+                                    selectingGrayPiece = false
+                                )
+                            }
+                            if (nextState.selectedBlackPiece != null) {
+                                nextState.selectedBlackPiece!!.position = move.to
+                                nextState = nextState.copy(
+                                    selectedBlackPiece = null
+                                )
+                            }
+                            if (nextState.selectedGrayPiece != null) {
+                                // move back to center / off-board
+                                nextState.selectedGrayPiece!!.position = null
+                                nextState = nextState.copy(
+                                    selectedGrayPiece = null
+                                )
+                            }
                             move.playerPiece.position = move.from
                             move.otherPlayerPiece.position = move.to
                             nextState = nextState.copy(
@@ -455,7 +507,7 @@ data class BoardState private constructor(
 
                             nextState = nextState.copy(
                                 history = nextState.history.dropLast(1),
-                                turn = nextState.turn - 1
+                                turn = nextState.turn - if(undoTurn) 1 else 0
                             )
                         }
                     }
@@ -501,13 +553,15 @@ data class BoardState private constructor(
 //                        updatePiecesAtPos(move.to)
 //                        updatePiecesAtPos(move.from)
                         } else {
+                            val undoTurn = !nextState.selectingGrayPiece
+                                    && nextState.selectedGrayPiece == null
 
                             move.piece.position = null
 
                             nextState = nextState.copy(
                                 selectedBlackPiece = move.piece,
                                 history = nextState.history.dropLast(1),
-                                turn = nextState.turn - 1
+                                turn = nextState.turn - if(undoTurn) 1 else 0
                             )
                         }
                     }
@@ -568,17 +622,26 @@ data class BoardState private constructor(
 //                        updatePiecesAtPos(move.to)
 //                        updatePiecesAtPos(move.from)
                         } else {
+                            val undoTurn = nextState.selectedGrayPiece == null
                             move.piece.position = null
 
                             nextState = nextState.copy(
                                 selectedGrayPiece = move.piece,
                                 history = nextState.history.dropLast(1),
-                                turn = nextState.turn - 1
+                                turn = nextState.turn - if(undoTurn) 1 else 0
                             )
                         }
                     }
                     is PentaMove.SelectGrey -> {
                         if (!undo) {
+                            with(originalState) {
+                                requireMove(gameStarted) {
+                                    PentaMove.IllegalMove(
+                                        "game is not started yet",
+                                        move
+                                    )
+                                }
+                            }
                             // TODO: add checks
 
                             if (move.grayPiece != null) {
@@ -616,7 +679,6 @@ data class BoardState private constructor(
                             nextState = nextState.copy(
                                 selectingGrayPiece = true,
                                 selectedGrayPiece = null,
-//                                turn = nextState.turn- 1,
                                 history = nextState.history.dropLast(1)
                             )
                         }
@@ -624,6 +686,12 @@ data class BoardState private constructor(
                     is PentaMove.SelectPlayerPiece -> {
                         if (!undo) {
                             with(originalState) {
+                                requireMove(gameStarted) {
+                                    PentaMove.IllegalMove(
+                                        "game is not started yet",
+                                        move
+                                    )
+                                }
                                 if (move.playerPiece != null) {
                                     requireMove(currentPlayer == move.playerPiece.player) {
                                         PentaMove.IllegalMove(
@@ -654,78 +722,6 @@ data class BoardState private constructor(
                             )
                         }
                     }
-                    /*
-                    is PentaMove.PlayerJoin -> {
-                        with(originalState) {
-                            requireMove(!gameStarted) {
-                                PentaMove.IllegalMove(
-                                    "game is already started",
-                                    move
-                                )
-                            }
-                            requireMove(players.none { it.id == move.player.id }) {
-                                PentaMove.IllegalMove(
-                                    "player already joined",
-                                    move
-                                )
-                            }
-                        }
-                        with(nextState) {
-                            nextState = nextState.copy(
-                                players = players + move.player
-                            )
-                        }
-
-                        val playerPieces = (0 until nextState.players.size).flatMap { p ->
-                            (0 until 5).map { i ->
-                                Piece.Player(
-                                    "p$p$i",
-                                    nextState.players[p].id,
-                                    nextState.players[p].figureId,
-                                    PentaColor.values()[i]
-                                ).also {
-                                    it.position = PentaBoard.c[i]
-                                }
-                            }
-                        }
-
-//                        val removedPositions = originalState.positions.entries - nextState.positions.entries
-//                        val addedPositions = nextState.positions.entries - originalState.positions.entries
-//                        val changed = originalState.positions.entries.map {
-//                            it.key to "${it.value?.id} -> ${nextState.positions[it.key]?.id}"
-//                        }.toMap()
-//                        logger.info { "removed pos" }
-//                        removedPositions.forEach {
-//                            logger.warn { "-  pos ${it.key} : ${it.value?.id}" }
-//                        }
-//                        logger.info { "added pos" }
-//                        addedPositions.forEach {
-//                            logger.warn { "+  pos ${it.key} : ${it.value?.id}" }
-//                        }
-//                        logger.info { "changed pos" }
-//                        changed.forEach {
-//                            logger.warn { "~  pos ${it.key} : ${it.value}" }
-//                        }
-
-                        with(nextState) {
-                            nextState = nextState.copy(
-                                figures = listOf<Piece>(
-                                    // keep all black and grey blockers
-                                    *figures.filterIsInstance<Piece.BlackBlocker>().toTypedArray(),
-                                    *figures.filterIsInstance<Piece.GrayBlocker>().toTypedArray(),
-                                    *playerPieces.toTypedArray()
-                                )
-                            )
-                        }
-
-//                        resetPlayers()
-//                        updateAllPieces()
-
-                        with(nextState) {
-                            nextState = nextState.copy(history = history + move)
-                        }
-                    }
-                    */
                     is PentaMove.SetGameType -> {
                         with(originalState) {
                             requireMove(!gameStarted) {
@@ -747,18 +743,6 @@ data class BoardState private constructor(
                                 }
                             }
                         }
-//                        val playerPieces = (0 until nextState.players.size).flatMap { p ->
-//                            (0 until 5).map { i ->
-//                                Piece.Player(
-//                                    "p$p$i",
-//                                    nextState.players[p].id,
-//                                    nextState.players[p].figureId,
-//                                    PentaColor.values()[i]
-//                                ).also {
-//                                    it.position = PentaBoard.c[i]
-//                                }
-//                            }
-//                        }
                         // TODO: update player pieces
                         with(nextState) {
                             nextState = nextState.copy(
@@ -781,25 +765,10 @@ data class BoardState private constructor(
                                     move
                                 )
                             }
-//                            requireMove(players.isNotEmpty()) {
-//                                PentaMove.IllegalMove(
-//                                    "there is no players",
-//                                    move
-//                                )
-//                            }
                         }
                         // TODO: setup UI for players related stuff here
 
                         // remove old player pieces positions
-//                    figures.filterIsInstance<Piece.Player>().forEach {
-//                        positions.remove(it.id)
-//                    }
-//                    figures.filterIsInstance<Piece.BlackBlocker>().forEach {
-//                        it.position = it.originalPosition
-//                    }
-//                    figures.filterIsInstance<Piece.GrayBlocker>().forEach {
-//                        it.position = null
-//                    }
                         with(nextState) {
                             nextState = nextState.copy(
                                 gameStarted = true,

@@ -48,6 +48,16 @@ data class State(
                             playingUsers = playingUsers + (action.player to action.user)
                         )
                     }
+                    is SessionEvent.PlayerLeave -> {
+                        val existingUser = playingUsers[action.player]
+                        if (existingUser != action.user) {
+                            logger.error { "$existingUser does not match ${action.user} for ${action.player}" }
+                            return this
+                        }
+                        copy (
+                            playingUsers = playingUsers - action.player
+                        )
+                    }
                     is SessionEvent.IllegalMove -> TODO()
                     is SessionEvent.Undo -> {
                         copy(

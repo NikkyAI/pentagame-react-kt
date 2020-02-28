@@ -5,8 +5,8 @@ import PentaMath
 import com.ccfraser.muirwik.components.MColor
 import com.ccfraser.muirwik.components.button.MButtonVariant
 import com.ccfraser.muirwik.components.button.mButton
-import com.github.nwillc.ksvg.elements.SVG
 import com.github.nwillc.ksvg.RenderMode
+import com.github.nwillc.ksvg.elements.SVG
 import containers.PentaSvgDispatchProps
 import containers.PentaSvgStateProps
 import debug
@@ -15,9 +15,6 @@ import io.data2viz.color.col
 import io.data2viz.math.deg
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import kotlinx.css.maxHeight
-import kotlinx.css.maxWidth
-import kotlinx.css.vh
 import org.w3c.dom.Element
 import org.w3c.dom.events.Event
 import org.w3c.dom.events.MouseEvent
@@ -43,8 +40,6 @@ import react.RBuilder
 import react.RComponent
 import react.RState
 import react.createRef
-import styled.css
-import styled.styledDiv
 import styled.styledSvg
 import util.forEach
 import kotlin.dom.clear
@@ -62,9 +57,9 @@ class PentaSvg(props: PentaSvgProps) : RComponent<PentaSvgProps, RState>(props) 
 ////                    is PentaMove.SelectGrey -> props.dispatchMoveLocal(move)
 ////                    is PentaMove.SelectPlayerPiece -> props.dispatchMoveLocal(move)
 //                    else -> {
-                        GlobalScope.launch {
-                            connection.sendMove(move)
-                        }
+                GlobalScope.launch {
+                    connection.sendMove(move)
+                }
 //                    }
 //                }
             }
@@ -74,57 +69,36 @@ class PentaSvg(props: PentaSvgProps) : RComponent<PentaSvgProps, RState>(props) 
         }
     }
 
-    private fun doSaveImage(event: Event) {
-        val scale = 1000
-
-        val svg = SVG.svg {
-            viewBox = "0 0 $scale $scale"
-
-            draw(scale, props)
-        }
-
-        val svgFile = buildString {
-            svg.render(this, RenderMode.FILE)
-        }
-
-        console.log(svgFile)
-    }
-
     override fun RBuilder.render() {
-        styledDiv {
-            css {
-                maxHeight = 100.vh
-                maxWidth = 100.vh
-            }
-            styledSvg {
-                ref = svgRef
-                attrs {
-                    attributes["preserveAspectRatio"] = "xMidYMid meet"
+        styledSvg {
+            ref = svgRef
+            attrs {
+                attributes["preserveAspectRatio"] = "xMidYMid meet"
 //                attributes["width"] = "100vw"
 //                attributes["height"] = "100vh"
-                }
             }
-            mButton(
-                caption = "svg file",
-                variant = MButtonVariant.contained,
-                color = MColor.primary,
-                onClick = {
-                    val scale = 1000
-
-                    val svg = SVG.svg {
-                        viewBox = "0 0 $scale $scale"
-
-                        draw(scale, props)
-                    }
-
-                    val svgFile = buildString {
-                        svg.render(this, RenderMode.FILE)
-                    }
-
-                    console.log(svgFile)
-                }
-            )
         }
+        //TODO: move to DebugGame view
+        mButton(
+            caption = "svg file",
+            variant = MButtonVariant.contained,
+            color = MColor.primary,
+            onClick = {
+                val scale = 1000
+
+                val svg = SVG.svg {
+                    viewBox = "0 0 $scale $scale"
+
+                    draw(scale, props)
+                }
+
+                val svgFile = buildString {
+                    svg.render(this, RenderMode.FILE)
+                }
+
+                console.log(svgFile)
+            }
+        )
     }
 
     override fun componentDidMount() {
@@ -140,7 +114,7 @@ class PentaSvg(props: PentaSvgProps) : RComponent<PentaSvgProps, RState>(props) 
 //        console.log("nextProps: ${nextProps.boardState}")
 
         // access isPlayBack
-        when (val conn = nextProps.connection){
+        when (val conn = nextProps.connection) {
             is ConnectionState.ConnectedToGame -> {
                 if (conn.isPlayback) return false
             }
@@ -403,7 +377,7 @@ private fun SVG.draw(scale: Int, svgProps: PentaSvgProps) {
         }
 
         val playinguser = svgProps.playingUsers[player]
-        if(playinguser != null) {
+        if (playinguser != null) {
             // draw player face
             drawFigure(
                 figureId = playinguser.figureId,
@@ -484,14 +458,14 @@ private fun SVG.draw(scale: Int, svgProps: PentaSvgProps) {
                 val isCurrentPlayer = piece.player == svgProps.boardState.currentPlayer
                 console.debug("playerPiece: $piece")
                 val selectable = isYourTurn
-                    && isCurrentPlayer
-                    && field != null
-                    && svgProps.boardState.selectedPlayerPiece == null
+                        && isCurrentPlayer
+                        && field != null
+                        && svgProps.boardState.selectedPlayerPiece == null
                 val swappable = isYourTurn
-                    && selectedPieceIsCurrentPlayer
-                    && field != null
+                        && selectedPieceIsCurrentPlayer
+                        && field != null
                 console.info("playerPiece: ", piece, "selectable: ", selectable, "swappable", swappable)
-                if(playinguser != null) {
+                if (playinguser != null) {
 
                     drawPlayer(
 //                    figureId = piece.figureId,
@@ -763,15 +737,15 @@ fun SVG.drawPentagame(scale: Int, svgProps: DrawProps) {
                 val isCurrentPlayer = piece.player == svgProps.boardState.currentPlayer
                 console.debug("playerPiece: $piece")
                 val selectable = isYourTurn
-                    && isCurrentPlayer
-                    && field != null
-                    && svgProps.boardState.selectedPlayerPiece == null
+                        && isCurrentPlayer
+                        && field != null
+                        && svgProps.boardState.selectedPlayerPiece == null
                 val swappable = isYourTurn
-                    && selectedPieceIsCurrentPlayer
-                    && field != null
+                        && selectedPieceIsCurrentPlayer
+                        && field != null
                 console.info("playerPiece: ", piece, "selectable: ", selectable, "swappable", swappable)
                 val playinguser = svgProps.playingUsers[piece.player]
-                if(playinguser != null) {
+                if (playinguser != null) {
                     drawPlayer(
                         figureId = playinguser.figureId,
                         center = scaledPos,

@@ -2,9 +2,19 @@ package components
 
 import SessionEvent
 import com.ccfraser.muirwik.components.MColor
+import com.ccfraser.muirwik.components.MDividerOrientation
+import com.ccfraser.muirwik.components.MDividerVariant
+import com.ccfraser.muirwik.components.MGridAlignItems
+import com.ccfraser.muirwik.components.MTypographyVariant
+import com.ccfraser.muirwik.components.button.MButtonGroupOrientation
+import com.ccfraser.muirwik.components.button.MButtonGroupVariant
 import com.ccfraser.muirwik.components.button.MButtonVariant
 import com.ccfraser.muirwik.components.button.mButton
+import com.ccfraser.muirwik.components.button.mButtonGroup
+import com.ccfraser.muirwik.components.mDivider
+import com.ccfraser.muirwik.components.mGridContainer
 import com.ccfraser.muirwik.components.mIcon
+import com.ccfraser.muirwik.components.mTypography
 import com.ccfraser.muirwik.components.spacingUnits
 import debug
 import kotlinx.coroutines.GlobalScope
@@ -61,7 +71,6 @@ private fun GameSetupProps.dispatchSessionEvent(sessionEvent: SessionEvent) {
 }
 
 class GameSetupControls(props: GameSetupProps) : RComponent<GameSetupProps, RState>(props) {
-
     override fun RBuilder.render() {
         if (props.boardState == undefined) {
             return
@@ -121,30 +130,62 @@ class GameSetupControls(props: GameSetupProps) : RComponent<GameSetupProps, RSta
                         }
                     }
                 }
-            } else {
+            } else { // local
+                // add users
+                props.boardState.gameType.players.forEach { player ->
+                    if (props.playingUsers[player] == null) {
+                        mGridContainer(
+                            alignItems = MGridAlignItems.center
+                        ) {
+                            mIcon(iconName = "add")
+                            mTypography(
+                                text = "Add $player",
+                                variant = MTypographyVariant.button
+                            )
 
-                val localSymbols = listOf("triangle", "square", "cross", "circle")
-                localSymbols.forEach { symbol ->
-                    props.boardState.gameType.players.forEach { player ->
-                        if (props.playingUsers[player] == null) {
-                            mButton(
-                                caption = "Join $player as $symbol",
-                                variant = MButtonVariant.outlined,
-                                startIcon = mIcon("add", addAsChild = false),
-                                onClick = {
-                                    //                                        val username = if
-                                    props.dispatchSessionEvent(
-                                        SessionEvent.PlayerJoin(
-                                            player = player,
-                                            user = UserInfo("local_$player", symbol)
-                                        )
+                            mButtonGroup(
+                                color = MColor.primary,
+                                variant = MButtonGroupVariant.outlined,
+                                orientation = MButtonGroupOrientation.horizontal
+                            ) {
+                                val localSymbols = listOf("triangle", "square", "cross", "circle")
+                                localSymbols.forEach { symbol ->
+                                    mButton(
+                                        caption = "as $symbol",
+                                        onClick = {
+                                            props.dispatchSessionEvent(
+                                                SessionEvent.PlayerJoin(
+                                                    player = player,
+                                                    user = UserInfo("local_$player", symbol)
+                                                )
+                                            )
+                                        }
                                     )
                                 }
-                            ) {
-                                css {
-                                    margin(1.spacingUnits)
-                                }
                             }
+                            css {
+                                margin(1.spacingUnits)
+                            }
+                        }
+                    }
+                }
+                // remove users
+                props.playingUsers.forEach { (player, user) ->
+                    mButton(
+                        caption = "Remove $player ${user.figureId}",
+                        startIcon = mIcon("clear", addAsChild = false),
+                        color = MColor.secondary,
+                        onClick = {
+                            props.dispatchSessionEvent(
+                                SessionEvent.PlayerLeave(
+                                    player = player,
+                                    user = user
+                                )
+                            )
+                        }
+                    ) {
+                        css {
+                            margin(1.spacingUnits)
                         }
                     }
                 }
