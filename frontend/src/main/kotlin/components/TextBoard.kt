@@ -1,5 +1,6 @@
 package components
 
+import com.ccfraser.muirwik.components.MColor
 import com.ccfraser.muirwik.components.button.MButtonVariant
 import com.ccfraser.muirwik.components.button.mButton
 import com.ccfraser.muirwik.components.form.mFormControlLabel
@@ -14,6 +15,8 @@ import com.ccfraser.muirwik.components.table.mTableCell
 import com.ccfraser.muirwik.components.table.mTableHead
 import com.ccfraser.muirwik.components.table.mTableRow
 import com.ccfraser.muirwik.components.transitions.mCollapse
+import com.github.nwillc.ksvg.RenderMode
+import com.github.nwillc.ksvg.elements.SVG
 import debug
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -41,6 +44,7 @@ import reducers.State
 import redux.WrapperAction
 import styled.css
 import styled.styledDiv
+import util.drawPentagame
 
 interface TextBoardProps : TextBoardStateProps, TextBoardDispatchProps {
 //    var boardState: BoardState
@@ -87,6 +91,31 @@ class TextBoard(props: TextBoardProps) : RComponent<TextBoardProps, RState>(prop
                     margin(1.spacingUnits)
                 }
             }
+            //TODO: move to DebugGame view
+            mButton(
+                caption = "svg file",
+                variant = MButtonVariant.contained,
+                color = MColor.primary,
+                onClick = {
+                    val scale = 1000
+
+                    val svg = SVG.svg {
+                        viewBox = "0 0 $scale $scale"
+
+                        drawPentagame(scale, props.boardState, props.connection, props.playingUsers)
+                    }
+
+                    val svgFile = buildString {
+                        svg.render(this, RenderMode.FILE)
+                    }
+
+                    console.log(svgFile)
+                }
+            ) {
+                css {
+                    margin(1.spacingUnits)
+                }
+            }
             val lastMove = props.boardState.history.lastOrNull()
             if (lastMove != null) {
                 mButton(
@@ -114,7 +143,7 @@ class TextBoard(props: TextBoardProps) : RComponent<TextBoardProps, RState>(prop
                 mTypography("Players")
                 mList {
                     props.playingUsers.forEach { (player, user) ->
-                        mListItem(player.toString(), user.id + " " + user.figureId)
+                        mListItem(player.toString(), user.name + " " + user.figureId)
                     }
                 }
                 mTypography("turn: $turn")

@@ -941,6 +941,8 @@ data class BoardState private constructor(
         }
     }
 
+    fun reduce(action: Any) = reduceFunc(this, action)
+
     fun canMove(start: Field, end: Field): Boolean {
         val backtrack = mutableSetOf<Field>()
         val next = mutableSetOf<Field>(start)

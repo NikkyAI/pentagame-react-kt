@@ -17,7 +17,6 @@ import com.ccfraser.muirwik.components.mTabs
 import com.ccfraser.muirwik.components.mTypography
 import com.ccfraser.muirwik.components.spacingUnits
 import com.ccfraser.muirwik.components.variant
-import containers.pentaSvgInteractive
 import kotlinx.css.Position
 import kotlinx.css.backgroundColor
 import kotlinx.css.left
@@ -43,12 +42,18 @@ class App : RComponent<RProps, RState>() {
     var tabValue: Any = Tabs.help
 
     override fun RBuilder.render() {
-        val leftWidth = "min(100vh, 50vw)"
+        val leftWidthLandscape = "min(100vh, 50vw)"
+        val leftWidthPortrait = "min(100vw, 50vh)"
 
         styledDiv {
             css {
+                rule("@media (orientation: landscape)") {
+                    put("left", "calc($leftWidthLandscape * 1.05)")
+                }
+                rule("@media (orientation: portrait)") {
+                    put("top", "calc($leftWidthPortrait * 1.05)")
+                }
                 position = Position.absolute
-                put("left", "calc($leftWidth * 1.05)")
             }
 
             mTypography("Pentagame", variant = MTypographyVariant.h2)
@@ -156,8 +161,16 @@ class App : RComponent<RProps, RState>() {
                 left = 0.px
                 top = 0.px
                 position = Position.fixed
-                put("height", leftWidth)
-                put("width", leftWidth)
+
+                rule("@media (orientation: landscape)") {
+                    put("height", leftWidthLandscape)
+                    put("width", leftWidthLandscape)
+                }
+                rule("@media (orientation: portrait)") {
+                    put("height", leftWidthPortrait)
+                    put("width", leftWidthPortrait)
+                }
+
                 backgroundColor = kotlinx.css.Color.white
             }
             pentaSvgInteractive {}

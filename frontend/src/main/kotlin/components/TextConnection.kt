@@ -1,5 +1,6 @@
 package components
 
+import SessionEvent
 import com.ccfraser.muirwik.components.MColor
 import com.ccfraser.muirwik.components.MGridJustify
 import com.ccfraser.muirwik.components.MGridSize
@@ -243,7 +244,8 @@ class TextConnection(props: TextConnectionProps) : RComponent<TextConnectionProp
                                         state,
                                         props.dispatchConnection,
                                         props.dispatchNotationLocal,
-                                        props.dispatchNewBoardstate
+                                        props.dispatchNewBoardstate,
+                                        props.dispatchSessionEvent
                                     )
                                 }
                             }
@@ -257,7 +259,7 @@ class TextConnection(props: TextConnectionProps) : RComponent<TextConnectionProp
                     props.games.forEach { (id, gameSessionInfo) ->
                         mListItem("id", gameSessionInfo.id) {
                             mListItemText("owner", gameSessionInfo.owner)
-                            mListItemText("players", "${gameSessionInfo.playingUsers}")
+                            mListItemText("players", "${gameSessionInfo.playingUsers}") // TODO: make better vizualisation
                             mListItemText("observers", "${gameSessionInfo.observers}")
                             mListItemText("running", "${gameSessionInfo.running}")
                             mListItemSecondaryAction {
@@ -271,7 +273,8 @@ class TextConnection(props: TextConnectionProps) : RComponent<TextConnectionProp
                                                 gameSessionInfo,
                                                 props.dispatchConnection,
                                                 props.dispatchNotationLocal,
-                                                props.dispatchNewBoardstate
+                                                props.dispatchNewBoardstate,
+                                                props.dispatchSessionEvent
                                             )
                                         }
                                     }
@@ -356,6 +359,7 @@ interface TextConnectionDispatchProps : RProps {
     var dispatchNotationLocal: (GameEvent) -> Unit
     var dispatchNewBoardstate: (BoardState) -> Unit
     var dispatchLobbyEvent: (LobbyEvent) -> Unit
+    var dispatchSessionEvent: (SessionEvent) -> Unit
 }
 
 val textConnection =
@@ -379,6 +383,7 @@ val textConnection =
             this.dispatchNotationLocal = { dispatch(it) }
             this.dispatchNewBoardstate = { dispatch(it) }
             this.dispatchLobbyEvent = { dispatch(it) }
+            this.dispatchSessionEvent = { dispatch(it) }
 //            this.dispatch = { dispatch(Action(it)) }
         }
     )(TextConnection::class.js.unsafeCast<RClass<TextConnectionProps>>())

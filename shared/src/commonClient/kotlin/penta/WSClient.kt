@@ -1,5 +1,6 @@
 package penta
 
+import SessionEvent
 import client
 import com.soywiz.klogger.Logger
 import io.ktor.client.features.websocket.webSocket
@@ -21,6 +22,7 @@ import io.ktor.http.setCookie
 import io.ktor.util.KtorExperimentalAPI
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.serialization.list
+import kotlinx.serialization.map
 import kotlinx.serialization.serializer
 import penta.network.GameEvent
 import penta.network.GameSessionInfo
@@ -231,7 +233,8 @@ object WSClient {
         state: ConnectionState.Lobby,
         dispatchConnection: (ConnectionState) -> Unit,
         dispatchNotation: (GameEvent) -> Unit,
-        dispatchNewBoardState: (BoardState) -> Unit
+        dispatchNewBoardState: (BoardState) -> Unit,
+        dispatchSessionEvent: (SessionEvent) -> Unit
     ) {
         val createGameUrl = URLBuilder(state.baseUrl)
             .path("api", "game", "create")
@@ -243,7 +246,8 @@ object WSClient {
             game = gameSessionInfo,
             dispatchConnection = dispatchConnection,
             dispatchNotation = dispatchNotation,
-            dispatchNewBoardState = dispatchNewBoardState
+            dispatchNewBoardState = dispatchNewBoardState,
+            dispatchSessionEvent = dispatchSessionEvent
         )
     }
 
@@ -253,7 +257,8 @@ object WSClient {
         game: GameSessionInfo,
         dispatchConnection: (ConnectionState) -> Unit,
         dispatchNotation: (GameEvent) -> Unit,
-        dispatchNewBoardState: (BoardState) -> Unit
+        dispatchNewBoardState: (BoardState) -> Unit,
+        dispatchSessionEvent: (SessionEvent) -> Unit
     ) {
         val wsUrl = URLBuilder(state.baseUrl)
             .path("ws", "game", game.id)
@@ -296,6 +301,16 @@ object WSClient {
 
             try {
                 // TODO: add another observerStore
+                val usersJsonMap = (incoming.receive() as Frame.Text).readText()
+                val users = json.parse(
+                    (PlayerState.serializer() to UserInfo.serializer()).map,
+                    usersJsonMap
+                )
+                users.forEach { (player, userInfo) ->
+                    // TODO: dispatch in one action ?
+                    dispatchSessionEvent(SessionEvent.PlayerJoin(player, userInfo))
+                }
+
                 val observersJsonList = (incoming.receive() as Frame.Text).readText()
                 logger.info { "receiving observers $observersJsonList" }
                 val observers = json.parse(String.serializer().list, observersJsonList)

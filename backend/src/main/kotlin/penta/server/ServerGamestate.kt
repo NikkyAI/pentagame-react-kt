@@ -1,5 +1,6 @@
 package penta.server
 
+import SessionEvent
 import com.soywiz.klogger.Logger
 import io.ktor.http.cio.websocket.Frame
 import io.ktor.http.cio.websocket.readText
@@ -13,6 +14,7 @@ import kotlinx.coroutines.newSingleThreadContext
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.list
+import kotlinx.serialization.map
 import kotlinx.serialization.serializer
 import org.jetbrains.exposed.sql.SizedCollection
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
@@ -28,7 +30,6 @@ import penta.BoardState
 import penta.PentaMove
 import penta.PlayerState
 import penta.UserInfo
-import penta.logic.GameType
 import penta.network.GameEvent
 import penta.network.GameSessionInfo
 import penta.server.db.Game
@@ -46,64 +47,67 @@ class ServerGamestate(
     var owner: User
 ) {
     private val logger = Logger(this::class.simpleName!! + " id: " + serverGameId)
-    val boardContext = newSingleThreadContext("board store $serverGameId")
-    val sessionContext = newSingleThreadContext("session store $serverGameId")
+//    val boardContext = newSingleThreadContext("board store $serverGameId")
+    val storeContext = newSingleThreadContext("session store $serverGameId")
 
-    private val boardStateStore: Store<BoardState> = runBlocking(boardContext) {
-        createStore(
-            BoardState.Companion::reduceFunc,
-            BoardState.create(),
-            applyMiddleware(loggingMiddleware(logger))
-        )
-    }
+//    private val boardStateStore: Store<BoardState> = runBlocking(boardContext) {
+//        createStore(
+//            BoardState.Companion::reduceFunc,
+//            BoardState.create(),
+//            applyMiddleware(loggingMiddleware(logger))
+//        )
+//    }
 
-    suspend fun getBoardState() = withContext(boardContext) {
-        boardStateStore.state
-    }
-
-    suspend fun boardDispatch(action: Any) = withContext(boardContext) {
-        boardStateStore.dispatch(action)
-    }
-
-    private val sessionStore: Store<SessionState> = runBlocking(sessionContext) {
+    private val store: Store<SessionState> = runBlocking(storeContext) {
         createStore(
             SessionState.reducer,
             SessionState(),
             applyMiddleware(loggingMiddleware(logger))
         )
     }
+    suspend fun getBoardState() = withContext(storeContext) {
+        store.state.boardState
+    }
+
+    suspend fun boardDispatch(action: Any) = withContext(storeContext) {
+        store.dispatch(action)
+    }
+
 
 //    companion object {
 //    }
 
     val info: GameSessionInfo
         get() {
-            val boardState = runBlocking(boardContext) {
-                boardStateStore.state
+            val boardState = runBlocking(storeContext) {
+                store.state.boardState
             }
-            val sessionState = runBlocking(sessionContext) {
-                sessionStore.state
+            val sessionState = runBlocking(storeContext) {
+                store.state
             }
             return GameSessionInfo(
                 id = serverGameId,
                 owner = owner.userId,
                 running = boardState.gameStarted,
-                playingUsers = sessionState.playingUsers.map { it.value.displayName }, // TODO: access sessionStore
-                observers = runBlocking(sessionContext) {
-                    sessionStore.state.observingSessions.keys.map { it.userId }
+                playingUsers = sessionState.playingUsers.mapValues {
+                    UserInfo(
+                        it.value.user.displayName,
+                        it.value.figureId
+                    )
+                }, // TODO: access sessionStore
+                observers = runBlocking(storeContext) {
+                    store.state.observingSessions.keys.map { it.userId }
                 }
             )
         }
 
-    private val serializer = GameEvent.serializer()
-
-    suspend fun <T> doForDifferent(original: List<T>, new: List<T>, op: suspend (T)->Unit) {
+    suspend fun <T> doForDifferent(original: List<T>, new: List<T>, op: suspend (T) -> Unit) {
         new.forEachIndexed { i, e ->
             val other = original.elementAtOrNull(i)
-            if(other == null) {
+            if (other == null) {
                 op(e)
             } else {
-                if(other != e) {
+                if (other != e) {
                     throw IllegalStateException("history differs")
                 }
             }
@@ -113,43 +117,64 @@ class ServerGamestate(
     suspend fun handle(wss: DefaultWebSocketServerSession, session: UserSession) = with(wss) {
         var unsubscribe: StoreSubscription = {}
         try {
-            withContext(sessionContext) {
-                sessionStore.dispatch(SessionState.Companion.Actions.AddObserver(session, wss))
+            // TODO: sync playing users
+            withContext(storeContext) {
+                store.dispatch(SessionState.Companion.Actions.AddObserver(session, wss))
 
+                // sending joined playersplayingUsers
+                // TODO: turn this into a message type
+                outgoing.send(
+                    Frame.Text(
+                        json.stringify(
+                            (PlayerState.serializer() to UserInfo.serializer()).map,
+                            store.state.playingUsers.mapValues { (player, userInfo) ->
+                                UserInfo(userInfo.user.displayName, userInfo.figureId)
+                            }
+                        )
+                    )
+                )
                 // play back history
                 logger.info { "sending observers" }
+                // TODO: turn this into a message type
                 outgoing.send(
                     Frame.Text(
                         json.stringify(
                             String.serializer().list,
-                            sessionStore.state.observingSessions.keys.map { it.userId })
+                            store.state.observingSessions.keys.map { it.userId })
                     )
                 )
             }
 
-            withContext(boardContext) {
+            withContext(storeContext) {
                 logger.info { "play back history" }
                 outgoing.send(
                     Frame.Text(
                         json.stringify(
-                            serializer.list,
-                            boardStateStore.state.history.map { it.toSerializable() })
+                            GameEvent.serializer().list,
+                            store.state.boardState.history.map { it.toSerializable() })
                     )
                 )
-                val sentMoves: MutableList<PentaMove> = boardStateStore.state.history.toMutableList()
+                val sentMoves: MutableList<PentaMove> = store.state.boardState.history.toMutableList()
 
                 val historySelector = SelectorBuilder<BoardState>()
-                    .withSingleField { boardStateStore.state.history }
+                    .withSingleField { store.state.boardState.history }
                 val playerSelector = SelectorBuilder<BoardState>()
-                    .withSingleField { boardStateStore.state.gameType.players }
+                    .withSingleField { store.state.boardState.gameType.players }
 
-                unsubscribe = boardStateStore.subscribe {
-                    historySelector.getIfChangedIn(boardStateStore.state)?.let { history ->
+                unsubscribe = store.subscribe {
+                    historySelector.getIfChangedIn(store.state.boardState)?.let { history ->
                         logger.info { "history triggered change: ${history.size}" }
                         GlobalScope.launch(handler) {
                             doForDifferent(sentMoves, history) { move ->
                                 logger.info { "transmitting move $move" }
-                                outgoing.send(Frame.Text(json.stringify(serializer, move.toSerializable())))
+                                outgoing.send(
+                                    Frame.Text(
+                                        json.stringify(
+                                            GameEvent.serializer(),
+                                            move.toSerializable()
+                                        )
+                                    )
+                                )
                                 sentMoves += move
                             }
                         }
@@ -167,7 +192,7 @@ class ServerGamestate(
 
                         logger.info { "writing history to db" }
                         transaction {
-//                        addLogger(Slf4jSqlDebugLogger)
+                            //                        addLogger(Slf4jSqlDebugLogger)
                             addLogger(StdOutSqlLogger)
                             logger.info { Game.all() }
                             val game = Game.find(Games.gameId eq serverGameId).firstOrNull()
@@ -183,7 +208,7 @@ class ServerGamestate(
                         }
                     }
 
-                    playerSelector.getIfChangedIn(boardStateStore.state)?.let { players ->
+                    playerSelector.getIfChangedIn(store.state.boardState)?.let { players ->
                         logger.info { "players triggered change: $players" }
                         logger.info { "writing players to db" }
                         transaction {
@@ -208,11 +233,22 @@ class ServerGamestate(
                 val notationJson = (incoming.receive() as Frame.Text).readText()
                 logger.info { "ws received: $notationJson" }
 
-                val notation = json.parse(serializer, notationJson)
-                withContext(boardContext) {
-                    notation.asMove(boardStateStore.state).also {
-                        boardStateStore.dispatch(it)
-                        boardStateStore.state.illegalMove?.let { illegalMove ->
+                val sessionEvent = json.parse(SessionEvent.serializer(), notationJson)
+                val authedSessionEvent = AuthedSessionEvent(
+                    event = sessionEvent,
+                    user = session.asUser()
+                )
+                withContext(storeContext) {
+                    store.dispatch(authedSessionEvent)
+                }
+
+                val notation = json.parse(GameEvent.serializer(), notationJson)
+                withContext(storeContext) {
+
+
+                    notation.asMove(store.state.boardState).also {
+                        store.dispatch(it)
+                        store.state.boardState.illegalMove?.let { illegalMove ->
                             logger.error {
                                 "handle illegal move: $illegalMove"
                             }
@@ -227,7 +263,7 @@ class ServerGamestate(
                                 )
                             }
                             // reset illegalMoveState
-                            boardStateStore.dispatch(BoardState.RemoveIllegalMove)
+                            store.dispatch(BoardState.RemoveIllegalMove)
                         }
                     }
                 }
@@ -235,28 +271,28 @@ class ServerGamestate(
             }
         } catch (e: IOException) {
             e.printStackTrace()
-            withContext(sessionContext) {
-                sessionStore.dispatch(SessionState.Companion.Actions.RemoveObserver(session))
+            withContext(storeContext) {
+                store.dispatch(SessionState.Companion.Actions.RemoveObserver(session))
             }
             val reason = closeReason.await()
             logger.debug { e }
             logger.debug { "onClose $reason" }
         } catch (e: ClosedReceiveChannelException) {
-            withContext(sessionContext) {
-                sessionStore.dispatch(SessionState.Companion.Actions.RemoveObserver(session))
+            withContext(storeContext) {
+                store.dispatch(SessionState.Companion.Actions.RemoveObserver(session))
             }
             val reason = closeReason.await()
             logger.error { "onClose $reason" }
         } catch (e: ClosedSendChannelException) {
-            withContext(sessionContext) {
-                sessionStore.dispatch(SessionState.Companion.Actions.RemoveObserver(session))
+            withContext(storeContext) {
+                store.dispatch(SessionState.Companion.Actions.RemoveObserver(session))
             }
             val reason = closeReason.await()
             logger.error { "onClose $reason" }
         } catch (e: Exception) {
             e.printStackTrace()
-            withContext(sessionContext) {
-                sessionStore.dispatch(SessionState.Companion.Actions.RemoveObserver(session))
+            withContext(storeContext) {
+                store.dispatch(SessionState.Companion.Actions.RemoveObserver(session))
             }
             logger.error { e }
             logger.error { "exception onClose ${e.message}" }
@@ -266,34 +302,34 @@ class ServerGamestate(
     }
 
     suspend fun requestJoin(user: User, shape: String, player: PlayerState) {
-        val success = withContext(boardContext) {
-            if (boardStateStore.state.players.size >= boardStateStore.state.gameType.playerCount) {
+        val success = withContext(storeContext) {
+            if (store.state.boardState.gameType.players.size >= store.state.boardState.gameType.playerCount) {
                 logger.error { "max player limit reached" }
                 return@withContext false
             }
-            if (boardStateStore.state.gameStarted) {
+            if (store.state.boardState.gameStarted) {
                 logger.error { "game has already started" }
                 return@withContext false
             }
             true
         }
-        if(!success) return
+        if (!success) return
 
-        withContext(sessionContext) {
-            val existingUser = sessionStore.state.playingUsers[player]
+        withContext(storeContext) {
+            val existingUser = store.state.playingUsers[player]
             if (existingUser != null) {
                 logger.error { "there is already $existingUser on $player" }
                 return@withContext
             }
-            if (boardStateStore.state.gameStarted) {
+            if (store.state.boardState.gameStarted) {
                 logger.error { "game has already started" }
                 return@withContext
             }
-            sessionStore.dispatch(
+            store.dispatch(
                 SessionEvent.PlayerJoin(
                     player = player,
                     user = UserInfo(
-                        id = user.userId,
+                        name = user.userId,
                         figureId = shape
                     )
                 )
@@ -307,7 +343,7 @@ class ServerGamestate(
 //            val playingUsers = withContext(sessionContext) {
 //                sessionStore.state.playingUsers
 //            }
-            withContext(boardContext) {
+            withContext(storeContext) {
                 // TODO: count people in session and initialize
 //                val gameType = when(playingUsers.size) {
 //                    2 -> GameType.TWO
@@ -316,7 +352,7 @@ class ServerGamestate(
 //                    else -> error("cannot handle ${playingUsers}")
 //                }
 
-                boardStateStore.dispatch(
+                store.dispatch(
                     PentaMove.InitGame
                 )
             }

@@ -1,19 +1,22 @@
 package penta.server
 
+import SessionEvent
 import com.soywiz.klogger.Logger
 import io.ktor.websocket.DefaultWebSocketServerSession
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import mu.KotlinLogging
 import org.reduxkotlin.Reducer
+import penta.BoardState
 import penta.PlayerState
 import penta.UserInfo
 import penta.util.exhaustive
 import penta.util.handler
 
 data class SessionState(
+    val boardState: BoardState = BoardState.create(),
     val observingSessions: Map<UserSession, DefaultWebSocketServerSession> = mapOf(),
-    val playingUsers: Map<PlayerState, User> = mapOf()
+    val playingUsers: Map<PlayerState, ServerUserInfo> = mapOf()
 ) {
     companion object {
         private val logger = Logger(this::class.simpleName!!)
@@ -38,6 +41,30 @@ data class SessionState(
                 is org.reduxkotlin.ActionTypes.REPLACE -> {
                     logger.info { "received REPLACE" }
                     state
+                }
+                is BoardState.RemoveIllegalMove -> {
+                    state.copy(
+                        boardState = state.boardState.reduce(action)
+                    )
+                }
+                is AuthedSessionEvent -> {
+                    val user = action.user
+                    when(val action = action.event) {
+                        is SessionEvent.WrappedGameEvent -> {
+                            state.copy(
+                                boardState = state.boardState.reduce(action)
+                            )
+                        }
+                        is SessionEvent.PlayerJoin -> {
+                            // TODO: validate origin of event
+                            state.copy(
+                                playingUsers = state.playingUsers + (action.player to ServerUserInfo(user, action.user.figureId))
+                            )
+                        }
+                        is SessionEvent.PlayerLeave -> TODO()
+                        is SessionEvent.IllegalMove -> TODO()
+                        is SessionEvent.Undo -> TODO()
+                    }
                 }
                 is Actions -> {
                     when (action) {
@@ -84,4 +111,11 @@ data class SessionState(
 
         }
     }
+}
+
+data class AuthedSessionEvent(
+    val event: SessionEvent,
+    val user: User
+) {
+
 }
