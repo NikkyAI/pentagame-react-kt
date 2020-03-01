@@ -4,6 +4,6 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class UserInfo(
-    val name: String,
+    val userId: String,
     var figureId: String // TODO: turn into enum or sealed class
 )

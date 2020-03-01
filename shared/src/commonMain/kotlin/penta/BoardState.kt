@@ -14,9 +14,9 @@ import penta.util.requireMove
 @Suppress("DataClassPrivateConstructor")
 data class BoardState private constructor(
 //    val players: List<PlayerState> = listOf(),
-    val currentPlayer: PlayerState = PlayerState.PLAYER_1,
+    val currentPlayer: PlayerIds = PlayerIds.PLAYER_1,
     val gameType: GameType = GameType.TWO,
-    val scoringColors: Map<PlayerState, Array<PentaColor>> = mapOf(),
+    val scoringColors: Map<PlayerIds, Array<PentaColor>> = mapOf(),
     val figures: List<Piece> = listOf(),
     val positions: Map<String, Field?> = mapOf(),
     val history: List<PentaMove> = listOf(),
@@ -34,7 +34,7 @@ data class BoardState private constructor(
     val illegalMove: PentaMove.IllegalMove? = null
 ) {
     @Deprecated("use gameType.players", ReplaceWith("gameType.players"))
-    val players: List<PlayerState>
+    val players: List<PlayerIds>
         get() = gameType.players
 
     object RemoveIllegalMove
@@ -898,7 +898,7 @@ data class BoardState private constructor(
             }
         }
 
-        fun WithMutableState.forceMovePlayerPiece(player: PlayerState) {
+        fun WithMutableState.forceMovePlayerPiece(player: PlayerIds) {
             with(nextState) {
                 if (selectingGrayPiece || selectingGrayPiece) return
                 val playerPieces =

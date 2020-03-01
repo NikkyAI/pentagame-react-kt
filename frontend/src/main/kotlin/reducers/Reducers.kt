@@ -8,7 +8,7 @@ import penta.BoardState
 import penta.BoardState.Companion.processMove
 import penta.ConnectionState
 import penta.PentaMove
-import penta.PlayerState
+import penta.PlayerIds
 import penta.UserInfo
 import penta.network.GameEvent
 import penta.network.LobbyEvent
@@ -21,7 +21,7 @@ data class State(
     val multiplayerState: MultiplayerState = MultiplayerState(
         connectionState = ConnectionState.Disconnected(baseUrl = Url(document.location!!.href))
     ),
-    val playingUsers: Map<PlayerState, UserInfo> = mapOf()
+    val playingUsers: Map<PlayerIds, UserInfo> = mapOf()
 //    val array: Array<String> = emptyArray()
 ) {
     fun reduce(action: Any): State {

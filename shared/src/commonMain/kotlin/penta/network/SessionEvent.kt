@@ -2,7 +2,7 @@ import kotlinx.serialization.modules.SerializersModuleBuilder
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Polymorphic
 import kotlinx.serialization.PolymorphicSerializer
-import penta.PlayerState
+import penta.PlayerIds
 import penta.UserInfo
 import penta.network.GameEvent
 
@@ -16,13 +16,13 @@ sealed class SessionEvent {
 
     @Serializable
     data class PlayerJoin(
-        val player: PlayerState, // TODO: make enum
+        val player: PlayerIds, // TODO: make enum
         val user: UserInfo
     ) : SessionEvent()
 
     @Serializable
     class PlayerLeave(
-        val player: PlayerState, // TODO: make enum
+        val player: PlayerIds, // TODO: make enum
         val user: UserInfo
     ) : SessionEvent()
 

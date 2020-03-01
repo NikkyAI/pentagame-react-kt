@@ -3,11 +3,9 @@ package penta.server.db
 import kotlinx.serialization.list
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
-import org.jetbrains.exposed.sql.SizedCollection
 import org.jetbrains.exposed.sql.StdOutSqlLogger
 import org.jetbrains.exposed.sql.addLogger
 import org.jetbrains.exposed.sql.transactions.transaction
-import penta.PlayerState
 import penta.logic.GameType
 import penta.network.GameEvent
 import penta.util.json
@@ -23,7 +21,7 @@ fun main() {
         addLogger(StdOutSqlLogger)
 
         SchemaUtils.drop(
-            Users, PlayersInGames, Games,
+            Users, PlayingUsers, Games, UserInGames,
             inBatch = true
         )
     }
@@ -31,8 +29,8 @@ fun main() {
         addLogger(StdOutSqlLogger)
 
         SchemaUtils.createMissingTablesAndColumns(
-            Users, PlayersInGames, Games,
-            inBatch = true
+            Users, PlayingUsers, Games, UserInGames,
+            inBatch = false
         )
     }
 
@@ -41,6 +39,7 @@ fun main() {
             userId = "TestUser"
             displayName = "Test User"
             passwordHash = "abcdefg"
+            temporaryUser = false
         }
     }
     println("testUser: $testUser")
@@ -50,6 +49,7 @@ fun main() {
 
         val someuser = findOrCreate("someuser") {
             passwordHash = "abcdefgh"
+            temporaryUser = true
         }
 
         println("someuser: $someuser")
@@ -63,11 +63,12 @@ fun main() {
                     GameEvent.InitGame
                 )
             )
-            players = SizedCollection(
-                listOf(
-                    someuser
-                )
-            )
+            owner = someuser
+//            players = SizedCollection(
+//                listOf(
+//                    someuser
+//                )
+//            )
         }
     }
 

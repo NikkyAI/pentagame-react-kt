@@ -15,10 +15,12 @@ import io.ktor.http.Url
 import io.ktor.http.cio.websocket.CloseReason
 import io.ktor.http.cio.websocket.Frame
 import io.ktor.http.cio.websocket.close
+import io.ktor.http.cio.websocket.closeExceptionally
 import io.ktor.http.cio.websocket.readText
 import io.ktor.http.content.TextContent
 import io.ktor.http.fullPath
 import io.ktor.http.setCookie
+import io.ktor.util.InternalAPI
 import io.ktor.util.KtorExperimentalAPI
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.serialization.list
@@ -155,11 +157,12 @@ object WSClient {
         return receivedList
     }
 
-    @UseExperimental(KtorExperimentalAPI::class)
+    @OptIn(InternalAPI::class, KtorExperimentalAPI::class)
     suspend fun connectToLobby(
         state: ConnectionState.Authenticated,
         dispatch: (ConnectionState) -> Unit,
-        dispatchLobbyEvent: (LobbyEvent) -> Unit
+        dispatchLobbyEvent: (LobbyEvent) -> Unit,
+        error: (Any) -> Unit
     ) {
         val wsUrl = URLBuilder(state.baseUrl)
             .path("ws", "lobby")
@@ -190,36 +193,69 @@ object WSClient {
             try {
                 while (true) {
                     logger.info { "waiting for frame" }
-                    val notationJson = (incoming.receive() as Frame.Text).readText()
-                    logger.info { "ws received: $notationJson" }
+                    val frame = try {
+                        incoming.receive()
+                    } catch (e: Exception) {
+                        logger.error { e }
+                        logger.error { "exception onClose ${e.message}" }
+                        throw e
+                        // TODO transition to state `ConnectionLost`
+                    } finally {
 
-                    val event = json.parse(LobbyEvent.serializer(), notationJson)
+                    }
+                    when(frame) {
+                        is Frame.Text -> {
+                            val notationJson = (frame as Frame.Text).readText()
+                            logger.info { "ws received: $notationJson" }
 
-                    logger.info { "received event: $event" }
+                            val event = json.parse(LobbyEvent.serializer(), notationJson)
 
-                    if(event !is LobbyEvent.FromServer) {
-                        close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "event: $this cannot be sent by client"))
+                            logger.info { "received event: $event" }
+
+                            if(event !is LobbyEvent.FromServer) {
+                                close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "event: $this cannot be sent by the server"))
 //                        terminate()
-                        throw IllegalStateException("event: $this cannot be sent by client")
+                                throw IllegalStateException("event: $this cannot be sent by client")
+                            }
+                            dispatchLobbyEvent(event as LobbyEvent)
+                        }
+                        else -> {
+                            logger.info { "unhandled frame $frame"}
+                        }
                     }
 
                     // TODO: dispatch LobbyEvents to redux
-                    dispatchLobbyEvent(event as LobbyEvent)
                 }
             } catch (e: ClosedReceiveChannelException) {
                 val reason = closeReason.await()
                 logger.debug { e }
+                error(e)
                 logger.debug { "onClose $reason" }
                 // TODO transition to state `ConnectionLost`
+//                dispatch(
+//                    ConnectionState.Disconnected(
+//                        baseUrl = lobbyState.baseUrl,
+//                        userId = lobbyState.userId
+//                    )
+//                )
+                return@webSocket
             } catch (e: Exception) {
                 logger.error { e }
+                error(e)
                 logger.error { "exception onClose ${e::class.simpleName} ${e.message}" }
                 // TODO transition to state `ConnectionLost`
+//                dispatch(
+//                    ConnectionState.Disconnected(
+//                        baseUrl = lobbyState.baseUrl,
+//                        userId = lobbyState.userId
+//                    )
+//                )
+                return@webSocket
             } finally {
+                // TODO: verify seeing this when connection is dropp
                 logger.info { "connection closing" }
             }
         }
-
 
         dispatch(
             ConnectionState.Disconnected(
@@ -303,7 +339,7 @@ object WSClient {
                 // TODO: add another observerStore
                 val usersJsonMap = (incoming.receive() as Frame.Text).readText()
                 val users = json.parse(
-                    (PlayerState.serializer() to UserInfo.serializer()).map,
+                    (PlayerIds.Companion to UserInfo.serializer()).map,
                     usersJsonMap
                 )
                 users.forEach { (player, userInfo) ->
@@ -350,10 +386,12 @@ object WSClient {
                     when (frame) {
 //                            is Frame.Binary -> TODO("handle binary frames")
                         is Frame.Text -> {
-                            val notationJson = frame.readText()
-                            logger.info { "receiving notation $notationJson" }
-                            val notation = json.parse(GameEvent.serializer(), notationJson)
-                            dispatchNotation(notation)
+                            val frameText = frame.readText()
+                            logger.info { "receiving frame $frameText" }
+                            val sessionEvent = json.parse(SessionEvent.serializer(), frameText)
+                            // TODO: assert that session event type is `FromServer`
+                            dispatchSessionEvent(sessionEvent)
+//                            dispatchNotation(notation)
                         }
                     }
 
@@ -364,10 +402,12 @@ object WSClient {
                 logger.debug { e }
                 logger.debug { "onClose $reason" }
                 // TODO transition to state `ConnectionLost`
+                return@webSocket
             } catch (e: Exception) {
                 logger.error { e }
                 logger.error { "exception onClose ${e::class.simpleName} ${e.message}" }
-                // TODO transition to state `ConnectionLost`
+                // TODO transition to state `ConnectionLost` ?
+                return@webSocket
             } finally {
                 logger.info { "connection closing" }
             }

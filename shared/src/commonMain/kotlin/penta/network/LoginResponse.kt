@@ -4,7 +4,6 @@ import kotlinx.serialization.Polymorphic
 import kotlinx.serialization.PolymorphicSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModuleBuilder
-import penta.util.ObjectSerializer
 
 @Polymorphic
 @Serializable(PolymorphicSerializer::class)
@@ -21,6 +20,7 @@ sealed class LoginResponse {
         val reason: String
     ) : LoginResponse(), Failure
 
+    @Serializable
     object IncorrectPassword : LoginResponse(), Failure
 
     companion object {
@@ -28,7 +28,7 @@ sealed class LoginResponse {
             builder.polymorphic<LoginResponse> {
                 Success::class with Success.serializer()
                 UserIdRejected::class with UserIdRejected.serializer()
-                IncorrectPassword::class with ObjectSerializer(IncorrectPassword)
+                IncorrectPassword::class with IncorrectPassword.serializer()
             }
         }
     }

@@ -1,12 +1,9 @@
 package tests
 
-import actions.Action
 import com.soywiz.klogger.Logger
 import org.junit.Test
 import org.reduxkotlin.applyMiddleware
 import org.reduxkotlin.createStore
-import penta.PentaMove
-import penta.PlayerState
 import penta.BoardState
 
 class Tests {

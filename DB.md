@@ -49,3 +49,8 @@ https://www.apgdiff.com/
     java -jar apgdiff-2.4.jar --ignore-start-with backup_v$(VERSION).sql pentagame_new.sql > upgrade.sql
     migra $(backup_v$(version) psql://localhost/dev_db
     ```
+
+
+# Notes: 
+
+`choco install postgresql11 /Password:postgres`

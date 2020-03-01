@@ -19,6 +19,7 @@ import kotlinx.serialization.serializer
 import org.jetbrains.exposed.sql.SizedCollection
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.StdOutSqlLogger
+import org.jetbrains.exposed.sql.Transaction
 import org.jetbrains.exposed.sql.addLogger
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.reduxkotlin.SelectorBuilder
@@ -28,12 +29,14 @@ import org.reduxkotlin.applyMiddleware
 import org.reduxkotlin.createStore
 import penta.BoardState
 import penta.PentaMove
-import penta.PlayerState
+import penta.PlayerIds
 import penta.UserInfo
 import penta.network.GameEvent
 import penta.network.GameSessionInfo
 import penta.server.db.Game
 import penta.server.db.Games
+import penta.server.db.PlayingUser
+import penta.server.db.PlayingUsers
 import penta.util.handler
 import penta.util.json
 import penta.util.loggingMiddleware
@@ -47,7 +50,8 @@ class ServerGamestate(
     var owner: User
 ) {
     private val logger = Logger(this::class.simpleName!! + " id: " + serverGameId)
-//    val boardContext = newSingleThreadContext("board store $serverGameId")
+
+    //    val boardContext = newSingleThreadContext("board store $serverGameId")
     val storeContext = newSingleThreadContext("session store $serverGameId")
 
 //    private val boardStateStore: Store<BoardState> = runBlocking(boardContext) {
@@ -65,6 +69,7 @@ class ServerGamestate(
             applyMiddleware(loggingMiddleware(logger))
         )
     }
+
     suspend fun getBoardState() = withContext(storeContext) {
         store.state.boardState
     }
@@ -126,10 +131,11 @@ class ServerGamestate(
                 outgoing.send(
                     Frame.Text(
                         json.stringify(
-                            (PlayerState.serializer() to UserInfo.serializer()).map,
-                            store.state.playingUsers.mapValues { (player, userInfo) ->
-                                UserInfo(userInfo.user.displayName, userInfo.figureId)
-                            }
+//                            (PlayerIds.serializer() to UserInfo.serializer()).map,
+                            (PlayerIds.Companion to UserInfo.serializer()).map,
+                            store.state.playingUsers.map { (player, userInfo) ->
+                                player to userInfo.toUserInfo(session)
+                            }.toMap()
                         )
                     )
                 )
@@ -155,11 +161,12 @@ class ServerGamestate(
                     )
                 )
                 val sentMoves: MutableList<PentaMove> = store.state.boardState.history.toMutableList()
+                val oldPlayingusers: MutableMap<PlayerIds, ServerUserInfo> = store.state.playingUsers.toMutableMap()
 
                 val historySelector = SelectorBuilder<BoardState>()
                     .withSingleField { store.state.boardState.history }
                 val playerSelector = SelectorBuilder<BoardState>()
-                    .withSingleField { store.state.boardState.gameType.players }
+                    .withSingleField { store.state.playingUsers }
 
                 unsubscribe = store.subscribe {
                     historySelector.getIfChangedIn(store.state.boardState)?.let { history ->
@@ -170,8 +177,10 @@ class ServerGamestate(
                                 outgoing.send(
                                     Frame.Text(
                                         json.stringify(
-                                            GameEvent.serializer(),
-                                            move.toSerializable()
+                                            SessionEvent.serializer(),
+                                            SessionEvent.WrappedGameEvent(
+                                                event = move.toSerializable()
+                                            )
                                         )
                                     )
                                 )
@@ -208,20 +217,55 @@ class ServerGamestate(
                         }
                     }
 
-                    playerSelector.getIfChangedIn(store.state.boardState)?.let { players ->
-                        logger.info { "players triggered change: $players" }
+                    playerSelector.getIfChangedIn(store.state.boardState)?.let { playingUsers ->
+                        logger.info { "players triggered change: $playingUsers" }
+
+                        val removedUsers = oldPlayingusers - playingUsers.keys
+                        val newUsers = playingUsers - oldPlayingusers.keys
+                        val notChangedUsers = playingUsers - newUsers.keys
+                        GlobalScope.launch(handler) {
+                            notChangedUsers.forEach {(player, info) ->
+                                val oldInfo = oldPlayingusers[player]!!
+                                if(info != oldInfo) {
+                                    outgoing.send(Frame.Text(json.stringify(SessionEvent.serializer(), SessionEvent.PlayerLeave(player, oldInfo.toUserInfo(session)))))
+                                    outgoing.send(Frame.Text(json.stringify(SessionEvent.serializer(), SessionEvent.PlayerJoin(player, info.toUserInfo(session)))))
+                                }
+                            }
+                            removedUsers.forEach { (player, info) ->
+                                outgoing.send(Frame.Text(json.stringify(SessionEvent.serializer(), SessionEvent.PlayerLeave(player, info.toUserInfo(session)))))
+                            }
+                            newUsers.forEach { (player, info) ->
+                                outgoing.send(Frame.Text(json.stringify(SessionEvent.serializer(), SessionEvent.PlayerJoin(player, info.toUserInfo(session)))))
+                            }
+                        }
+
                         logger.info { "writing players to db" }
                         transaction {
                             addLogger(StdOutSqlLogger)
-                            val game = Game.find(Games.gameId eq serverGameId).firstOrNull()
-//                        val game = Game.all().find { it.gameId == id }
+                            val game = Game.find(Games.gameId eq serverGameId).limit(1).firstOrNull()
                             if (game == null) {
                                 logger.error { "could not find $serverGameId" }
+                                rollback()
                                 return@transaction
                             }
-                            game.players = SizedCollection(
-                                players.mapNotNull {
-                                    UserManager.findDBUser(it.id)
+                            val playersInGames = PlayingUser.find(PlayingUsers.gameId eq game.id).toList()
+                            game.playingUsers = SizedCollection(
+                                playingUsers.mapNotNull { (player, info) ->
+//                                    UserManager.findDBUser(info.)
+                                    val playerInGame = playersInGames.find { it.game == game && it.player == player.id }
+                                    if (playerInGame != null) {
+                                        playerInGame.user = UserManager.toDBUser(info.user)
+                                        playerInGame.shape = info.figureId
+                                        playerInGame
+                                    } else {
+                                        PlayingUser.new {
+                                            this.game = game
+                                            this.player = player.id
+                                            this.user = UserManager.toDBUser(info.user)
+                                            this.shape = info.figureId
+                                        }
+                                    }
+
                                 }
                             )
                         }
@@ -234,40 +278,32 @@ class ServerGamestate(
                 logger.info { "ws received: $notationJson" }
 
                 val sessionEvent = json.parse(SessionEvent.serializer(), notationJson)
-                val authedSessionEvent = AuthedSessionEvent(
-                    event = sessionEvent,
-                    user = session.asUser()
-                )
                 withContext(storeContext) {
+                    val authedSessionEvent = AuthedSessionEvent(
+                        event = sessionEvent,
+                        user = session.asUser()
+                    )
                     store.dispatch(authedSessionEvent)
-                }
 
-                val notation = json.parse(GameEvent.serializer(), notationJson)
-                withContext(storeContext) {
-
-
-                    notation.asMove(store.state.boardState).also {
-                        store.dispatch(it)
-                        store.state.boardState.illegalMove?.let { illegalMove ->
-                            logger.error {
-                                "handle illegal move: $illegalMove"
-                            }
-                            GlobalScope.launch(Dispatchers.Default + handler) {
-                                outgoing.send(
-                                    Frame.Text(
-                                        json.stringify(
-                                            GameEvent.serializer(),
-                                            illegalMove.toSerializable()
-                                        )
+                    // handle possible illegal moves
+                    store.state.boardState.illegalMove?.let { illegalMove ->
+                        logger.error {
+                            "handle illegal move: $illegalMove"
+                        }
+                        GlobalScope.launch(Dispatchers.Default + handler) {
+                            outgoing.send(
+                                Frame.Text(
+                                    json.stringify(
+                                        GameEvent.serializer(),
+                                        illegalMove.toSerializable()
                                     )
                                 )
-                            }
-                            // reset illegalMoveState
-                            store.dispatch(BoardState.RemoveIllegalMove)
+                            )
                         }
+                        // reset illegalMoveState
+                        store.dispatch(BoardState.RemoveIllegalMove)
                     }
                 }
-                // apply move ?
             }
         } catch (e: IOException) {
             e.printStackTrace()
@@ -301,7 +337,7 @@ class ServerGamestate(
         }
     }
 
-    suspend fun requestJoin(user: User, shape: String, player: PlayerState) {
+    suspend fun requestJoin(user: User, shape: String, player: PlayerIds) {
         val success = withContext(storeContext) {
             if (store.state.boardState.gameType.players.size >= store.state.boardState.gameType.playerCount) {
                 logger.error { "max player limit reached" }
@@ -329,7 +365,7 @@ class ServerGamestate(
                 SessionEvent.PlayerJoin(
                     player = player,
                     user = UserInfo(
-                        name = user.userId,
+                        userId = user.userId,
                         figureId = shape
                     )
                 )
@@ -354,6 +390,19 @@ class ServerGamestate(
 
                 store.dispatch(
                     PentaMove.InitGame
+                )
+            }
+        }
+    }
+
+    suspend fun Transaction.loadUsers(game: Game) {
+        withContext(storeContext) {
+            game.playingUsers.forEach {
+                store.dispatch(
+                    AuthedSessionEvent(
+                        SessionEvent.PlayerJoin(PlayerIds.valueOf(it.player), UserInfo(it.user.displayName ?: it.user.userId, it.shape)),
+                        UserManager.convert(it.user)
+                    )
                 )
             }
         }

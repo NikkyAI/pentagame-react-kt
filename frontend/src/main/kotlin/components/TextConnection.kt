@@ -169,7 +169,8 @@ class TextConnection(props: TextConnectionProps) : RComponent<TextConnectionProp
                     penta.WSClient.connectToLobby(
                         state = nextState,
                         dispatch = props.dispatchConnection,
-                    dispatchLobbyEvent = props.dispatchLobbyEvent
+                    dispatchLobbyEvent = props.dispatchLobbyEvent,
+                    error = { console.error(it) }
                     )
 //                    requestGameList(connection = nextState)
                 }

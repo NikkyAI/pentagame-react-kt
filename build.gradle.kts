@@ -34,8 +34,6 @@ allprojects {
 
 // heroku stage
 val stage = tasks.create("stage") {
-    // TODO: add :backend:shadowJar
-    // TODO: update jar path
     dependsOn("clean")
     dependsOn(":backend:flywayMigrate")
     dependsOn(":backend:flywayValidate")

@@ -154,6 +154,8 @@ kotlin {
         js().compilations["main"].defaultSourceSet {
             dependsOn(commonClient)
             dependencies {
+                // cannot look up serialzation utils otherwise
+                api("org.jetbrains.kotlinx:kotlinx-serialization-runtime-js:_")
                 // logging
                 api("com.soywiz.korlibs.klogger:klogger-js:_")
                 api("io.github.microutils:kotlin-logging-js:_")

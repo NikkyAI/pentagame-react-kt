@@ -5,23 +5,18 @@ import io.ktor.http.cio.websocket.Frame
 import io.ktor.websocket.DefaultWebSocketServerSession
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.newSingleThreadContext
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withContext
 import kotlinx.serialization.list
-import org.jetbrains.exposed.sql.SizedCollection
 import org.jetbrains.exposed.sql.Slf4jSqlDebugLogger
 import org.jetbrains.exposed.sql.addLogger
+import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.reduxkotlin.applyMiddleware
-import org.reduxkotlin.createStore
 import penta.LobbyState
 import penta.network.GameEvent
 import penta.network.LobbyEvent
 import penta.server.db.Game
 import penta.util.handler
 import penta.util.json
-import penta.util.loggingMiddleware
 
 data class GlobalState(
     val games: List<ServerGamestate> = loadGames(),
@@ -159,9 +154,9 @@ data class GlobalState(
             }
         }
 
-        fun loadGames(): List<ServerGamestate> {
-            return transaction {
-                Game.all().map { game ->
+        fun loadGames(): List<ServerGamestate> = runBlocking {
+            newSuspendedTransaction {
+               Game.all().map { game ->
                     GameController.idCounter++
                     ServerGamestate(
                         game.gameId,
@@ -169,11 +164,11 @@ data class GlobalState(
                             UserManager.convert(u)
                         }
                     ).apply {
+                        // load playing users
+                        loadUsers(game)
                         // apply all history
-                        runBlocking {
-                            json.parse(GameEvent.serializer().list, game.history).forEach { move ->
-                                boardDispatch(move)
-                            }
+                        json.parse(GameEvent.serializer().list, game.history).forEach { move ->
+                            boardDispatch(move)
                         }
                     }
                 }

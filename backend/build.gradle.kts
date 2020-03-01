@@ -13,12 +13,6 @@ plugins {
 
 val gen_resource = buildDir.resolve("gen-src/resources").apply { mkdirs() }
 
-//sourceSets {
-//    main {
-//        resources.srcDirs += gen_resource
-//    }
-//}
-
 val hasDevUrl = extra.has("DEV_JDBC_DATABASE_URL")
 if (!hasDevUrl) logger.error("DEV_JDBC_DATABASE_URL not set")
 val hasLiveUrl = extra.has("LIVE_JDBC_DATABASE_URL")
@@ -172,7 +166,11 @@ val packageStatic = tasks.create("packageStatic") {
     group = "build"
     val frontend = project(":frontend")
     dependsOn(":frontend:processResources")
-    dependsOn(":frontend:browserProductionWebpack")
+    if(properties.contains("dev")) {
+        dependsOn(":frontend:browserDevelopmentWebpack")
+    } else {
+        dependsOn(":frontend:browserProductionWebpack")
+    }
 
     outputs.upToDateWhen { false }
     outputs.dir(gen_resource)

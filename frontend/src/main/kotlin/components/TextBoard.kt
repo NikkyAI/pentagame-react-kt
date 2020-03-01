@@ -28,7 +28,7 @@ import kotlinx.serialization.list
 import penta.BoardState
 import penta.ConnectionState
 import penta.PentaMove
-import penta.PlayerState
+import penta.PlayerIds
 import penta.UserInfo
 import penta.network.GameEvent
 import penta.util.json
@@ -147,7 +147,7 @@ class TextBoard(props: TextBoardProps) : RComponent<TextBoardProps, RState>(prop
                 mTypography("Players")
                 mList {
                     props.playingUsers.forEach { (player, user) ->
-                        mListItem(player.toString(), user.name + " " + user.figureId)
+                        mListItem(player.toString(), user.userId + " " + user.figureId)
                     }
                 }
                 mTypography("turn: $turn")
@@ -251,7 +251,7 @@ interface TextBoardsStateParameters : RProps {
 interface TextBoardStateProps : RProps {
     var state: State
     var boardState: BoardState
-    var playingUsers: Map<PlayerState, UserInfo>
+    var playingUsers: Map<PlayerIds, UserInfo>
     var connection: ConnectionState
 }
 

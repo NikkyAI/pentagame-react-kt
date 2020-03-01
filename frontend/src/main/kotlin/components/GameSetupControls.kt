@@ -2,8 +2,6 @@ package components
 
 import SessionEvent
 import com.ccfraser.muirwik.components.MColor
-import com.ccfraser.muirwik.components.MDividerOrientation
-import com.ccfraser.muirwik.components.MDividerVariant
 import com.ccfraser.muirwik.components.MGridAlignItems
 import com.ccfraser.muirwik.components.MTypographyVariant
 import com.ccfraser.muirwik.components.button.MButtonGroupOrientation
@@ -11,7 +9,6 @@ import com.ccfraser.muirwik.components.button.MButtonGroupVariant
 import com.ccfraser.muirwik.components.button.MButtonVariant
 import com.ccfraser.muirwik.components.button.mButton
 import com.ccfraser.muirwik.components.button.mButtonGroup
-import com.ccfraser.muirwik.components.mDivider
 import com.ccfraser.muirwik.components.mGridContainer
 import com.ccfraser.muirwik.components.mIcon
 import com.ccfraser.muirwik.components.mTypography
@@ -23,7 +20,7 @@ import kotlinx.css.margin
 import penta.BoardState
 import penta.ConnectionState
 import penta.PentaMove
-import penta.PlayerState
+import penta.PlayerIds
 import penta.UserInfo
 import penta.logic.GameType
 import react.RBuilder
@@ -228,7 +225,7 @@ interface GameSetupStateParameters : RProps {
 interface GameSetupStateProps : RProps {
     var state: State
     var boardState: BoardState
-    var playingUsers: Map<PlayerState, UserInfo>
+    var playingUsers: Map<PlayerIds, UserInfo>
     var connection: ConnectionState
 }
 

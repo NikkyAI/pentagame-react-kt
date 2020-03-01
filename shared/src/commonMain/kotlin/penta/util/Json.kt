@@ -9,7 +9,7 @@ import penta.network.LoginResponse
 
 val json = Json(
     JsonConfiguration(
-        unquoted = false,
+//        unquotedPrint = false,
         allowStructuredMapKeys = false, //true,
         prettyPrint = false,
         classDiscriminator = "type"

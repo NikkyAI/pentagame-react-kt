@@ -7,10 +7,9 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModuleBuilder
 import penta.BoardState
 import penta.PentaMove
-import penta.PlayerState
+import penta.PlayerIds
 import penta.logic.Piece
 import penta.logic.GameType
-import penta.util.ObjectSerializer
 
 @Polymorphic
 @Serializable(PolymorphicSerializer::class)
@@ -20,7 +19,7 @@ sealed class GameEvent {
 
     @Serializable
     data class MovePlayer(
-        val player: PlayerState,
+        val player: PlayerIds,
         val piece: String,
         val from: String,
         val to: String
@@ -36,7 +35,7 @@ sealed class GameEvent {
 
     @Serializable
     data class ForcedMovePlayer(
-        val player: PlayerState,
+        val player: PlayerIds,
         val piece: String,
         val from: String,
         val to: String
@@ -52,7 +51,7 @@ sealed class GameEvent {
 
     @Serializable
     data class SwapOwnPiece(
-        val player: PlayerState,
+        val player: PlayerIds,
         val piece: String,
         val otherPiece: String,
         val from: String,
@@ -71,8 +70,8 @@ sealed class GameEvent {
 
     @Serializable
     data class SwapHostilePieces(
-        val player: PlayerState,
-        val otherPlayer: PlayerState,
+        val player: PlayerIds,
+        val otherPlayer: PlayerIds,
         val piece: String,
         val otherPiece: String,
         val from: String,
@@ -91,8 +90,8 @@ sealed class GameEvent {
 
     @Serializable
     data class CooperativeSwap(
-        val player: PlayerState,
-        val otherPlayer: PlayerState,
+        val player: PlayerIds,
+        val otherPlayer: PlayerIds,
         val piece: String,
         val otherPiece: String,
         val from: String,
@@ -179,6 +178,7 @@ sealed class GameEvent {
             )
     }
 
+    @Serializable
     object InitGame: GameEvent() {
         override fun asMove(boardState: BoardState) = PentaMove.InitGame
     }
@@ -227,7 +227,7 @@ sealed class GameEvent {
                 SelectPlayerPiece::class with SelectPlayerPiece.serializer()
 //                PlayerJoin::class with PlayerJoin.serializer()
                 SetGameType::class with SetGameType.serializer()
-                InitGame::class with ObjectSerializer(InitGame)
+                InitGame::class with InitGame.serializer()
                 Win::class with Win.serializer()
                 IllegalMove::class with IllegalMove.serializer()
                 Undo::class with Undo.serializer()

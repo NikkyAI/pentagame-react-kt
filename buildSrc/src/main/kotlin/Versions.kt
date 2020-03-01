@@ -2,8 +2,8 @@
 object Kotlin {
 //    val version = "_"
 //        val version = "1.3.61"
-//    val version = "1.3.70-eap-42"
-    val version = "1.3.70-eap-184"
+//    val version = "1.3.70-eap-184"
+    val version = "1.3.70-eap-274"
 }
 
 object Data2Viz {
@@ -24,8 +24,8 @@ object Logback {
 
 object Serialization {
 //    const val version = "0.14.0"
-//    const val version = "0.14.0-1.3.70-eap-42"
-    const val version = "0.14.0-1.3.70-eap-134"
+//    const val version = "0.14.0-1.3.70-eap-134"
+    const val version = "0.20.0-1.3.70-eap-274"
 }
 
 object Coroutines {

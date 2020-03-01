@@ -2,9 +2,6 @@ package components
 
 import PentaBoard
 import actions.Action
-import com.ccfraser.muirwik.components.MColor
-import com.ccfraser.muirwik.components.button.MButtonVariant
-import com.ccfraser.muirwik.components.button.mButton
 import com.github.nwillc.ksvg.RenderMode
 import com.github.nwillc.ksvg.elements.SVG
 import debug
@@ -19,7 +16,7 @@ import penta.BoardState
 import penta.ConnectionState
 import penta.PentaMove
 import penta.PentagameClick
-import penta.PlayerState
+import penta.PlayerIds
 import penta.UserInfo
 import react.RBuilder
 import react.RClass
@@ -182,7 +179,7 @@ interface PentaSvgParameters : RProps {
 interface PentaSvgStateProps : RProps {
     var state: State
     var boardState: BoardState
-    var playingUsers: Map<PlayerState, UserInfo>
+    var playingUsers: Map<PlayerIds, UserInfo>
     var connection: ConnectionState
 }
 

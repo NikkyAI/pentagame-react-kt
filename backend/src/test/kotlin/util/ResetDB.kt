@@ -6,7 +6,8 @@ import org.jetbrains.exposed.sql.Slf4jSqlDebugLogger
 import org.jetbrains.exposed.sql.addLogger
 import org.jetbrains.exposed.sql.transactions.transaction
 import penta.server.db.Games
-import penta.server.db.PlayersInGames
+import penta.server.db.PlayingUsers
+import penta.server.db.UserInGames
 import penta.server.db.Users
 
 object ResetDB {
@@ -22,9 +23,10 @@ object ResetDB {
 
             SchemaUtils.drop(
                 Users,
-                PlayersInGames,
+                PlayingUsers,
                 Games,
-                inBatch = true
+                UserInGames,
+                inBatch = false
             )
         }
 
@@ -33,9 +35,10 @@ object ResetDB {
 
             SchemaUtils.createMissingTablesAndColumns(
                 Users,
-                PlayersInGames,
+                PlayingUsers,
                 Games,
-                inBatch = true
+                UserInGames,
+                inBatch = false
             )
         }
     }

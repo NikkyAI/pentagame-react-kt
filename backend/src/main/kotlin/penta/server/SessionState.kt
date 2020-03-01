@@ -5,18 +5,17 @@ import com.soywiz.klogger.Logger
 import io.ktor.websocket.DefaultWebSocketServerSession
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import mu.KotlinLogging
 import org.reduxkotlin.Reducer
 import penta.BoardState
-import penta.PlayerState
-import penta.UserInfo
+import penta.PlayerIds
+import penta.network.GameEvent
 import penta.util.exhaustive
 import penta.util.handler
 
 data class SessionState(
     val boardState: BoardState = BoardState.create(),
     val observingSessions: Map<UserSession, DefaultWebSocketServerSession> = mapOf(),
-    val playingUsers: Map<PlayerState, ServerUserInfo> = mapOf()
+    val playingUsers: Map<PlayerIds, ServerUserInfo> = mapOf()
 ) {
     companion object {
         private val logger = Logger(this::class.simpleName!!)
@@ -47,16 +46,22 @@ data class SessionState(
                         boardState = state.boardState.reduce(action)
                     )
                 }
+                is GameEvent -> {
+                    state.copy(
+                        boardState = state.boardState.reduce(action)
+                    )
+                }
                 is AuthedSessionEvent -> {
                     val user = action.user
                     when(val action = action.event) {
                         is SessionEvent.WrappedGameEvent -> {
                             state.copy(
-                                boardState = state.boardState.reduce(action)
+                                boardState = state.boardState.reduce(action.event)
                             )
                         }
                         is SessionEvent.PlayerJoin -> {
                             // TODO: validate origin of event
+                            logger.info { "TODO: check $user" }
                             state.copy(
                                 playingUsers = state.playingUsers + (action.player to ServerUserInfo(user, action.user.figureId))
                             )
@@ -113,9 +118,3 @@ data class SessionState(
     }
 }
 
-data class AuthedSessionEvent(
-    val event: SessionEvent,
-    val user: User
-) {
-
-}

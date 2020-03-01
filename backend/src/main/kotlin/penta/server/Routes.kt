@@ -19,7 +19,7 @@ import io.ktor.routing.post
 import io.ktor.routing.routing
 import io.ktor.websocket.webSocket
 import kotlinx.serialization.list
-import penta.PlayerState
+import penta.PlayerIds
 import penta.util.json
 import penta.network.GameSessionInfo
 import penta.network.LoginRequest
@@ -219,7 +219,7 @@ fun Application.routes() = routing {
         val game = GameController.get(gameId) ?: throw IllegalArgumentException("no game found with id $gameId")
         val shape = call.parameters["shape"] ?: throw IllegalArgumentException("missing parameter shape")
         val playerId = call.parameters["player"] ?: throw IllegalArgumentException("missing parameter player")
-        val player = PlayerState.valueOf(playerId) ?: throw IllegalArgumentException("no player found with id $playerId")
+        val player = PlayerIds.valueOf(playerId) ?: throw IllegalArgumentException("no player found with id $playerId")
         game.requestJoin(user = session.asUser(), shape = shape, player = player)
 
         call.respondText(

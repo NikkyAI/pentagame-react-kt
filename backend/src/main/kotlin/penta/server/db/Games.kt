@@ -23,11 +23,29 @@ class Game(id: EntityID<UUID>) : UUIDEntity(id) {
     var gameId by Games.gameId
     var history by Games.history
     var owner by User referencedOn Games.owner
-    var players by User via PlayersInGames
+    var playingUsers by PlayingUser via UserInGames
 }
 
-object PlayersInGames: Table("players_in_games") {
-    val playerId = reference("user", Users)//, onDelete = ReferenceOption.CASCADE)
+object UserInGames: Table("user_in_game") {
+    val gameId = reference("game", Games)
+    val playerInGame = reference("playerInGame", PlayingUsers)
+    override val primaryKey: PrimaryKey = PrimaryKey(gameId, playerInGame)
+}
+
+object PlayingUsers: UUIDTable("playingUsers") {
     val gameId = reference("game", Games)//, onDelete = ReferenceOption.CASCADE)
-    override val primaryKey: PrimaryKey = PrimaryKey(playerId, gameId)
+    val userId = reference("user", Users)//, onDelete = ReferenceOption.CASCADE)
+    val player = varchar("player", 20)
+    val shape = varchar("shape", 20)
+    init {
+        index(true, gameId, player)
+    }
+}
+
+class PlayingUser(id: EntityID<UUID>) : UUIDEntity(id) {
+    companion object : UUIDEntityClass<PlayingUser>(PlayingUsers)
+    var game by Game referencedOn PlayingUsers.gameId
+    var user by User referencedOn PlayingUsers.userId
+    var player by PlayingUsers.player
+    var shape by PlayingUsers.shape
 }

@@ -4,7 +4,6 @@ import org.jetbrains.exposed.dao.UUIDEntity
 import org.jetbrains.exposed.dao.UUIDEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.UUIDTable
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.Transaction
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.util.UUID
@@ -29,7 +28,7 @@ class User(id: EntityID<UUID>) : UUIDEntity(id) {
     var userId by Users.userId
     var passwordHash by Users.passwordHash
     var displayName by Users.displayName
-    var players by Game via PlayersInGames
+    var players by Game via PlayingUsers
     var temporaryUser by Users.temporaryUser
 
     override fun toString(): String {

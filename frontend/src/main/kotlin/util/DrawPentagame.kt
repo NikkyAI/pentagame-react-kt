@@ -8,7 +8,7 @@ import io.data2viz.math.deg
 import penta.BoardState
 import penta.ConnectionState
 import penta.PentaColors
-import penta.PlayerState
+import penta.PlayerIds
 import penta.UserInfo
 import penta.calculatePiecePos
 import penta.cornerPoint
@@ -19,7 +19,7 @@ import penta.logic.Piece
 
 data class DrawProps(
     val boardState: BoardState,
-    val playingUsers: Map<PlayerState, UserInfo>,
+    val playingUsers: Map<PlayerIds, UserInfo>,
     val figures: Map<Field, Piece>,
     val canMoveToField: Map<Field, Boolean>,
     val drawCorners: Boolean = true,
@@ -30,7 +30,7 @@ data class DrawProps(
 //    } else false
 )
 
-fun SVG.drawPentagame(scale: Int, boardState: BoardState, connection: ConnectionState, playingUsers: Map<PlayerState, UserInfo>) {
+fun SVG.drawPentagame(scale: Int, boardState: BoardState, connection: ConnectionState, playingUsers: Map<PlayerIds, UserInfo>) {
 //        val lineWidth = (PentaMath.s / 5) / PentaMath.R_ * scale
     val lineWidth = 0.1 / PentaMath.R_ * scale
 
@@ -45,7 +45,7 @@ fun SVG.drawPentagame(scale: Int, boardState: BoardState, connection: Connection
 //    val boardState = svgProps.boardState
 
     val isYourTurn = if (connection is ConnectionState.ConnectedToGame) {
-        boardState.currentPlayer.id == connection.userId
+        playingUsers[boardState.currentPlayer]?.userId == connection.userId
     } else true // in local game it is always your turn
     val selectedPieceIsCurrentPlayer = boardState.selectedPlayerPiece?.player == boardState.currentPlayer
     val selectedPlayerPieceField = if (selectedPieceIsCurrentPlayer) {
