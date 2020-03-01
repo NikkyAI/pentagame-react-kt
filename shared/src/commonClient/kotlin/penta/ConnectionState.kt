@@ -83,9 +83,15 @@ sealed class ConnectionState {
         private val websocketSessionGame: DefaultClientWebSocketSession,
         private val websocketSessionLobby: DefaultClientWebSocketSession
     ) : ConnectionState(), HasSession, HasGameSession {
+        @Deprecated("send session instead")
         suspend fun sendMove(move: PentaMove) {
             websocketSessionGame.outgoing.send(
-                Frame.Text(json.stringify(GameEvent.serializer(), move.toSerializable()))
+                Frame.Text(json.stringify(SessionEvent.serializer(), SessionEvent.WrappedGameEvent(move.toSerializable())))
+            )
+        }
+        suspend fun sendEvent(event: SessionEvent) {
+            websocketSessionGame.outgoing.send(
+                Frame.Text(json.stringify(SessionEvent.serializer(), event))
             )
         }
         suspend fun sendSessionEvent(event: SessionEvent) {

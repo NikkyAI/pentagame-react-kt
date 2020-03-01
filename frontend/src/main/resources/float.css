@@ -1,0 +1,73 @@
+.absolute {
+    top: 0;
+    position: absolute;
+}
+
+.fixed {
+    left: 0;
+    top: 0;
+    position: fixed;
+}
+
+.fixed-background {
+    left: 0;
+    top: 0;
+    position: fixed;
+    background-color: ghostwhite;
+}
+
+@media (max-aspect-ratio: 1/2) {
+    .fixed {
+        height: 100vw;
+        width: 100vw;
+    }
+    .fixed-background {
+        height: 100vw;
+        width: 100vw;
+    }
+    .absolute {
+        top: 100vw;
+    }
+}
+@media (max-aspect-ratio: 1/1) and (min-aspect-ratio: 1/2) {
+    .fixed {
+        height: 50vh;
+        width: 50vh;
+        left: calc((100vw - 50vh) / 2);
+    }
+    .fixed-background {
+        height: 50vh;
+        width: 100vw;
+    }
+    .absolute {
+        top: 50vh;
+    }
+}
+@media (max-aspect-ratio: 2/1) and (min-aspect-ratio: 1/1) {
+    .fixed {
+        height: 50vw;
+        width: 50vw;
+        top: calc((100vh - 50vw) / 2);
+    }
+    .fixed-background {
+        height: 100vh;
+        width: 50vw;
+    }
+    .absolute {
+        left: 50vw;
+    }
+}
+@media (min-aspect-ratio: 2/1) {
+    .fixed {
+        height: 100vh;
+        width: 100vh;
+    }
+    .fixed-background {
+        height: 100vh;
+        width: 50vh;
+    }
+    .absolute {
+        left: 100vh;
+    }
+}
+

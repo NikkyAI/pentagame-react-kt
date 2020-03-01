@@ -61,7 +61,12 @@ data class State(
                     is SessionEvent.IllegalMove -> TODO()
                     is SessionEvent.Undo -> {
                         copy(
-                            boardState = BoardState.reduceFunc(boardState, action)
+                            boardState = boardState.reduce(action)
+                        )
+                    }
+                    is SessionEvent.WrappedGameEvent -> {
+                        copy(
+                            boardState = boardState.reduce(action.event)
                         )
                     }
                 }

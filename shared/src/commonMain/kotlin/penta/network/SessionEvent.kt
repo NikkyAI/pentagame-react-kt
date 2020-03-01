@@ -4,13 +4,14 @@ import kotlinx.serialization.Polymorphic
 import kotlinx.serialization.PolymorphicSerializer
 import penta.PlayerState
 import penta.UserInfo
+import penta.network.GameEvent
 
 @Polymorphic
 @Serializable(PolymorphicSerializer::class)
 sealed class SessionEvent {
     @Serializable
     data class WrappedGameEvent(
-        val event: penta.network.GameEvent
+        val event: GameEvent
     ) : SessionEvent()
 
     @Serializable
@@ -35,7 +36,7 @@ sealed class SessionEvent {
 
     @Serializable
     data class Undo(
-        val moves: List<WrappedGameEvent>
+        val moves: List<GameEvent>
     ) : SessionEvent() {
 
     }

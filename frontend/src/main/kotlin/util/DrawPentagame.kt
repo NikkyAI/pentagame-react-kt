@@ -289,7 +289,7 @@ fun SVG.drawPentagame(scale: Int, boardState: BoardState, connection: Connection
                 val swappable = isYourTurn
                         && selectedPieceIsCurrentPlayer
                         && field != null
-                console.info("playerPiece: ", piece, "selectable: ", selectable, "swappable", swappable)
+                console.debug("playerPiece: ", piece, "selectable: ", selectable, "swappable", swappable)
                 if (playinguser != null) {
 
                     drawPlayer(

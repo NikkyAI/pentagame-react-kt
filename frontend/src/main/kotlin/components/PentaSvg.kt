@@ -41,6 +41,7 @@ interface PentaSvgProps : PentaSvgStateProps, PentaSvgDispatchProps
 class PentaSvg(props: PentaSvgProps) : RComponent<PentaSvgProps, RState>(props) {
     private val svgRef = createRef<SVGElement>()
 
+    // TODO: dispatchSessionEvent
     fun dispatchMove(move: PentaMove) {
         when (val connection = props.connection) {
             is ConnectionState.ConnectedToGame -> {

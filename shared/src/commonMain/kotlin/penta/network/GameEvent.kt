@@ -178,8 +178,7 @@ sealed class GameEvent {
                 gameType = gameType
             )
     }
-    // TODO: also initialize player count / gamemode
-    @Serializable
+
     object InitGame: GameEvent() {
         override fun asMove(boardState: BoardState) = PentaMove.InitGame
     }

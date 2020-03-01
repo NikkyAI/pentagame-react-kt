@@ -1,5 +1,6 @@
 package components
 
+import SessionEvent
 import com.ccfraser.muirwik.components.MColor
 import com.ccfraser.muirwik.components.button.MButtonVariant
 import com.ccfraser.muirwik.components.button.mButton
@@ -55,17 +56,20 @@ interface TextBoardProps : TextBoardStateProps, TextBoardDispatchProps {
 class TextBoard(props: TextBoardProps) : RComponent<TextBoardProps, RState>(props) {
     var figureSwitch: Boolean = false
     var historySwitch: Boolean = false
-    fun TextBoardProps.dispatchMove(move: PentaMove) {
+    fun TextBoardProps.dispatchSessionEvent(event: SessionEvent) {
         when (val c = connection) {
             is ConnectionState.ConnectedToGame -> {
                 GlobalScope.launch {
-                    c.sendMove(move)
+                    c.sendEvent(event)
                 }
             }
             else -> {
-                dispatchMoveLocal(move)
+                dispatchSessionEventLocal(event)
             }
         }
+    }
+    fun TextBoardProps.dispatchMove(move: PentaMove) {
+        dispatchSessionEvent(SessionEvent.WrappedGameEvent(move.toSerializable()))
     }
 
     override fun RBuilder.render() {
@@ -252,11 +256,11 @@ interface TextBoardStateProps : RProps {
 }
 
 interface TextBoardDispatchProps : RProps {
-    var dispatchMoveLocal: (PentaMove) -> Unit
+    var dispatchSessionEventLocal: (SessionEvent) -> Unit
 }
 
 val textBoardState =
-    rConnect<State, PentaMove, WrapperAction, TextBoardsStateParameters, TextBoardStateProps, TextBoardDispatchProps, TextBoardProps>(
+    rConnect<State, SessionEvent, WrapperAction, TextBoardsStateParameters, TextBoardStateProps, TextBoardDispatchProps, TextBoardProps>(
         { state, configProps ->
             console.debug("TextBoardContainer.state")
             console.debug("state: ", state)
@@ -276,6 +280,6 @@ val textBoardState =
 //                dispatch(Action(PentaMove.PlayerJoin(PlayerState(playerId, figureId))))
 //            }
 //            relay = { dispatch(Action(it)) }
-            dispatchMoveLocal = { dispatch(it) }
+            dispatchSessionEventLocal = { dispatch(it) }
         }
     )(TextBoard::class.js.unsafeCast<RClass<TextBoardProps>>())

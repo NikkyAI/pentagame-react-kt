@@ -59,7 +59,8 @@ fun main() {
             history = json.stringify(
                 GameEvent.serializer().list, listOf<GameEvent>(
 //                    GameEvent.PlayerJoin(PlayerState("someuser", "tiangle")),
-                    GameEvent.InitGame(GameType.TWO)
+                    GameEvent.SetGameType(GameType.TWO),
+                    GameEvent.InitGame
                 )
             )
             players = SizedCollection(

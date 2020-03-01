@@ -44,18 +44,6 @@ interface GameSetupProps : GameSetupStateProps, GameSetupDispatchProps {
 //    var startGameClick: () -> Unit
 }
 
-private fun GameSetupProps.dispatchMove(move: PentaMove) {
-    when (val c = connection) {
-        is ConnectionState.ConnectedToGame -> {
-            GlobalScope.launch {
-                c.sendMove(move)
-            }
-        }
-        else -> {
-            dispatchMoveLocal(move)
-        }
-    }
-}
 
 private fun GameSetupProps.dispatchSessionEvent(sessionEvent: SessionEvent) {
     when (val c = connection) {
@@ -68,6 +56,9 @@ private fun GameSetupProps.dispatchSessionEvent(sessionEvent: SessionEvent) {
             dispatchSesionEventLocal(sessionEvent)
         }
     }
+}
+private fun GameSetupProps.dispatchMove(move: PentaMove) {
+    dispatchSessionEvent(SessionEvent.WrappedGameEvent(move.toSerializable()))
 }
 
 class GameSetupControls(props: GameSetupProps) : RComponent<GameSetupProps, RState>(props) {
