@@ -23,9 +23,9 @@ import io.ktor.http.setCookie
 import io.ktor.util.InternalAPI
 import io.ktor.util.KtorExperimentalAPI
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
-import kotlinx.serialization.list
-import kotlinx.serialization.map
-import kotlinx.serialization.serializer
+import kotlinx.serialization.builtins.MapSerializer
+import kotlinx.serialization.builtins.list
+import kotlinx.serialization.builtins.serializer
 import penta.network.GameEvent
 import penta.network.GameSessionInfo
 import penta.network.LobbyEvent
@@ -339,7 +339,7 @@ object WSClient {
                 // TODO: add another observerStore
                 val usersJsonMap = (incoming.receive() as Frame.Text).readText()
                 val users = json.parse(
-                    (PlayerIds.Companion to UserInfo.serializer()).map,
+                    MapSerializer(PlayerIds.Companion, UserInfo.serializer()),
                     usersJsonMap
                 )
                 users.forEach { (player, userInfo) ->

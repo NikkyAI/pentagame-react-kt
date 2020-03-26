@@ -18,6 +18,7 @@ import io.ktor.routing.get
 import io.ktor.routing.post
 import io.ktor.routing.routing
 import io.ktor.websocket.webSocket
+import kotlinx.serialization.builtins.list
 import kotlinx.serialization.list
 import penta.PlayerIds
 import penta.util.json

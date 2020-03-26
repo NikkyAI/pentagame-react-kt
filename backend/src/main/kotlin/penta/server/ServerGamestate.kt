@@ -13,6 +13,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.newSingleThreadContext
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.builtins.MapSerializer
+import kotlinx.serialization.builtins.list
+import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.list
 import kotlinx.serialization.map
 import kotlinx.serialization.serializer
@@ -128,11 +131,12 @@ class ServerGamestate(
 
                 // sending joined playersplayingUsers
                 // TODO: turn this into a message type
+                val t = (PlayerIds.Companion to UserInfo.serializer())
                 outgoing.send(
                     Frame.Text(
                         json.stringify(
 //                            (PlayerIds.serializer() to UserInfo.serializer()).map,
-                            (PlayerIds.Companion to UserInfo.serializer()).map,
+                            MapSerializer(t.first, t.second),
                             store.state.playingUsers.map { (player, userInfo) ->
                                 player to userInfo.toUserInfo(session)
                             }.toMap()

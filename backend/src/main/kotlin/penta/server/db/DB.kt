@@ -1,5 +1,6 @@
 package penta.server.db
 
+import kotlinx.serialization.builtins.list
 import kotlinx.serialization.list
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils

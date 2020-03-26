@@ -24,6 +24,7 @@ import kotlinx.coroutines.launch
 import kotlinx.css.Color
 import kotlinx.css.backgroundColor
 import kotlinx.css.margin
+import kotlinx.serialization.builtins.list
 import kotlinx.serialization.list
 import penta.BoardState
 import penta.ConnectionState
