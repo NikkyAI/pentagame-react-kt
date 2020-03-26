@@ -3,7 +3,7 @@ object Kotlin {
 //    val version = "_"
 //        val version = "1.3.61"
 //    val version = "1.3.70-eap-184"
-    val version = "1.3.70-eap-274"
+    val version = "1.3.70"
 }
 
 object Data2Viz {

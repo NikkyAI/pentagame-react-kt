@@ -24,6 +24,16 @@ alternative:
 `./gradlew :frontend:bundle`
 then open `frontend/build/bundle/index.html` in a browser (using idea as webserver)
 
+### Database
+
+launch a local postgres container with
+```sh
+docker pull postgres
+docker run --rm   --name pg-docker -e POSTGRES_PASSWORD=docker -d -p 5432:5432 -v $HOME/docker/volumes/postgres:/var/lib/postgresql/data  postgres
+```
+
+https://hackernoon.com/dont-install-postgres-docker-pull-postgres-bee20e200198
+
 ### Recording a game
 
 The game is currently recorded by the getClient and server, but not serialized or stored
