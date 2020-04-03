@@ -93,30 +93,64 @@ class GameSetupControls(props: GameSetupProps) : RComponent<GameSetupProps, RSta
             if (conn is ConnectionState.ConnectedToGame) {
                 if (!props.boardState.gameStarted) {
                     val localSymbols = listOf("triangle", "square", "cross", "circle")
-                    localSymbols.forEach { symbol ->
+//                    localSymbols.forEach { symbol ->
                         props.boardState.gameType.players.forEach { player ->
                             if (props.playingUsers[player] == null) {
-                                mButton(
-                                    caption = "Join $player as $symbol",
-                                    variant = MButtonVariant.outlined,
-                                    startIcon = mIcon("add", addAsChild = false),
-                                    onClick = {
-                                        //                                        val username = if
-                                        props.dispatchSessionEvent(
-                                            SessionEvent.PlayerJoin(
-                                                player = player,
-                                                user = UserInfo(conn.userId, symbol)
-                                            )
-                                        )
-                                    }
+                                mGridContainer(
+                                    alignItems = MGridAlignItems.center
                                 ) {
+                                    mIcon(iconName = "add")
+                                    mTypography(
+                                        text = "Add $player",
+                                        variant = MTypographyVariant.button
+                                    )
+                                    mButtonGroup(
+                                        color = MColor.primary,
+                                        variant = MButtonGroupVariant.outlined,
+                                        orientation = MButtonGroupOrientation.horizontal
+                                    ) {
+                                        val leftOverSymbols =
+                                            localSymbols - props.playingUsers.map { (playerId, userInfo) -> userInfo.figureId }
+                                        leftOverSymbols.forEach { symbol ->
+                                            mButton(
+                                                caption = "as $symbol",
+                                                onClick = {
+                                                    props.dispatchSessionEvent(
+                                                        SessionEvent.PlayerJoin(
+                                                            player = player,
+                                                            user = UserInfo("local_$player", symbol)
+                                                        )
+                                                    )
+                                                }
+                                            )
+                                        }
+                                    }
+
                                     css {
                                         margin(1.spacingUnits)
                                     }
                                 }
+//                                mButton(
+//                                    caption = "Join $player as $symbol",
+//                                    variant = MButtonVariant.outlined,
+//                                    startIcon = mIcon("add", addAsChild = false),
+//                                    onClick = {
+//                                        //                                        val username = if
+//                                        props.dispatchSessionEvent(
+//                                            SessionEvent.PlayerJoin(
+//                                                player = player,
+//                                                user = UserInfo(conn.userId, symbol)
+//                                            )
+//                                        )
+//                                    }
+//                                ) {
+//                                    css {
+//                                        margin(1.spacingUnits)
+//                                    }
+//                                }
                             }
                         }
-                    }
+//                    }
                 }
             } else { // local
                 // add users

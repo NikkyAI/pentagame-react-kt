@@ -12,6 +12,11 @@ import penta.network.GameEvent
 import penta.util.json
 import java.util.UUID
 
+fun connect() =  Database.connect(
+    url = System.getenv("JDBC_DATABASE_URL"),
+    driver = "org.postgresql.Driver"
+)
+
 fun main() {
     val db = Database.connect(
         url = System.getenv("JDBC_DATABASE_URL"),

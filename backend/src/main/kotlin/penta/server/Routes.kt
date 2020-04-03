@@ -1,5 +1,6 @@
 package penta.server
 
+import ch.qos.logback.core.db.dialect.DBUtil
 import com.soywiz.klogger.Logger
 import io.ktor.application.Application
 import io.ktor.application.call
@@ -20,12 +21,14 @@ import io.ktor.routing.routing
 import io.ktor.websocket.webSocket
 import kotlinx.serialization.builtins.list
 import kotlinx.serialization.list
+import org.jetbrains.exposed.sql.Database
 import penta.PlayerIds
 import penta.util.json
 import penta.network.GameSessionInfo
 import penta.network.LoginRequest
 import penta.network.LoginResponse
 import penta.network.ServerStatus
+import penta.server.db.connect
 import kotlin.random.Random
 import kotlin.IllegalArgumentException
 
@@ -95,6 +98,8 @@ fun Application.routes() = routing {
         // find registered user
         // val dbuser = DBUser.getByUserId(loginRequest.userId)
         // val response: LoginResponse = if (dbuser == null) {
+
+//        val db = connect()
         val user: User.RegisteredUser? = UserManager.find(loginRequest.userId) as? User.RegisteredUser
         val response: LoginResponse = if (user == null) {
             when {

@@ -5,10 +5,11 @@ import org.jetbrains.exposed.sql.addLogger
 import penta.server.db.User as DBUser
 import org.jetbrains.exposed.sql.transactions.transaction
 import penta.server.db.Users
+import penta.server.db.connect
 import penta.server.db.findOrCreate
 
 object UserManager {
-    fun findDBUser(userId: String) = transaction {
+    fun findDBUser(userId: String) = transaction(connect()) {
         addLogger(StdOutSqlLogger)
         DBUser.find(Users.userId eq userId).firstOrNull()
     }
