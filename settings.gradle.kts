@@ -1,4 +1,4 @@
-import  de.fayard.versions.setupVersionPlaceholdersResolving
+import de.fayard.dependencies.bootstrapRefreshVersionsAndDependencies
 
 pluginManagement {
     repositories {
@@ -22,14 +22,17 @@ pluginManagement {
 }
 
 buildscript {
-    dependencies.classpath("de.fayard.refreshVersions:de.fayard.refreshVersions.gradle.plugin:0.8.6")
+    repositories { gradlePluginPortal() }
+    dependencies.classpath("de.fayard:dependencies:0.5.8")
 }
 
 plugins {
   id("com.gradle.enterprise").version("3.1.1")
 }
 
-settings.setupVersionPlaceholdersResolving()
+bootstrapRefreshVersionsAndDependencies(
+    listOf(rootDir.resolve("dependencies-rules.txt").readText())
+)
 
 enableFeaturePreview("GRADLE_METADATA")
 

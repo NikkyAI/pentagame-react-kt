@@ -1,0 +1,21 @@
+com.fasterxml.jackson.*:*
+              ^^^^^^^
+
+
+ch.qos.logback:logback-classic
+               ^^^^^^^.^^^^^^^
+
+io.data2viz.d2v:*
+   ^^^^^^^^
+
+com.soywiz.korlibs.klogger:*
+           ^^^^^^^.^^^^^^^
+
+io.github.microutils:kotlin-logging(-*)
+          ^^^^^^^^^^.       ^^^^^^^
+
+org.reduxkotlin:redux-kotlin
+    ^^^^^^^^^^^
+
+org.reduxkotlin:redux-kotlin-reselect
+    ^^^^^^^^^^^.             ^^^^^^^^

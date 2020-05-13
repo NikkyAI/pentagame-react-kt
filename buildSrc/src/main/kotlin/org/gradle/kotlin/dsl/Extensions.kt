@@ -5,9 +5,9 @@ import java.io.ByteArrayOutputStream
 import java.net.URI
 
 fun ktor(module: String? = null, version: String? = null): Any =
-    "io.ktor:${module?.let { "ktor-$module" } ?: "ktor"}:${version ?: Ktor.version}"
+    "io.ktor:${module?.let { "ktor-$module" } ?: "ktor"}:${version ?: Ktor.v}"
 
-fun d2v(module: String, version: String? = Data2Viz.version): String =
+fun d2v(module: String, version: String? = Data2Viz.v): String =
     "${Data2Viz.group}:${module}" + (version?.let { ":$it" } ?: "")
 
 fun Project.captureExec(vararg args: Any): String {

@@ -1,6 +1,5 @@
 package penta.server
 
-import ch.qos.logback.core.db.dialect.DBUtil
 import com.soywiz.klogger.Logger
 import io.ktor.application.Application
 import io.ktor.application.call
@@ -20,15 +19,12 @@ import io.ktor.routing.post
 import io.ktor.routing.routing
 import io.ktor.websocket.webSocket
 import kotlinx.serialization.builtins.list
-import kotlinx.serialization.list
-import org.jetbrains.exposed.sql.Database
 import penta.PlayerIds
 import penta.util.json
 import penta.network.GameSessionInfo
 import penta.network.LoginRequest
 import penta.network.LoginResponse
 import penta.network.ServerStatus
-import penta.server.db.connect
 import kotlin.random.Random
 import kotlin.IllegalArgumentException
 

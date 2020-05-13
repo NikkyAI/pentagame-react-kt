@@ -1,7 +1,7 @@
 plugins {
-    kotlin("multiplatform") version Kotlin.version
-    id("kotlinx-serialization") version Kotlin.version
-    id("de.fayard.refreshVersions") // version "0.8.6"
+    kotlin("multiplatform") version MyKotlin.v
+    id("kotlinx-serialization") version MyKotlin.v
+    id("de.fayard.refreshVersions") // version "0.9.4"
     `maven-publish`
 }
 

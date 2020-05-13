@@ -6,7 +6,7 @@ import java.io.PrintStream
 plugins {
     kotlin("jvm")
     id("com.github.johnrengelman.shadow") version "5.0.0"
-    id("org.flywaydb.flyway") version Flyway.version
+    id("org.flywaydb.flyway") version Flyway.v
     application
     id("de.fayard.dependencies")    
 }
@@ -127,16 +127,16 @@ dependencies {
 
     implementation(project(":shared"))
 
-    implementation("io.ktor:ktor-server-netty:${Ktor.version}")
-    implementation("io.ktor:ktor-html-builder:${Ktor.version}")
-    implementation("io.ktor:ktor-serialization:${Ktor.version}")
-    implementation("ch.qos.logback:logback-classic:${Logback.version}")
+    implementation("io.ktor:ktor-server-netty:_")
+    implementation("io.ktor:ktor-html-builder:_")
+    implementation("io.ktor:ktor-serialization:_")
+    implementation("ch.qos.logback:logback-classic:${Logback.v}")
 
-    implementation("org.postgresql:postgresql:${Postgres.version}")
+    implementation("org.postgresql:postgresql:${Postgres.v}")
 
-    implementation("org.jetbrains.exposed:exposed-core:${Exposed.version}")
-    implementation("org.jetbrains.exposed:exposed-dao:${Exposed.version}")
-    implementation("org.jetbrains.exposed:exposed-jdbc:${Exposed.version}")
+    implementation("org.jetbrains.exposed:exposed-core:${Exposed.v}")
+    implementation("org.jetbrains.exposed:exposed-dao:${Exposed.v}")
+    implementation("org.jetbrains.exposed:exposed-jdbc:${Exposed.v}")
 
 //    implementation ("com.improve_future:harmonica:1.1.24")
 //    implementation (group = "org.reflections", name= "reflections", version= "0.9.11")
