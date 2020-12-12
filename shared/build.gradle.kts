@@ -5,8 +5,7 @@ import java.time.format.DateTimeFormatter
 
 plugins {
     kotlin("multiplatform")
-    id("kotlinx-serialization")
-    id("de.fayard.dependencies")
+    kotlin("plugin.serialization")
 }
 
 val genCommonSrcKt = buildDir.resolve("gen-src/commonMain/kotlin").apply { mkdirs() }
@@ -44,8 +43,10 @@ kotlin {
             }
         }
     }
+    js().browser()
+/*
     js {
-        nodejs()
+//        nodejs()
 //        useCommonJs()
 //        browser {
 //            runTask {
@@ -65,6 +66,7 @@ kotlin {
             }
         }
     }
+*/
 
     /* Targets configuration omitted.
     *  To find out how to configure the targets, please follow the link:
@@ -74,15 +76,18 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 api(kotlin("stdlib"))
-                api("org.jetbrains.kotlinx:kotlinx-serialization-runtime-common:_")
-                api("org.jetbrains.kotlinx:kotlinx-coroutines-core-common:_")
+                api("org.jetbrains.kotlinx:kotlinx-serialization-json:_")
+                api("org.jetbrains.kotlinx:kotlinx-coroutines-core:_")
 
-                api(d2v("core"))
-                api(d2v("color"))
+                api("org.jetbrains.kotlinx:kotlinx-datetime:_")
+
+                api("org.koin:koin-core:_")
+//                api(d2v("core"))
+//                api(d2v("color"))
 
                 // logging
                 api("com.soywiz.korlibs.klogger:klogger:_")
-                api("io.github.microutils:kotlin-logging-common:_")
+                api("io.github.microutils:kotlin-logging:_")
 
                 // Redux
                 api("org.reduxkotlin:redux-kotlin:_")
@@ -97,8 +102,9 @@ kotlin {
 
         val commonTest by getting {
             dependencies {
-                api(kotlin("test-common"))
-                api(kotlin("test-annotations-common"))
+                api(kotlin("test"))
+//                api(kotlin("test-annotations"))
+                api("org.koin:koin-test:_")
             }
         }
 
@@ -106,23 +112,17 @@ kotlin {
             dependencies {
                 api(kotlin("stdlib-jdk8"))
 
-                api("org.jetbrains.kotlinx:kotlinx-serialization-runtime:_")
-
                 // KTOR
-                api(ktor("server-core"))
-                api(ktor("server-cio"))
-                api(ktor("websockets"))
-                api(ktor("jackson"))
+                api(Ktor.server.core)
+                api("io.ktor:ktor-server-cio:_")
+                api("io.ktor:ktor-websockets:_")
+                api("io.ktor:ktor-jackson:_")
 
                 // logging
 //                api("com.soywiz.korlibs.klogger:klogger-jvm:_")
 
                 // serialization
 //                api("org.jetbrains.kotlinx:kotlinx-serialization-runtime:_")
-
-                // Jackson
-                api("com.fasterxml.jackson.core:jackson-databind:_")
-                api("com.fasterxml.jackson.module:jackson-module-kotlin:_")
 
                 // logging
                 api("ch.qos.logback:logback-classic:_")
@@ -141,11 +141,16 @@ kotlin {
         val commonClient by creating {
             dependsOn(commonMain)
             dependencies {
-                api(d2v("viz"))
+//                api(d2v("viz"))
 
-                api(ktor("client-core"))
-                api(ktor("client-json"))
-                api(ktor("client-serialization"))
+                api("io.ktor:ktor-client-core:_")
+                api("io.ktor:ktor-client-json:_")
+                api("io.ktor:ktor-client-serialization:_")
+
+
+                implementation("io.rsocket.kotlin:rsocket-core:_")
+                implementation("io.rsocket.kotlin:rsocket-transport-ktor:_")
+                implementation("io.rsocket.kotlin:rsocket-transport-ktor-client:_")
 
 //                api(ktor("client-websocket"))
             }
@@ -155,16 +160,16 @@ kotlin {
             dependsOn(commonClient)
             dependencies {
                 // cannot look up serialzation utils otherwise
-                api("org.jetbrains.kotlinx:kotlinx-serialization-runtime-js:_")
                 // logging
-                api("com.soywiz.korlibs.klogger:klogger-js:_")
-                api("io.github.microutils:kotlin-logging-js:_")
+//                api("com.soywiz.korlibs.klogger:klogger-js:_")
+//                api("io.github.microutils:kotlin-logging-js:_")
 
-                // ktor client
-                api(ktor("client-core-js"))
-                api(ktor("client-json-js"))
-                api(ktor("client-serialization-js"))
+//                // ktor client
+//                api("io.ktor:ktor-client-core-js:_")
+//                api("io.ktor:ktor-client-json-js:_")
+//                api("io.ktor:ktor-client-serialization-js:_")
 
+/*
                 api(npm("react", "^16.9.0"))
                 api(npm("react-dom", "^16.9.0"))
 //                api(npm("react-router-dom"))
@@ -180,6 +185,8 @@ kotlin {
                 api(npm("abort-controller"))
 
                 api(npm("redux-logger"))
+*/
+/*
 
                 val kotlinWrappersVersion = "pre.90-kotlin-1.3.61"
                 api("org.jetbrains:kotlin-react:16.9.0-${kotlinWrappersVersion}")
@@ -190,20 +197,14 @@ kotlin {
 
                 api("org.jetbrains:kotlin-redux:4.0.0-${kotlinWrappersVersion}")
                 api("org.jetbrains:kotlin-react-redux:5.0.7-${kotlinWrappersVersion}")
+*/
 
-//                api("org.jetbrains:kotlin-react:_")
-//                api("org.jetbrains:kotlin-react-dom:_")
-//                api("org.jetbrains:kotlin-css:_")
-//                api("org.jetbrains:kotlin-css-js:_")
-//                api("org.jetbrains:kotlin-styled:_")
-
-//                api("org.jetbrains:kotlin-redux:_")
-//                api("org.jetbrains:kotlin-react-redux:_")
-
+/*
                 // material UI components
                 api(project(":muirwik"))
 //                api(project(":muirwik"))
 
+*/
                 api("com.github.nwillc:ksvg-js:3.0.0")
             }
         }

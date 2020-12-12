@@ -5,10 +5,10 @@ import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.Slf4jSqlDebugLogger
 import org.jetbrains.exposed.sql.addLogger
 import org.jetbrains.exposed.sql.transactions.transaction
-import penta.server.db.Games
-import penta.server.db.PlayingUsers
-import penta.server.db.UserInGames
-import penta.server.db.Users
+import old.server.db.Games
+import old.server.db.PlayingUsers
+import old.server.db.UserInGames
+import old.server.db.Users
 
 object ResetDB {
     @JvmStatic

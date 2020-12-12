@@ -1,15 +1,15 @@
 package tests
 
-import com.soywiz.klogger.Logger
+import mu.KotlinLogging
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.Slf4jSqlDebugLogger
 import org.jetbrains.exposed.sql.addLogger
 import org.jetbrains.exposed.sql.transactions.transaction
-import penta.server.db.User
+import old.server.db.User
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 
-val logger = Logger("DBTests")
+val logger = KotlinLogging.logger("DBTests")
 
 @BeforeTest
 fun connect() {

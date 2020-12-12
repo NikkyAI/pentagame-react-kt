@@ -1,0 +1,17 @@
+com.fasterxml.jackson.*:*
+              ^^^^^^^
+
+ch.qos.logback:logback-classic
+               ^^^^^^^^^^^^^^^
+
+org.koin:koin-*
+         ^^^^
+
+io.github.microutils:kotlin-logging
+                     ^^^^^^^^^^^^^^
+
+com.soywiz.korlibs.klogger:*
+           ^^^^^^^.^^^^^^^
+
+io.rsocket.kotlin:rsocket-*
+   ^^^^^^^.^^^^^^

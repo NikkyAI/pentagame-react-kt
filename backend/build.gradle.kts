@@ -2,17 +2,19 @@ import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import java.io.ByteArrayOutputStream
 import java.io.PrintStream
 
-
 plugins {
     kotlin("jvm")
-    id("com.github.johnrengelman.shadow") version "5.0.0"
-    id("org.flywaydb.flyway") version Flyway.version
+    kotlin("plugin.serialization")
+    id("com.github.johnrengelman.shadow")
+    id("com.squareup.sqldelight")
     application
-    id("de.fayard.dependencies")    
+//    id("org.flywaydb.flyway") version Flyway.version
+//    id("de.fayard.dependencies")
 }
 
 val gen_resource = buildDir.resolve("gen-src/resources").apply { mkdirs() }
 
+/*
 val hasDevUrl = extra.has("DEV_JDBC_DATABASE_URL")
 if (!hasDevUrl) logger.error("DEV_JDBC_DATABASE_URL not set")
 val hasLiveUrl = extra.has("LIVE_JDBC_DATABASE_URL")
@@ -121,27 +123,46 @@ if (hasDevUrl && hasLiveUrl) {
         }
     }
 }
+*/
 
 dependencies {
-    implementation(kotlin("stdlib-jdk8"))
+    implementation(kotlin("stdlib-jdk8", "_"))
 
     implementation(project(":shared"))
 
-    implementation("io.ktor:ktor-server-netty:${Ktor.version}")
-    implementation("io.ktor:ktor-html-builder:${Ktor.version}")
-    implementation("io.ktor:ktor-serialization:${Ktor.version}")
-    implementation("ch.qos.logback:logback-classic:${Logback.version}")
+    implementation("io.github.microutils:kotlin-logging:_")
 
-    implementation("org.postgresql:postgresql:${Postgres.version}")
+    implementation("io.rsocket.kotlin:rsocket-core:_")
+    implementation("io.rsocket.kotlin:rsocket-transport-ktor:_")
+    implementation("io.rsocket.kotlin:rsocket-transport-ktor-server:_")
 
-    implementation("org.jetbrains.exposed:exposed-core:${Exposed.version}")
-    implementation("org.jetbrains.exposed:exposed-dao:${Exposed.version}")
-    implementation("org.jetbrains.exposed:exposed-jdbc:${Exposed.version}")
+    implementation("io.ktor:ktor-server-netty:_")
+    implementation("io.ktor:ktor-html-builder:_")
+    implementation("io.ktor:ktor-serialization:_")
+    implementation("ch.qos.logback:logback-classic:_")
 
-//    implementation ("com.improve_future:harmonica:1.1.24")
-//    implementation (group = "org.reflections", name= "reflections", version= "0.9.11")
+    implementation("org.koin:koin-ktor:_")
+    implementation("org.koin:koin-logger-slf4j:_")
+
+    implementation("io.rsocket.kotlin:rsocket-core:_")
+    implementation("io.rsocket.kotlin:rsocket-transport-ktor:_")
+
+//    implementation("org.xerial:sqlite-jdbc:_")
+    implementation("com.squareup.sqldelight:sqlite-driver:_")
+
+    implementation("org.postgresql:postgresql:_")
 
     testImplementation(kotlin("test-junit"))
+
+    //TODO: remove
+
+    implementation("org.jetbrains.exposed:exposed-core:_")
+    implementation("org.jetbrains.exposed:exposed-dao:_")
+    implementation("org.jetbrains.exposed:exposed-jdbc:_")
+
+    // Jackson
+    implementation("com.fasterxml.jackson.core:jackson-databind:_")
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:_")
 }
 
 kotlin {
@@ -162,6 +183,19 @@ tasks {
     }
 }
 
+sqldelight {
+    database("Database") {
+        packageName = "server.db"
+//        dialect = "postgres"
+        verifyMigrations = true
+        deriveSchemaFromMigrations = true
+
+        schemaOutputDirectory = file("src/main/sqldelight/databases")
+    }
+}
+
+//TODO: add back once working again
+/*
 val packageStatic = tasks.create("packageStatic") {
     group = "build"
     val frontend = project(":frontend")
@@ -197,16 +231,20 @@ val packageStatic = tasks.create("packageStatic") {
 //        }
     }
 }
+*/
 
 application {
     mainClassName = "io.ktor.server.cio.EngineMain"
 }
 
+/*
 val shadowJar = tasks.getByName<ShadowJar>("shadowJar") {
     dependsOn(packageStatic)
 
     from(packageStatic)
 }
+*/
+val shadowJar by tasks.getting(ShadowJar::class)
 
 val unzipJsJar = tasks.create<Copy>("unzipShadowJar") {
     dependsOn(shadowJar)

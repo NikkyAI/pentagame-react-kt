@@ -1,48 +1,27 @@
-import  de.fayard.versions.setupVersionPlaceholdersResolving
-
-pluginManagement {
-    repositories {
-        gradlePluginPortal()
-        maven(url = "https://jcenter.bintray.com/")
-        maven(url = "https://dl.bintray.com/kotlin/kotlin-eap")
-    }
-
-    resolutionStrategy {
-        eachPlugin {
-            val module = when(requested.id.id) {
-                "kotlinx-serialization" -> "org.jetbrains.kotlin:kotlin-serialization:${requested.version}"
-                "proguard" -> "net.sf.proguard:proguard-gradle:${requested.version}"
-                else -> null
-            }
-            if(module != null) {
-                useModule(module)
-            }
-        }
-    }
-}
+import de.fayard.refreshVersions.bootstrapRefreshVersions
 
 buildscript {
-    dependencies.classpath("de.fayard.refreshVersions:de.fayard.refreshVersions.gradle.plugin:0.8.6")
+    repositories { gradlePluginPortal() }
+    dependencies.classpath("de.fayard.refreshVersions:refreshVersions:0.9.7")
 }
 
 plugins {
-  id("com.gradle.enterprise").version("3.1.1")
+  id("com.gradle.enterprise").version("3.5")
 }
 
-settings.setupVersionPlaceholdersResolving()
-
-enableFeaturePreview("GRADLE_METADATA")
+bootstrapRefreshVersions(
+    listOf(rootDir.resolve("buildSrc/dependencies-rules.txt").readText())
+)
 
 //includeBuild("ksvg")
 
 include("backend")
-include("frontend")
+//include("frontend")
 include("shared")
-include(":muirwik")
-//include(":ksvg")
+//include(":muirwik")
 
 //project(":ksvg").projectDir = rootDir.resolve("ksvg")
-project(":muirwik").projectDir = rootDir.resolve("muirwik/muirwik-components")
+//project(":muirwik").projectDir = rootDir.resolve("muirwik/muirwik-components")
 
 
 gradleEnterprise {

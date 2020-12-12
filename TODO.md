@@ -1,33 +1,23 @@
 # TODO
 
-RefreshVersions
-
-- migrate versions to "_" and hope for the best
-- run gradle refreshVersions
-- verify plugin versions before https://scans.gradle.com/s/q7sfru33i4fxs/plugins?expanded=WzM4XQ
-- verify dependencies version before migration https://scans.gradle.com/s/q7sfru33i4fxs/dependencies
-
-
 - Bugs \
   see [issues](https://github.com/NikkyAI/pentagame/issues?q=is%3Aissue+is%3Aopen+sort%3Aupdated-desc)
 
+- Shared
+  - RSocket client extensions
+
+
 - Frontend
-  - Redux/Statemachine
-    - [x] process `LobbyEvents`
-  - UI
-    - [ ] track points for players
-    - [ ] change figure shapes for players
+  - fritz2
 
 - [ ] Notation Parser
   - [ ] finalize notation syntax
 
-- [ ] User
-  - [ ] Backend
-    - [ ] add User storage (Postgres + Exposed)
-    - [ ] add routes for setting user data (password, displayname)
-  - [ ] Frontend
-    - [ ] add views
+- Backend
+  - restart from scratch
+  - database / SQL + sqldelight
+  - rsocket
+
+- research needed:
+  - JWT (apiToken)
   
-- General
-  - [ ] add logic and UI for 2v2 and other team modes
-  - [ ] Database

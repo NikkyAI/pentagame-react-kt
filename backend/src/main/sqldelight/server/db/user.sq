@@ -1,0 +1,4 @@
+getAll:
+SELECT *
+FROM `users`
+;
